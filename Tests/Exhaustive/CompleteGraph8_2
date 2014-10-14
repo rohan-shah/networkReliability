@@ -1,0 +1,31 @@
+Command c:\math\Thesis\Implementations\networkReliability\x64\Release\ExhaustiveSearch.exe run from directory "c:\math\Thesis\Implementations\networkReliability\Tests\Exhaustive" with arguments "--completeGraph 8 --interestVertices 2"
+Number of suitable subgraphs with that number of edges
+  0:  0
+  1:  1
+  2:  33
+  3:  531
+  4:  5490
+  5:  40215
+  6:  216335
+  7:  863175
+  8:  2597280
+  9:  6226055
+ 10:  12351771
+ 11:  20731599
+ 12:  29817560
+ 13:  37029795
+ 14:  39882795
+ 15:  37333453
+ 16:  30381045
+ 17:  21462210
+ 18:  13120450
+ 19:  6906480
+ 20:  3108063
+ 21:  1184038
+ 22:  376740
+ 23:  98280
+ 24:  20475
+ 25:  3276
+ 26:  378
+ 27:  28
+ 28:  1

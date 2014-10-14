@@ -1,0 +1,33 @@
+Command ..\..\x64\Release\ExhaustiveSearch.exe run from directory "C:\math\Thesis\Implementations\networkReliability\Tests\Exhaustive" with arguments "--graphFile ../../dodecahedronReordered.graphml --interestVertices 0 19"
+Number of suitable subgraphs with that number of edges
+  0:  0
+  1:  0
+  2:  0
+  3:  0
+  4:  0
+  5:  6
+  6:  162
+  7:  2094
+  8:  17238
+  9:  101442
+ 10:  454071
+ 11:  1605720
+ 12:  4597725
+ 13:  10833306
+ 14:  21217914
+ 15:  34721924
+ 16:  47506734
+ 17:  54147186
+ 18:  51033218
+ 19:  39423228
+ 20:  24853473
+ 21:  12875830
+ 22:  5531394
+ 23:  1977348
+ 24:  585436
+ 25:  141630
+ 26:  27345
+ 27:  4058
+ 28:  435
+ 29:  30
+ 30:  1
