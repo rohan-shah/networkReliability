@@ -101,7 +101,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;BOOST_AUTO_LINK_TAGGED;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\AllPointsMaxFlow\AllPointsMaxFlow;..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -136,7 +136,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;BOOST_AUTO_LINK_TAGGED;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\AllPointsMaxFlow\AllPointsMaxFlow;..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -152,20 +152,26 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Arguments.h" />
+    <ClInclude Include="ArgumentsMPFR.h" />
     <ClInclude Include="ArgumentsMPIR.h" />
+    <ClInclude Include="computeConditionalProb.h" />
     <ClInclude Include="connected_components_restricted.hpp" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="depth_first_search_restricted.hpp" />
     <ClInclude Include="EdgeState.h" />
     <ClInclude Include="graphAlgorithms.h" />
+    <ClInclude Include="includeMPFR.h" />
     <ClInclude Include="includeMPIRXX.h" />
+    <ClInclude Include="mpreal.h" />
     <ClInclude Include="NetworkReliabilityObs.h" />
     <ClInclude Include="NetworkReliabilitySubObs.h" />
     <ClInclude Include="ZoomGraphicsView.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Arguments.cpp" />
+    <ClCompile Include="ArgumentsMPFR.cpp" />
     <ClCompile Include="ArgumentsMPIR.cpp" />
+    <ClCompile Include="computeConditionalProb.cpp" />
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="graphAlgorithms.cpp" />
     <ClCompile Include="NetworkReliabilityObs.cpp" />

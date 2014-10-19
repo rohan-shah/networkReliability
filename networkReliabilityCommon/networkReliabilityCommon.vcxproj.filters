@@ -48,6 +48,18 @@
     <ClInclude Include="includeMPIRXX.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="includeMPFR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ArgumentsMPFR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mpreal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="computeConditionalProb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Context.cpp">
@@ -69,6 +81,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ArgumentsMPIR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ArgumentsMPFR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="computeConditionalProb.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
