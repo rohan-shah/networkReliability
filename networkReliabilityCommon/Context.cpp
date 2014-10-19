@@ -12,6 +12,7 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/iterator/counting_iterator.hpp>
+#include "allPointsMaxFlow.hpp"
 namespace networkReliability
 {
 	namespace ContextImpl
@@ -187,7 +188,18 @@ namespace networkReliability
 		}
 		else
 		{
-			throw std::runtime_error("Currently only set up for the 2-terminal and all-terminal reliability problems");
+			std::vector<int> flowMatrix(nVertices*nVertices);
+			allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
+			allPointsMaxFlow::allPointsMaxFlow<Context::internalDirectedGraph, int>(flowMatrix, capacityVector, *directedGraph.get(), scratch);
+			int maxFlow = std::numeric_limits<int>::max();
+			for(int i = 0; i < interestVertices->size(); i++)
+			{
+				for(int j = i+1; j < interestVertices->size(); j++)
+				{
+					maxFlow = std::min(maxFlow, flowMatrix[(*interestVertices)[i] + (*interestVertices)[j] * nVertices]);
+				}
+			}
+			minCutEdges = maxFlow;
 		}
 	}
 	void Context::loadDistributions(std::string path)
@@ -484,6 +496,7 @@ namespace networkReliability
 	int Context::getMinCut(std::vector<int>& capacityVector) const
 	{
 		std::size_t nVertices = boost::num_vertices(*graph);
+		//Are we looking at the all-terminal reliability problem?
 		if(interestVertices->size() == nVertices)
 		{
 			ContextImpl::constant_property_map_vertices_size_type<Context::internalGraph::edge_descriptor, 1L> edgeWeights;
@@ -491,29 +504,54 @@ namespace networkReliability
 			//BOOST_AUTO(parities, boost::make_one_bit_color_map(num_vertices(*graph), get(boost::vertex_index, *graph)));
 			return (int)boost::stoer_wagner_min_cut(*graph, edgeWeights);//, boost::parity_map(parities));
 		}
-		//or are we looking at the 2-terminal reliability problem?
-		else if(interestVertices->size() == 2)
-		{
-			typedef boost::property_map<Context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMapType;
-			typedef boost::property_map<Context::internalDirectedGraph, boost::vertex_index_t>::const_type vertexIndexMapType;
-			typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMapType> edgeCapacityMapType;
-			typedef boost::iterator_property_map<typename std::vector<Context::internalDirectedGraph::edge_descriptor>::iterator, vertexIndexMapType> vertexPredecessorMapType;
-			typedef boost::iterator_property_map<typename std::vector<boost::default_color_type>::iterator, vertexIndexMapType> colorMapType;
-			typedef boost::iterator_property_map<typename std::vector<int>::iterator, vertexIndexMapType> distanceMapType;
-
-			edgeIndexMapType edgeIndexMap = boost::get(boost::edge_index, *directedGraph);
-			vertexIndexMapType vertexIndexMap = boost::get(boost::vertex_index, *directedGraph);
-			edgeCapacityMapType residualCapacityMap(edgeResidualCapacityVector.begin(), edgeIndexMap);
-			edgeCapacityMapType edgeCapacityMap(capacityVector.begin(), edgeIndexMap);
-			vertexPredecessorMapType vertexPredecessorMap(vertexPredecessorVector.begin(), vertexIndexMap);
-			colorMapType colorMap(colorVector.begin(), vertexIndexMap);
-			distanceMapType distanceMap(distanceVector.begin(), vertexIndexMap);
-
-			return boost::boykov_kolmogorov_max_flow(*directedGraph, (*interestVertices)[0], (*interestVertices)[1], boost::residual_capacity_map(residualCapacityMap).capacity_map(edgeCapacityMap).predecessor_map(vertexPredecessorMap).color_map(colorMap).distance_map(distanceMap));
-		}
+		//or are we looking at the k-terminal reliability problem?
 		else
 		{
-			throw std::runtime_error("Currently only set up for the 2-terminal and all-terminal reliability problems");
+			const std::size_t nInterestVertices = interestVertices->size();
+			//Use the all-points max flow
+			if(interestVertices->size() * (interestVertices->size() - 1) / 2 > nVertices - 1)
+			{
+				std::vector<int> maxFlowResults(nVertices * nVertices, std::numeric_limits<int>::max());
+				allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
+				allPointsMaxFlow::allPointsMaxFlow<Context::internalDirectedGraph, int>(maxFlowResults, capacityVector, *directedGraph, scratch);
+				int minimum = std::numeric_limits<int>::max();
+				for(std::size_t i = 0; i < nInterestVertices; i++)
+				{
+					for(std::size_t j = i+1; j < nInterestVertices; j++)
+					{
+						minimum = std::min(minimum, maxFlowResults[(*interestVertices)[i] + (*interestVertices)[j] * nVertices]);
+					}
+				}
+				return minimum;
+			}
+			//Otherwise just call max-flow a bunch of times (the naive version)
+			else
+			{
+				std::vector<int> maxFlowResults(nInterestVertices * nInterestVertices, std::numeric_limits<int>::max());
+				typedef boost::property_map<Context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMapType;
+				typedef boost::property_map<Context::internalDirectedGraph, boost::vertex_index_t>::const_type vertexIndexMapType;
+				typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMapType> edgeCapacityMapType;
+				typedef boost::iterator_property_map<typename std::vector<Context::internalDirectedGraph::edge_descriptor>::iterator, vertexIndexMapType> vertexPredecessorMapType;
+				typedef boost::iterator_property_map<typename std::vector<boost::default_color_type>::iterator, vertexIndexMapType> colorMapType;
+				typedef boost::iterator_property_map<typename std::vector<int>::iterator, vertexIndexMapType> distanceMapType;
+
+				edgeIndexMapType edgeIndexMap = boost::get(boost::edge_index, *directedGraph);
+				vertexIndexMapType vertexIndexMap = boost::get(boost::vertex_index, *directedGraph);
+				edgeCapacityMapType residualCapacityMap(edgeResidualCapacityVector.begin(), edgeIndexMap);
+				edgeCapacityMapType edgeCapacityMap(capacityVector.begin(), edgeIndexMap);
+				vertexPredecessorMapType vertexPredecessorMap(vertexPredecessorVector.begin(), vertexIndexMap);
+				colorMapType colorMap(colorVector.begin(), vertexIndexMap);
+				distanceMapType distanceMap(distanceVector.begin(), vertexIndexMap);
+
+				for(std::size_t i = 0; i < nInterestVertices; i++)
+				{
+					for(std::size_t j = i+1; j < nInterestVertices; j++)
+					{
+						maxFlowResults[i + j * nInterestVertices] = maxFlowResults[j + i * nInterestVertices] = boost::boykov_kolmogorov_max_flow(*directedGraph, (*interestVertices)[i], (*interestVertices)[j], boost::residual_capacity_map(residualCapacityMap).capacity_map(edgeCapacityMap).predecessor_map(vertexPredecessorMap).color_map(colorMap).distance_map(distanceMap));
+					}
+				}
+				return *std::min_element(maxFlowResults.begin(), maxFlowResults.end());
+			}
 		}
 	}
 	std::size_t Context::getNEdges() const
