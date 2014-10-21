@@ -79,6 +79,11 @@ namespace networkReliability
 			std::cout << message << std::endl;
 			return 0;
 		}
+		if(variableMap.count("splittingFactor") != 1)
+		{
+			std::cout << "Please enter a value for input splittingFactor" << std::endl;
+			return 0;
+		}
 
 		std::vector<float> splittingFactors = variableMap["splittingFactor"].as<std::vector<float> >();
 		if(splittingFactors.size() == 1)
