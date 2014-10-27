@@ -17,8 +17,9 @@ namespace networkReliability
 
 		boost::program_options::options_description options("Usage");
 		options.add_options()
-			("gridGraph", boost::program_options::value<int>(), "(int) The dimension of the square grid graph to use. Incompatible with graphFile. ")
-			("graphFile", boost::program_options::value<std::string>(), "(string) The path to a graphml file. Incompatible with gridGraph")
+			("completeGraph", boost::program_options::value<int>(), "(int) The number of vertices in the complete graph to use. Incompatible with graphFile and gridGraph. ")
+			("gridGraph", boost::program_options::value<int>(), "(int) The dimension of the square grid graph to use. Incompatible with graphFile and completeGraph. ")
+			("graphFile", boost::program_options::value<std::string>(), "(string) The path to a graphml file. Incompatible with gridGraph and completeGraph. ")
 			("n", boost::program_options::value<int>(), "(int) The number of simulations to perform. ")
 			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational. ")
 			("seed", boost::program_options::value<int>(), "(int) The random seed used to generate the random graphs. ")
