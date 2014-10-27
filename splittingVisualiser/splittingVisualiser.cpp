@@ -25,7 +25,7 @@ namespace networkReliability
 		};
 	}
 	splittingVisualiser::splittingVisualiser(Context const& context, int seed, float pointSize, int initialRadius)
-		:context(context), pointSize(pointSize), initialRadius(initialRadius), obs(context, randomSource), currentRadius(initialRadius), seed(seed)
+		:context(context), pointSize(pointSize), initialRadius(initialRadius), obs(context, randomSource), currentRadius(initialRadius), seed(seed), nextAction(RESIMULATE)
 	{
 		randomSource.seed(seed);
 		if(initialRadius < 0)
@@ -78,12 +78,13 @@ namespace networkReliability
 			NetworkReliabilitySubObs subObs = obs.getSubObservation(initialRadius);
 			if(!isSingleComponent(context, subObs.getState(), components, stack, colorMap)) break;
 		}
-		updateGraphics();
+		updateGraphics(currentRadius, -1);
+		nextAction = RESIMULATE;
 	}
 	splittingVisualiser::~splittingVisualiser()
 	{
 	}
-	void splittingVisualiser::updateGraphics()
+	void splittingVisualiser::updateGraphics(int connectionRadius, int highlightRadius)
 	{
 		QList<QGraphicsItem*> allItems = graphicsScene->items();
 		for(QList<QGraphicsItem*>::iterator i = allItems.begin(); i != allItems.end(); i++) delete *i;
@@ -91,7 +92,7 @@ namespace networkReliability
 		addBackgroundRectangle();
 		addPoints();
 		addLines();
-		statusLabel->setText(QString::fromStdString("Current observation is potentially disconnected at radius " + boost::lexical_cast<std::string>(currentRadius)));
+		statusLabel->setText(QString::fromStdString("Current observation is potentially disconnected at radius " + boost::lexical_cast<std::string>(connectionRadius) + ", highlighted at radius " + boost::lexical_cast<std::string>(highlightRadius)));
 	}
 	void splittingVisualiser::addPoints()
 	{
@@ -195,26 +196,36 @@ namespace networkReliability
 		std::vector<int> components(nEdges);
 		std::vector<boost::default_color_type> colorMap;
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
-		if(currentRadius > 0)
+		if (nextAction == RESIMULATE)
 		{
-			NetworkReliabilitySubObs subObs = obs.getSubObservation(currentRadius);
-			if(subObs.getMinCut() >= HIGH_CAPACITY)
+			if (currentRadius > 0)
 			{
-				throw std::runtime_error("Mincut was infeasibly large");
-			}
-			currentRadius--;
-			while(true)
-			{
-				obs = subObs.getObservation(randomSource);
-				NetworkReliabilitySubObs newSubObs = obs.getSubObservation(currentRadius);
-				if(isSingleComponent(context, newSubObs.getState(), components, stack, colorMap)) continue;
-				updateGraphics();
-				if(newSubObs.getMinCut() >= HIGH_CAPACITY)
+				NetworkReliabilitySubObs subObs = obs.getSubObservation(currentRadius);
+				if (subObs.getMinCut() >= HIGH_CAPACITY)
 				{
 					throw std::runtime_error("Mincut was infeasibly large");
 				}
-				break;
+				while (true)
+				{
+					obs = subObs.getObservation(randomSource);
+					NetworkReliabilitySubObs newSubObs = obs.getSubObservation(currentRadius-1);
+					if (isSingleComponent(context, newSubObs.getState(), components, stack, colorMap)) continue;
+					updateGraphics(currentRadius-1, currentRadius);
+					if (newSubObs.getMinCut() >= HIGH_CAPACITY)
+					{
+						throw std::runtime_error("Mincut was infeasibly large");
+					}
+					break;
+				}
 			}
+			nextAction = DECREASE_RADIUS;
+		}
+		else
+		{
+			currentRadius--;
+			obs = obs.getSubObservation(currentRadius).getObservation(randomSource);
+			updateGraphics(currentRadius, currentRadius);
+			nextAction = RESIMULATE;
 		}
 	}
 	bool splittingVisualiser::eventFilter(QObject*, QEvent *event)

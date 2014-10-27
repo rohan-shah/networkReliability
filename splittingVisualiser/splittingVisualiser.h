@@ -9,6 +9,11 @@
 #include "NetworkReliabilityObs.h"
 namespace networkReliability
 {
+	enum nextState
+	{
+		DECREASE_RADIUS, RESIMULATE
+	};
+	//If the next state is RESIMULATE, then we resimulate until we observe something that hits the next level, BUT
 	class splittingVisualiser : public QMainWindow
 	{
 		Q_OBJECT
@@ -18,7 +23,7 @@ namespace networkReliability
 		bool eventFilter(QObject* object, QEvent *event);
 	private:
 		void addBackgroundRectangle();
-		void updateGraphics();
+		void updateGraphics(int connectionRadius, int highlightRadius);
 		void fromStart();
 		void nextStep();
 		void addPoints();
@@ -36,6 +41,7 @@ namespace networkReliability
 		QStatusBar* statusBar;
 		QLabel* statusLabel;
 
+		nextState nextAction;
 		float minX, maxX, minY, maxY;
 	};
 }

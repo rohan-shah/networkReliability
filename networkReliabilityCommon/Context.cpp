@@ -118,11 +118,11 @@ namespace networkReliability
 		std::swap(nEdges, other.nEdges);
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
 	}
-	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpf_class& operationalProbability)
+	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability)
 		:vertexPositions(vertexPositions), interestVertices(interestVertices), operationalProbability(operationalProbability)
 	{
-		mpf_class inoperationalProbability = (1 - operationalProbability);
-		inoperationalProbabilityD = inoperationalProbability.get_d();
+		mpfr_class inoperationalProbability = (1 - operationalProbability);
+		inoperationalProbabilityD = inoperationalProbability.toDouble();
 
 		std::size_t nVertices = boost::num_vertices(*unorderedGraph);
 		nEdges = boost::num_edges(*unorderedGraph);
@@ -209,7 +209,7 @@ namespace networkReliability
 		{
 			boost::archive::binary_iarchive ia(ifs);
 
-			mpf_class readProbability;
+			mpfr_class readProbability;
 			ia >> readProbability;
 			if(readProbability != operationalProbability)
 			{
@@ -311,7 +311,7 @@ namespace networkReliability
 
 		return result;
 	}
-	Context Context::gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpf_class& operationalProbability)
+	Context Context::gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpfr_class& operationalProbability)
 	{
 		boost::shared_ptr<std::vector<vertexPosition> > vertexPositions(new std::vector<vertexPosition>(gridDimension * gridDimension));
 		boost::shared_ptr<Context::inputGraph> graph(new Context::inputGraph(gridDimension * gridDimension));
@@ -328,7 +328,7 @@ namespace networkReliability
 		for(int i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = i;
 		return Context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
 	}
-	Context Context::completeContext(int nVertices, int nInterestVertices, const mpf_class& operationalProbability)
+	Context Context::completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability)
 	{
 		if(nInterestVertices < 2 || nInterestVertices > nVertices)
 		{
@@ -366,7 +366,7 @@ namespace networkReliability
 	{
 		return *vertexPositions;
 	}
-	Context Context::fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpf_class& operationalProbability)
+	Context Context::fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability)
 	{
 		std::ifstream input(path);
 		if(!input.is_open())
@@ -377,7 +377,8 @@ namespace networkReliability
 		boost::dynamic_properties properties;
 		boost::shared_ptr<inputGraph> graph(new inputGraph());
 
-		boost::vector_property_map<int> orderingProperty;
+		typedef boost::property_map<Context::inputGraph, boost::edge_index_t>::type edgeIndexMapType; 
+		edgeIndexMapType orderingProperty;
 		properties.property("order", orderingProperty);
 
 		boost::vector_property_map<float> xProperty, yProperty;
@@ -385,10 +386,8 @@ namespace networkReliability
 		properties.property("y", yProperty);
 
 		boost::read_graphml(input, *graph, properties);
+		const std::size_t nEdges = boost::num_edges(*graph);
 
-		boost::shared_ptr<std::vector<int> > ordering(new std::vector<int>());
-		ordering->insert(ordering->end(), orderingProperty.storage_begin(), orderingProperty.storage_end());
-		
 		boost::shared_ptr<std::vector<vertexPosition> > vertexPositions(new std::vector<vertexPosition>());
 		for(auto xIterator = xProperty.storage_begin(), yIterator = yProperty.storage_begin(); xIterator != xProperty.storage_end(); xIterator++, yIterator++)
 		{
@@ -396,17 +395,50 @@ namespace networkReliability
 		}
 
 		successful = true;
-		if(ordering->size() == 0)
+		//check that the edge_index values are either all 0, or distinct. 
+		//In the process copy the values into a vector
+		bool allZero = true;
+		boost::shared_ptr<std::vector<int> > ordering(new std::vector<int>(boost::num_edges(*graph)));
+		Context::inputGraph::edge_iterator current, end;
+		boost::tie(current, end) = boost::edges(*graph);
+		for (; current != end; current++)
 		{
-			ordering->resize(boost::num_edges(*graph));
-			for(int i =0; i < boost::num_edges(*graph); i++) (*ordering)[i] = i;
+			if (boost::get(boost::edge_index, *graph, *current) != 0)
+			{
+				allZero = false;
+				break;
+			}
 		}
-		if(ordering->size() != boost::num_edges(*graph))
+		if (allZero)
 		{
-			successful = false;
-			message = "Wrong number of vertices in ordering";
-			return Context();
+			std::copy(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges), ordering->begin());
 		}
+		else
+		{
+			std::vector<bool> foundEdgeIndex(nEdges, false);
+			boost::tie(current, end) = boost::edges(*graph);
+			std::vector<int>::iterator outputIterator = ordering->begin();
+			for (; current != end; current++)
+			{
+				int edgeIndex = boost::get(boost::edge_index, *graph, *current);
+				if (edgeIndex >= nEdges || edgeIndex < 0)
+				{
+					message = "Invalid order value specified";
+					successful = false;
+					return Context();
+				}
+				if (foundEdgeIndex[edgeIndex])
+				{
+					successful = false;
+					message = "Duplicate values in ordering";
+					return Context();
+				}
+				else foundEdgeIndex[edgeIndex] = true;
+				*outputIterator = edgeIndex;
+				outputIterator++;
+			}
+		}
+
 
 		int maxInterest = *std::max_element(interestVertices->begin(), interestVertices->end());
 		int minInterest = *std::min_element(interestVertices->begin(), interestVertices->end());
@@ -422,7 +454,7 @@ namespace networkReliability
 	{
 		return edgeDistances.get();
 	}
-	const mpf_class& Context::getOperationalProbability() const
+	const mpfr_class& Context::getOperationalProbability() const
 	{
 		return operationalProbability;
 	}
@@ -469,13 +501,12 @@ namespace networkReliability
 		internalGraph::edge_iterator start, end, current;
 		boost::tie(start, end) = boost::edges(*graph);
 		//add edges
-		int counter = 0;
 		current = start;
 		while(current != end)
 		{
-			std::pair<internalDirectedGraph::edge_descriptor, bool> firstEdgePair = boost::add_edge(current->m_source, current->m_target, counter++, directedGraphRef);
-
-			std::pair<internalDirectedGraph::edge_descriptor, bool> secondEdgePair = boost::add_edge(current->m_target, current->m_source, counter++, directedGraphRef);
+			int originalEdgeIndex = boost::get(boost::edge_index, *graph, *current);
+			std::pair<internalDirectedGraph::edge_descriptor, bool> firstEdgePair = boost::add_edge(current->m_source, current->m_target, 2*originalEdgeIndex, directedGraphRef);
+			std::pair<internalDirectedGraph::edge_descriptor, bool> secondEdgePair = boost::add_edge(current->m_target, current->m_source, 2*originalEdgeIndex+1, directedGraphRef);
 
 			boost::put(reverseMap, firstEdgePair.first, secondEdgePair.first);
 			boost::put(reverseMap, secondEdgePair.first, firstEdgePair.first);

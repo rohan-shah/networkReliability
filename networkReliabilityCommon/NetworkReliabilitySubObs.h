@@ -4,14 +4,14 @@
 #include "Context.h"
 #include "EdgeState.h"
 #include <boost/shared_array.hpp>
-#include "includeMPIRXX.h"
+#include "includeMPFR.h"
 namespace networkReliability
 {
 	class NetworkReliabilityObs;
 	class NetworkReliabilitySubObs : public boost::noncopyable
 	{
 	public:
-		typedef mpf_class conditioning_type;
+		typedef mpfr_class conditioning_type;
 		NetworkReliabilitySubObs(NetworkReliabilitySubObs&& other);
 		NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, int radius, int conditioningCount, conditioning_type conditiniongProb);
 		NetworkReliabilityObs getObservation(boost::mt19937& randomSource) const;

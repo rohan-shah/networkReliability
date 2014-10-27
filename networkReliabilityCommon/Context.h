@@ -13,7 +13,7 @@ namespace networkReliability
 	{
 	public:
 		friend class boost::serialization::access;
-		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> inputGraph;
+		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_index_t, int> > inputGraph;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_index_t, int> > internalGraph;
 		typedef boost::adjacency_list_traits<boost::vecS, boost::vecS, boost::bidirectionalS> directedGraphTraits;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, boost::no_property, 
@@ -23,14 +23,14 @@ namespace networkReliability
 		> internalDirectedGraph;
 		typedef std::pair<float, float> vertexPosition;
 
-		Context(boost::shared_ptr<const inputGraph> graph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpf_class& operationalProbability);
+		Context(boost::shared_ptr<const inputGraph> graph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability);
 
 		Context& operator=(Context&& other);
 		Context(Context&& other);
 		~Context();
 		
-		static Context gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpf_class& operationalProbability);
-		static Context fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpf_class& operationalProbability);
+		static Context gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpfr_class& operationalProbability);
+		static Context fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability);
 		static Context emptyContext();
 		const internalGraph& getGraph() const;
 		const internalDirectedGraph& getDirectedGraph() const;
@@ -38,13 +38,13 @@ namespace networkReliability
 		std::size_t getNEdges() const;
 		const std::vector<int>& getInterestVertices() const;
 		const std::vector<vertexPosition>& getVertexPositions() const;
-		const mpf_class& getOperationalProbability() const;
+		const mpfr_class& getOperationalProbability() const;
 		void loadDistributions(std::string path);
 		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
 		std::size_t getMinCutEdges() const;
 		std::vector<int>& getCapacityVector() const;
 		int getMinCut(std::vector<int>& capacityVector) const;
-		static Context completeContext(int nVertices, int nInterestVertices, const mpf_class& operationalProbability);
+		static Context completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability);
 		double getInoperationalProbabilityD() const;
 	private:
 		//Context& operator=(Context const& other);
@@ -59,7 +59,7 @@ namespace networkReliability
 		std::size_t nEdges;
 
 		boost::shared_array<int> edgeDistances;
-		mpf_class operationalProbability;
+		mpfr_class operationalProbability;
 		double inoperationalProbabilityD;
 		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allDistributions;
 		

@@ -6,15 +6,15 @@
 #include "graphAlgorithms.h"
 #include <boost/accumulators/statistics.hpp>
 #include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/sum_kahan.hpp>
+#include <boost/accumulators/statistics/sum.hpp>
 #include <boost/random/bernoulli_distribution.hpp>
-#include "includeMPIRXX.h"
+#include "includeMPFR.h"
 namespace networkReliability
 {
-	std::string toString(mpf_class number)
+	std::string toString(mpfr_class number)
 	{
 		mp_exp_t exponent;
-		char* resultCStr = mpf_get_str(NULL, &exponent, 10, 10, number.get_mpf_t());
+		char* resultCStr = mpfr_get_str(NULL, &exponent, 10, 10, number.mpfr_ptr(), MPFR_RNDN);
 		std::string resultStr  = resultCStr;
 		free(resultCStr);
 		return resultStr.substr(0, 1) + "." + resultStr.substr(1, resultStr.size() - 1) + "e" + boost::lexical_cast<std::string>(exponent - 1);
@@ -23,7 +23,7 @@ namespace networkReliability
 	int main(int argc, char **argv)
 	{
 		typedef NetworkReliabilityObs::conditioning_type calculation_type;
-		mpf_set_default_prec(256);
+		mpfr_set_default_prec(256);
 
 		boost::program_options::options_description options("Usage");
 		options.add_options()
@@ -37,6 +37,7 @@ namespace networkReliability
 			("distributionsCache", boost::program_options::value<std::vector<std::string> >()->multitoken(), "(path) The paths to files that contain truncated binomial distribution data")
 			("n", boost::program_options::value<int>(), "(int) The number of graphs initially generated")
 			("variance", "Output variance estimate")
+			("relativeError", "Output relative error")
 			("parts", "Output estimates for transition probabilities")
 			("help", "Display this message");
 
@@ -71,6 +72,7 @@ namespace networkReliability
 
 		bool estimateParts = variableMap.count("parts") > 0;
 		bool variance = variableMap.count("variance") > 0;
+		bool relativeError = variableMap.count("relativeError") > 0;
 
 		std::string message;
 		int initialRadius;
@@ -149,8 +151,8 @@ namespace networkReliability
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
 		std::size_t totalSamples = 0;
 
-		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > varianceAccumulatorSum;
-		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > varianceAccumulatorSquaredSum;
+		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > firstMomentSum;
+		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > secondMomentSum;
 
 		for(int i = 0; i < n; i++)
 		{
@@ -180,6 +182,8 @@ namespace networkReliability
 			if(isSingleComponent(context, subObs.getState(), components, stack, colorMap))
 			{
 				probabilities[0](0);
+				firstMomentSum(0);
+				secondMomentSum(0);
 				continue;
 			}
 			probabilities[0](1);
@@ -208,47 +212,57 @@ namespace networkReliability
 				observations.swap(nextStepObservations);
 			}
 			calculation_type term = boost::accumulators::sum(perTopLevelSum) / calculation_type(productSplittingFactorsPerRun);
-			varianceAccumulatorSum(term);
-			varianceAccumulatorSquaredSum(term*term);
+			firstMomentSum(term);
+			secondMomentSum(term*term);
 		}
 		if (estimateParts)
 		{
-			calculation_type factor = boost::accumulators::sum(conditioningProbabilities[0]) / mpf_class(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[0])));
+			calculation_type factor = boost::accumulators::sum(conditioningProbabilities[0]) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[0])));
 			std::cout << "Step 0, conditioning on event " << toString(factor) << std::endl;
-			factor = boost::accumulators::sum(probabilities[0]) / mpf_class(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[0])));
+			factor = boost::accumulators::sum(probabilities[0]) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[0])));
 			std::cout << "Step 0, event " << toString(factor) << std::endl;
 			if (initialRadius > 0)
 			{
 				/*
 				  The extra factor of
-				  (boost::accumulators::sum_kahan(conditioningProbabilities[0]) / boost::accumulators::count(conditioningProbabilities[0]))
+				  (boost::accumulators::sum(conditioningProbabilities[0]) / boost::accumulators::count(conditioningProbabilities[0]))
 				  is there because the code multiplies the probabilities together as it goes, but in the formula we just want the average
 				  of \P\(C_1 \lmid \lowerBoundExt = ...\).
 				  Hence we have to divide by the probability of C_0 for this level. This doesn't come up again later on because
 				  past this point it cancels in the numerator and denominator.
 				  */
-				factor = boost::accumulators::sum_kahan(conditioningProbabilities[1]) / (mpf_class(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[1]))) * (boost::accumulators::sum_kahan(conditioningProbabilities[0]) / mpf_class(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[0])))));
+				factor = boost::accumulators::sum(conditioningProbabilities[1]) / (calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[1]))) * (boost::accumulators::sum(conditioningProbabilities[0]) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[0])))));
 				std::cout << "Step 1, conditioning on event " << toString(factor) << std::endl;
 
-				factor = boost::accumulators::sum_kahan(probabilities[1]) / (boost::accumulators::sum_kahan(conditioningProbabilities[1]));
+				factor = boost::accumulators::sum(probabilities[1]) / (boost::accumulators::sum(conditioningProbabilities[1]));
 				std::cout << "Step 1, event " << toString(factor) << std::endl;
 
 				for (int i = 2; i < initialRadius + 1; i++)
 				{
-					factor = (mpf_class(boost::lexical_cast<std::string>(boost::accumulators::count(probabilities[i - 1]))) / mpf_class(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[i])))) * (boost::accumulators::sum_kahan(conditioningProbabilities[i]) / boost::accumulators::sum_kahan(probabilities[i - 1]));
+					factor = (calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(probabilities[i - 1]))) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[i])))) * (boost::accumulators::sum(conditioningProbabilities[i]) / boost::accumulators::sum(probabilities[i - 1]));
 					std::cout << "Step " << i << ", conditioning on event " << toString(factor) << std::endl;
 
-					factor = boost::accumulators::sum_kahan(probabilities[i]) / (boost::accumulators::sum_kahan(conditioningProbabilities[i]));
+					factor = boost::accumulators::sum(probabilities[i]) / (boost::accumulators::sum(conditioningProbabilities[i]));
 					std::cout << "Step " << i << ", event " << toString(factor) << std::endl;
 				}
 			}
 		}
+		//Estimate as the product of the various parts
+		calculation_type estimate = boost::accumulators::sum(probabilities[initialRadius]) / calculation_type(boost::lexical_cast<std::string>(totalSamples));
+		//...but this is the one we're actually using
+		estimate = boost::accumulators::sum(firstMomentSum) / n;
+		//This is the variance of the distribution we're taking the empirical expectation of. Hence
+		//the /n in everything below - Variance of the estimate decreases at rate 1/n
+		calculation_type estimatedVariance = boost::accumulators::sum(secondMomentSum) / n - (estimate * estimate);
 		if (variance)
 		{
-			calculation_type variance = boost::accumulators::sum(varianceAccumulatorSquaredSum)/n - (boost::accumulators::sum(varianceAccumulatorSum) * boost::accumulators::sum(varianceAccumulatorSum))/(n*n);
-			std::cout << "Estimated variance is " << toString(variance/n) << std::endl;
+			std::cout << "Estimated variance is " << toString(estimatedVariance/n) << std::endl;
 		}
-		std::cout << "Estimate is " << toString(boost::accumulators::sum_kahan(probabilities[initialRadius]) / mpf_class(boost::lexical_cast<std::string>(totalSamples))) << std::endl;
+		if (relativeError)
+		{
+			std::cout << "Estimated relative error is " << toString(mpfr::sqrt(estimatedVariance / n) / estimate) << std::endl;
+		}
+		std::cout << "Estimate is " << toString(boost::accumulators::sum(firstMomentSum) / n) << std::endl;
 		return 0;
 	}
 }

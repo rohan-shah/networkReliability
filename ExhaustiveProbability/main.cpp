@@ -1,10 +1,10 @@
 #include <boost/lexical_cast.hpp>
-#include "includeMPIRXX.h"
+#include "includeMPFR.h"
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
 #include "Arguments.h"
-#include "ArgumentsMPIR.h"
+#include "ArgumentsMPFR.h"
 #include <boost/filesystem.hpp>
 #include <locale>
 #include <codecvt>
@@ -12,7 +12,7 @@ namespace networkReliability
 {
 	int main(int argc, char** argv)
 	{
-		mpf_set_default_prec(1024);
+		mpfr_set_default_prec(1024);
 
 		boost::program_options::options_description exhaustiveProbabilityOptions("Usage");
 		exhaustiveProbabilityOptions.add_options()
@@ -46,13 +46,12 @@ namespace networkReliability
 			return 0;
 		}
 
-		mpf_class probability_mpf, compProbability_mpf, one_mpf;
-		mpf_set_d(one_mpf.get_mpf_t(), 1);
-		if(!readProbabilityString(exhaustiveProbabilityVariableMap, probability_mpf))
+		mpfr_class probability_mpfr;
+		if(!readProbabilityString(exhaustiveProbabilityVariableMap, probability_mpfr))
 		{
 			return 0;
 		}
-		mpf_sub(compProbability_mpf.get_mpf_t(), one_mpf.get_mpf_t(), probability_mpf.get_mpf_t());
+		mpfr_class compProbability_mpfr = 1 - probability_mpfr;
 
 		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 		std::vector<std::wstring> lines;
@@ -125,7 +124,7 @@ namespace networkReliability
 		const std::size_t nEdges = lines.size() - 3;
 
 		typedef long long counterType;
-		boost::scoped_array<mpf_class> sizeCounters(new mpf_class[nEdges+1]);
+		boost::scoped_array<mpfr_class> sizeCounters(new mpfr_class[nEdges+1]);
 		for(int i = 0; i < nEdges+1; i++)
 		{
 			std::vector<std::string> splitCounterLine;
@@ -137,35 +136,31 @@ namespace networkReliability
 				std::cout << "Invalid format for data line" << std::endl;
 				return 0;
 			}
-			mpf_init_set_str(sizeCounters[i].get_mpf_t(), splitCounterLine[1].c_str(), 10);
+			mpfr_set_str(sizeCounters[i].mpfr_ptr(), splitCounterLine[1].c_str(), 10, MPFR_RNDN);
 		}
 
-		mpf_class result = 0;
+		mpfr_class result = 0;
 		for(int i = 0; i < nEdges+1; i++)
 		{
-			mpf_class probabilityPower;
-			mpf_pow_ui(probabilityPower.get_mpf_t(), probability_mpf.get_mpf_t(), i);
-			mpf_class compProbabilityPower;
-			mpf_pow_ui(compProbabilityPower.get_mpf_t(), compProbability_mpf.get_mpf_t(), nEdges-i);
+			mpfr_class probabilityPower = mpfr::pow(probability_mpfr, i, MPFR_RNDN);
+			mpfr_class compProbabilityPower = mpfr::pow(compProbability_mpfr, (unsigned long)(nEdges - i), MPFR_RNDN);
 
 			result += sizeCounters[i] * compProbabilityPower * probabilityPower;
 		}
-		mpf_class unreliability;
-		mpf_sub(unreliability.get_mpf_t(), one_mpf.get_mpf_t(), result.get_mpf_t());
+		mpfr_class unreliability = 1 - result;
 		
 		mp_exp_t exponent;
-		char* resultCStr = mpf_get_str(NULL, &exponent, 10, 10, unreliability.get_mpf_t());
+		char* resultCStr = mpfr_get_str(NULL, &exponent, 10, 10, unreliability.mpfr_ptr(), MPFR_RNDN);
 		std::string resultStr = resultCStr;
 		std::cout << "Unreliability probability was " << resultStr.substr(0, 1) << "." << resultStr.substr(1, resultStr.size() - 1) << "e" << (exponent-1) << std::endl;
 		free(resultCStr);
 
 		if(exhaustiveProbabilityVariableMap.count("zeroProbability") == 1)
 		{
-			mpf_class reliability, reliabilityPower;
-			mpf_sub(reliability.get_mpf_t(), one_mpf.get_mpf_t(), unreliability.get_mpf_t());
-			mpf_pow_ui(reliabilityPower.get_mpf_t(), reliability.get_mpf_t(), exhaustiveProbabilityVariableMap["zeroProbability"].as<unsigned long long>());
+			mpfr_class reliability = 1 - unreliability;
+			mpfr_class reliabilityPower = mpfr::pow(reliability, (unsigned long)exhaustiveProbabilityVariableMap["zeroProbability"].as<unsigned long long>(), MPFR_RNDN);
 
-			resultCStr = mpf_get_str(NULL, &exponent, 10, 10, reliabilityPower.get_mpf_t());
+			resultCStr = mpfr_get_str(NULL, &exponent, 10, 10, reliabilityPower.mpfr_ptr(), MPFR_RNDN);
 			resultStr = resultCStr;
 			std::cout << "Probability of estimating 0 for " << exhaustiveProbabilityVariableMap["zeroProbability"].as<unsigned long long>() << " CMC samples is " << resultStr.substr(0, 1) << "." << resultStr.substr(1, resultStr.size() - 1) << "e" << (exponent - 1) << std::endl;
 			free(resultCStr);

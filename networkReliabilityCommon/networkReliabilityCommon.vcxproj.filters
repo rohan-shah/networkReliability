@@ -42,9 +42,6 @@
     <ClInclude Include="ZoomGraphicsView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ArgumentsMPIR.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="includeMPIRXX.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -78,9 +75,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ZoomGraphicsView.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ArgumentsMPIR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ArgumentsMPFR.cpp">

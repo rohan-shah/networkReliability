@@ -10,7 +10,7 @@ namespace networkReliability
 	class NetworkReliabilityObs
 	{
 	public:
-		typedef mpf_class conditioning_type;
+		typedef mpfr_class conditioning_type;
 		NetworkReliabilityObs(Context const& context, boost::mt19937& randomSource);
 		NetworkReliabilityObs(Context const& context, boost::shared_array<EdgeState> state, int conditioningCount, conditioning_type conditioningProb);
 		NetworkReliabilityObs(NetworkReliabilityObs&& other);

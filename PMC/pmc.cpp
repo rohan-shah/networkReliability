@@ -74,7 +74,7 @@ namespace networkReliability
 		boost::tie(current, end) = boost::edges(graph);
 		for(;current != end; current++)
 		{
-			vertices.push_back(std::make_pair(current->m_source, current->m_target));
+			vertices.push_back(std::make_pair((int)current->m_source, (int)current->m_target));
 		}
 
 		mpfr_class exponentialRate = -mpfr::log(1 - opProbability);
