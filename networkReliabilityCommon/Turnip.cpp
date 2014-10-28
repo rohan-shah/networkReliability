@@ -1,0 +1,106 @@
+#include "Turnip.h"
+#include <boost/iterator/counting_iterator.hpp>
+#include <boost/random/random_number_generator.hpp>
+#include <boost/range/algorithm/random_shuffle.hpp>
+#include "computeConditionalProb.h"
+namespace networkReliability
+{
+	TurnipInput::TurnipInput(boost::mt19937& randomSource, Context const& context)
+		:randomSource(randomSource), context(context), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false)
+	{}
+	void turnip(TurnipInput& input)
+	{
+		const std::vector<int>& interestVertices = input.context.getInterestVertices();
+		const std::size_t nEdges = input.context.getNEdges();
+		const std::size_t nVertices = boost::num_vertices(input.context.getGraph());
+		//The sum of all the conditional probabilities (Used to get estimate and estimate of variance of estimate)
+		mpfr_class sumConditional = 0, sumSquaredConditional = 0;
+		//This stores the rates that go into the matrix exponential computation
+		std::vector<mpfr_class> ratesForPMC;
+		boost::random_number_generator<boost::mt19937> generator(input.randomSource);
+		std::vector<int> edgeOrdering(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges));
+
+		//The initial rate at the start
+		mpfr_class sumAllRates = 0;
+		for (std::vector<mpfr_class>::iterator i = input.exponentialRates.begin(); i != input.exponentialRates.end(); i++)
+		{
+			sumAllRates += *i;
+		}
+
+		//The edges which are still under consideration
+		std::vector<bool> alreadySeen(nEdges);
+		//Only warn about stability once
+		input.warnedStability = false;
+
+		//scratch data used to compute conditional probabilities
+		std::vector<mpfr_class> computeConditionalProbScratch;
+		//Used to hold the connected component IDS
+		std::vector<int> componentIDs(nVertices);
+		for (int i = 0; i < input.n; i++)
+		{
+			//Simulate permutation
+			boost::random_shuffle(edgeOrdering, generator);
+			//No edges have yet been seen
+			std::fill(alreadySeen.begin(), alreadySeen.end(), false);
+			//The first rate is going to be this
+			mpfr_class currentRate = sumAllRates;
+			//which edge in the permutation are we currently looking at?
+			int permutationCounter = 0;
+			//these are going to be the rates for the matrix exponential
+			ratesForPMC.clear();
+			//reset connected component IDs
+			componentIDs.clear();
+			componentIDs.insert(componentIDs.begin(), boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nVertices));
+			while (true)
+			{
+				//get out the edge index
+				int edgeIndex = edgeOrdering[permutationCounter];
+				//Has this edge been removed from consideration already?
+				if (!alreadySeen[edgeIndex])
+				{
+					//If not, add the current rate
+					ratesForPMC.push_back(currentRate);
+					//Mark the edge as seen
+					alreadySeen[edgeIndex] = true;
+					//subtract the rate from the current rate
+					currentRate -= input.exponentialRates[edgeIndex];
+					//Get the old component IDs
+					int firstComponentID = componentIDs[input.vertices[edgeIndex].first];
+					int secondComponentID = componentIDs[input.vertices[edgeIndex].second];
+					//go through all the edges that haven't been seen yet. 
+					for (int j = 0; j < nEdges; j++)
+					{
+						if (!alreadySeen[j])
+						{
+							int firstVertex = input.vertices[j].first, secondVertex = input.vertices[j].second;
+							if ((componentIDs[firstVertex] == secondComponentID || componentIDs[firstVertex] == firstComponentID) && (componentIDs[secondVertex] == firstComponentID || componentIDs[secondVertex] == secondComponentID))
+							{
+								alreadySeen[j] = true;
+								currentRate -= input.exponentialRates[j];
+							}
+						}
+					}
+					std::replace(componentIDs.begin(), componentIDs.end(), std::max(firstComponentID, secondComponentID), std::min(firstComponentID, secondComponentID));
+					//determine whether or not we've hit the critical threshold
+					bool connected = true;
+					for (int k = 1; k < interestVertices.size(); k++)
+					{
+						connected &= (componentIDs[interestVertices[k]] == componentIDs[interestVertices[0]]);
+					}
+					if (connected) break;
+				}
+				permutationCounter++;
+			}
+			mpfr_class additionalPart = computeConditionalProb(ratesForPMC, computeConditionalProbScratch);
+			//mpfr_class additionalPart2 = computeConditionalProb(ratesForPMC);
+			if ((additionalPart > 1 || additionalPart < 0) && !input.warnedStability)
+			{
+				input.warnedStability = true;
+			}
+			sumConditional += additionalPart;
+			sumSquaredConditional += additionalPart*additionalPart;
+		}
+		input.estimateFirstMoment = sumConditional / input.n;
+		input.estimateSecondMoment = sumSquaredConditional / input.n;
+	}
+}

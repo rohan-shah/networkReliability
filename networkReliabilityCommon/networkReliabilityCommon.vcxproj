@@ -164,6 +164,7 @@
     <ClInclude Include="mpreal.h" />
     <ClInclude Include="NetworkReliabilityObs.h" />
     <ClInclude Include="NetworkReliabilitySubObs.h" />
+    <ClInclude Include="Turnip.h" />
     <ClInclude Include="ZoomGraphicsView.h" />
   </ItemGroup>
   <ItemGroup>
@@ -174,6 +175,7 @@
     <ClCompile Include="graphAlgorithms.cpp" />
     <ClCompile Include="NetworkReliabilityObs.cpp" />
     <ClCompile Include="NetworkReliabilitySubObs.cpp" />
+    <ClCompile Include="Turnip.cpp" />
     <ClCompile Include="ZoomGraphicsView.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
