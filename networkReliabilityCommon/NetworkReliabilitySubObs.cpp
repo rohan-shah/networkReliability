@@ -35,6 +35,10 @@ namespace networkReliability
 	{
 		return minCut;
 	}
+	const NetworkReliabilitySubObs::conditioning_type& NetworkReliabilitySubObs::getConditioningProb() const
+	{
+		return conditioningProb;
+	}
 	NetworkReliabilitySubObs::NetworkReliabilitySubObs(NetworkReliabilitySubObs&& other)
 		:context(other.context)
 	{

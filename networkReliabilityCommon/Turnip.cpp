@@ -5,14 +5,28 @@
 #include "computeConditionalProb.h"
 namespace networkReliability
 {
-	TurnipInput::TurnipInput(boost::mt19937& randomSource, Context const& context)
-		:randomSource(randomSource), context(context), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false)
+	TurnipInput::TurnipInput(boost::mt19937& randomSource, Context::internalGraph const& graph, const std::vector<int>& interestVertices)
+		:randomSource(randomSource), graph(graph), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false), interestVertices(interestVertices)
 	{}
 	void turnip(TurnipInput& input)
 	{
-		const std::vector<int>& interestVertices = input.context.getInterestVertices();
-		const std::size_t nEdges = input.context.getNEdges();
-		const std::size_t nVertices = boost::num_vertices(input.context.getGraph());
+		const std::vector<int>& interestVertices = input.interestVertices;
+		const std::size_t nEdges = boost::num_edges(input.graph);
+		const std::size_t nVertices = boost::num_vertices(input.graph);
+		if (input.edges.size() != nEdges && input.edges.size() != 0)
+		{
+			throw std::runtime_error("input.nEdges must had an invalid size");
+		}
+		if (input.edges.size() == 0)
+		{
+			input.edges.resize(nEdges);
+			Context::internalGraph::edge_iterator current, end;
+			boost::tie(current, end) = boost::edges(input.graph);
+			for (; current != end; current++)
+			{
+				input.edges[boost::get(boost::edge_index, input.graph, *current)] = std::make_pair(current->m_source, current->m_target);
+			}
+		}
 		//The sum of all the conditional probabilities (Used to get estimate and estimate of variance of estimate)
 		mpfr_class sumConditional = 0, sumSquaredConditional = 0;
 		//This stores the rates that go into the matrix exponential computation
@@ -65,14 +79,14 @@ namespace networkReliability
 					//subtract the rate from the current rate
 					currentRate -= input.exponentialRates[edgeIndex];
 					//Get the old component IDs
-					int firstComponentID = componentIDs[input.vertices[edgeIndex].first];
-					int secondComponentID = componentIDs[input.vertices[edgeIndex].second];
+					int firstComponentID = componentIDs[input.edges[edgeIndex].first];
+					int secondComponentID = componentIDs[input.edges[edgeIndex].second];
 					//go through all the edges that haven't been seen yet. 
 					for (int j = 0; j < nEdges; j++)
 					{
 						if (!alreadySeen[j])
 						{
-							int firstVertex = input.vertices[j].first, secondVertex = input.vertices[j].second;
+							int firstVertex = input.edges[j].first, secondVertex = input.edges[j].second;
 							if ((componentIDs[firstVertex] == secondComponentID || componentIDs[firstVertex] == firstComponentID) && (componentIDs[secondVertex] == firstComponentID || componentIDs[secondVertex] == secondComponentID))
 							{
 								alreadySeen[j] = true;

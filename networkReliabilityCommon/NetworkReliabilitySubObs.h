@@ -19,6 +19,7 @@ namespace networkReliability
 		int getMinCut() const;
 		NetworkReliabilitySubObs& operator=(NetworkReliabilitySubObs&& other);
 		int getConditioningCount() const;
+		const conditioning_type& getConditioningProb() const;
 	private:
 		Context const& context;
 		boost::shared_array<EdgeState> state;

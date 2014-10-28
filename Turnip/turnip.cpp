@@ -68,19 +68,12 @@ namespace networkReliability
 		const Context::internalGraph& graph = context.getGraph();
 		const std::size_t nEdges = context.getNEdges();
 	
-		TurnipInput input(randomSource, context);
+		TurnipInput input(randomSource, graph, context.getInterestVertices());
 		//set up exponential rates
 		input.exponentialRates.resize(nEdges);
 		{
 			mpfr_class exponentialRate = -mpfr::log(1 - opProbability);
 			std::fill(input.exponentialRates.begin(), input.exponentialRates.end(), exponentialRate);
-		}
-		//set up vertices vector
-		Context::internalGraph::edge_iterator current, end;
-		boost::tie(current, end) = boost::edges(graph);
-		for (; current != end; current++)
-		{
-			input.vertices.push_back(std::make_pair((int)current->m_source, (int)current->m_target));
 		}
 		input.n = n;
 		turnip(input);
