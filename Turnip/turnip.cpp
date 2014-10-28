@@ -78,7 +78,11 @@ namespace networkReliability
 			vertices.push_back(std::make_pair((int)current->m_source, (int)current->m_target));
 		}
 
-		mpfr_class exponentialRate = -mpfr::log(1 - opProbability);
+		std::vector<mpfr_class> exponentialRates(nEdges);
+		{
+			mpfr_class exponentialRate = -mpfr::log(1 - opProbability);
+			std::fill(exponentialRates.begin(), exponentialRates.end(), exponentialRate);
+		}
 		//The sum of all the conditional probabilities (Used to get estimate and estimate of variance of estimate)
 		mpfr_class sumConditional = 0, sumSquaredConditional = 0;
 		//This stores the rates that go into the matrix exponential computation
@@ -87,7 +91,11 @@ namespace networkReliability
 		std::vector<int> edgeOrdering(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges));
 
 		//The initial rate at the start
-		mpfr_class sumAllRates = nEdges * exponentialRate;
+		mpfr_class sumAllRates = 0; 
+		for (std::vector<mpfr_class>::iterator i = exponentialRates.begin(); i != exponentialRates.end(); i++)
+		{
+			sumAllRates += *i;
+		}
 
 		//The edges which are still under consideration
 		std::vector<bool> alreadySeen(nEdges);
@@ -124,11 +132,12 @@ namespace networkReliability
 					ratesForPMC.push_back(currentRate);
 					//Mark the edge as seen
 					alreadySeen[edgeIndex] = true;
+					//subtract the rate from the current rate
+					currentRate -= exponentialRates[edgeIndex];
 					//Get the old component IDs
 					int firstComponentID = componentIDs[vertices[edgeIndex].first];
 					int secondComponentID = componentIDs[vertices[edgeIndex].second];
-					//go through all the edges that haven't been seen yet. It's equal to one to start with because of the edge we just added. 
-					int edgesToRemove = 1;
+					//go through all the edges that haven't been seen yet. 
 					for(int j = 0; j < nEdges; j++)
 					{
 						if(!alreadySeen[j])
@@ -137,11 +146,10 @@ namespace networkReliability
 							if((componentIDs[firstVertex] == secondComponentID || componentIDs[firstVertex] == firstComponentID) && (componentIDs[secondVertex] == firstComponentID || componentIDs[secondVertex] == secondComponentID))
 							{
 								alreadySeen[j] = true;
-								edgesToRemove++;
+								currentRate -= exponentialRates[j];
 							}
 						}
 					}
-					currentRate -= edgesToRemove * exponentialRate;
 					std::replace(componentIDs.begin(), componentIDs.end(), std::max(firstComponentID, secondComponentID), std::min(firstComponentID, secondComponentID));
 					//determine whether or not we've hit the critical threshold
 					bool connected = true;
