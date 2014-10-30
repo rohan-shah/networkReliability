@@ -51,9 +51,6 @@
     <ClInclude Include="ArgumentsMPFR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mpreal.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="computeConditionalProb.h">
       <Filter>Header Files</Filter>
     </ClInclude>

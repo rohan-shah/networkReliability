@@ -5,14 +5,15 @@
 #include "computeConditionalProb.h"
 namespace networkReliability
 {
-	TurnipInput::TurnipInput(boost::mt19937& randomSource, Context::internalGraph const& graph, const std::vector<int>& interestVertices)
+	TurnipInput::TurnipInput(boost::mt19937& randomSource, const Context::internalGraph* graph, const std::vector<int>& interestVertices)
 		:randomSource(randomSource), graph(graph), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false), interestVertices(interestVertices)
 	{}
 	void turnip(TurnipInput& input)
 	{
+		const Context::internalGraph& graph = *input.graph;
 		const std::vector<int>& interestVertices = input.interestVertices;
-		const std::size_t nEdges = boost::num_edges(input.graph);
-		const std::size_t nVertices = boost::num_vertices(input.graph);
+		const std::size_t nEdges = boost::num_edges(graph);
+		const std::size_t nVertices = boost::num_vertices(graph);
 		if (input.edges.size() != nEdges && input.edges.size() != 0)
 		{
 			throw std::runtime_error("input.nEdges must had an invalid size");
@@ -21,10 +22,10 @@ namespace networkReliability
 		{
 			input.edges.resize(nEdges);
 			Context::internalGraph::edge_iterator current, end;
-			boost::tie(current, end) = boost::edges(input.graph);
+			boost::tie(current, end) = boost::edges(graph);
 			for (; current != end; current++)
 			{
-				input.edges[boost::get(boost::edge_index, input.graph, *current)] = std::make_pair(current->m_source, current->m_target);
+				input.edges[boost::get(boost::edge_index, graph, *current)] = std::make_pair(current->m_source, current->m_target);
 			}
 		}
 		//The sum of all the conditional probabilities (Used to get estimate and estimate of variance of estimate)

@@ -9,10 +9,10 @@ namespace networkReliability
 {
 	struct TurnipInput
 	{
-		TurnipInput(boost::mt19937& randomSource, Context::internalGraph const& graph, const std::vector<int>& interestVertices);
+		TurnipInput(boost::mt19937& randomSource, const Context::internalGraph* graph, const std::vector<int>& interestVertices);
 		boost::mt19937& randomSource;
 		std::vector<mpfr_class> exponentialRates;
-		Context::internalGraph const& graph;
+		const Context::internalGraph* graph;
 		const std::vector<int>& interestVertices;
 		std::vector<std::pair<int, int> > edges;
 		size_t n;

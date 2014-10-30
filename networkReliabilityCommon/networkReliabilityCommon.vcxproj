@@ -161,7 +161,6 @@
     <ClInclude Include="graphAlgorithms.h" />
     <ClInclude Include="includeMPFR.h" />
     <ClInclude Include="includeMPIRXX.h" />
-    <ClInclude Include="mpreal.h" />
     <ClInclude Include="NetworkReliabilityObs.h" />
     <ClInclude Include="NetworkReliabilitySubObs.h" />
     <ClInclude Include="Turnip.h" />

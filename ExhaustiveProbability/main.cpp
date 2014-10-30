@@ -136,21 +136,21 @@ namespace networkReliability
 				std::cout << "Invalid format for data line" << std::endl;
 				return 0;
 			}
-			mpfr_set_str(sizeCounters[i].mpfr_ptr(), splitCounterLine[1].c_str(), 10, MPFR_RNDN);
+			sizeCounters[i] = mpfr_class(splitCounterLine[1]);
 		}
 
 		mpfr_class result = 0;
 		for(int i = 0; i < nEdges+1; i++)
 		{
-			mpfr_class probabilityPower = mpfr::pow(probability_mpfr, i, MPFR_RNDN);
-			mpfr_class compProbabilityPower = mpfr::pow(compProbability_mpfr, (unsigned long)(nEdges - i), MPFR_RNDN);
+			mpfr_class probabilityPower = boost::multiprecision::pow(probability_mpfr, i);
+			mpfr_class compProbabilityPower = boost::multiprecision::pow(compProbability_mpfr, (unsigned long)(nEdges - i));
 
 			result += sizeCounters[i] * compProbabilityPower * probabilityPower;
 		}
 		mpfr_class unreliability = 1 - result;
 		
 		mp_exp_t exponent;
-		char* resultCStr = mpfr_get_str(NULL, &exponent, 10, 10, unreliability.mpfr_ptr(), MPFR_RNDN);
+		char* resultCStr = mpfr_get_str(NULL, &exponent, 10, 10, unreliability.backend().data(), MPFR_RNDN);
 		std::string resultStr = resultCStr;
 		std::cout << "Unreliability probability was " << resultStr.substr(0, 1) << "." << resultStr.substr(1, resultStr.size() - 1) << "e" << (exponent-1) << std::endl;
 		free(resultCStr);
@@ -158,9 +158,9 @@ namespace networkReliability
 		if(exhaustiveProbabilityVariableMap.count("zeroProbability") == 1)
 		{
 			mpfr_class reliability = 1 - unreliability;
-			mpfr_class reliabilityPower = mpfr::pow(reliability, (unsigned long)exhaustiveProbabilityVariableMap["zeroProbability"].as<unsigned long long>(), MPFR_RNDN);
+			mpfr_class reliabilityPower = boost::multiprecision::pow(reliability, (unsigned long)exhaustiveProbabilityVariableMap["zeroProbability"].as<unsigned long long>());
 
-			resultCStr = mpfr_get_str(NULL, &exponent, 10, 10, reliabilityPower.mpfr_ptr(), MPFR_RNDN);
+			resultCStr = mpfr_get_str(NULL, &exponent, 10, 10, reliabilityPower.backend().data(), MPFR_RNDN);
 			resultStr = resultCStr;
 			std::cout << "Probability of estimating 0 for " << exhaustiveProbabilityVariableMap["zeroProbability"].as<unsigned long long>() << " CMC samples is " << resultStr.substr(0, 1) << "." << resultStr.substr(1, resultStr.size() - 1) << "e" << (exponent - 1) << std::endl;
 			free(resultCStr);

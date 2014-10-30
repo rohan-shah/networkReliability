@@ -122,7 +122,7 @@ namespace networkReliability
 		:vertexPositions(vertexPositions), interestVertices(interestVertices), operationalProbability(operationalProbability)
 	{
 		mpfr_class inoperationalProbability = (1 - operationalProbability);
-		inoperationalProbabilityD = inoperationalProbability.toDouble();
+		inoperationalProbabilityD = (double)inoperationalProbability;
 
 		std::size_t nVertices = boost::num_vertices(*unorderedGraph);
 		nEdges = boost::num_edges(*unorderedGraph);

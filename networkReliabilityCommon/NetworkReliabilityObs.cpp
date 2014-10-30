@@ -12,7 +12,7 @@ namespace networkReliability
 		const std::size_t nEdges = boost::num_edges(graph);
 		boost::shared_array<EdgeState> state(new EdgeState[nEdges]);
 
-		boost::random::bernoulli_distribution<double> edgeDist(context.getOperationalProbability().toDouble());
+		boost::random::bernoulli_distribution<double> edgeDist((double)context.getOperationalProbability());
 
 		for(std::size_t i = 0; i < nEdges; i++)
 		{

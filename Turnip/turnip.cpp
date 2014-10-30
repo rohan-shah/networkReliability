@@ -55,7 +55,7 @@ namespace networkReliability
 		{
 			std::cout << "Error parsing numeric argument opProbability" << std::endl;
 		}
-		double opProbabilityD = opProbability.toDouble();
+		double opProbabilityD = (double)opProbability;
 		Context context = Context::emptyContext();
 		if(!readContext(variableMap, context, opProbabilityD))
 		{
@@ -68,11 +68,11 @@ namespace networkReliability
 		const Context::internalGraph& graph = context.getGraph();
 		const std::size_t nEdges = context.getNEdges();
 	
-		TurnipInput input(randomSource, graph, context.getInterestVertices());
+		TurnipInput input(randomSource, &graph, context.getInterestVertices());
 		//set up exponential rates
 		input.exponentialRates.resize(nEdges);
 		{
-			mpfr_class exponentialRate = -mpfr::log(1 - opProbability);
+			mpfr_class exponentialRate = -boost::multiprecision::log(1 - opProbability);
 			std::fill(input.exponentialRates.begin(), input.exponentialRates.end(), exponentialRate);
 		}
 		input.n = n;
@@ -83,11 +83,11 @@ namespace networkReliability
 		}
 
 		mpfr_class varianceEstimate = input.estimateSecondMoment - input.estimateFirstMoment*input.estimateFirstMoment;
-		mpfr_class sqrtVarianceEstimate = mpfr::sqrt(varianceEstimate / input.n);
+		mpfr_class sqrtVarianceEstimate = boost::multiprecision::sqrt(varianceEstimate / input.n);
 		mpfr_class relativeErrorEstimate = sqrtVarianceEstimate / input.estimateFirstMoment;
 
-		std::cout << "Unreliability probability estimate was " << input.estimateFirstMoment.toDouble() << std::endl;
-		std::cout << "Relative error was " << relativeErrorEstimate.toDouble() << std::endl;
+		std::cout << "Unreliability probability estimate was " << (double)input.estimateFirstMoment << std::endl;
+		std::cout << "Relative error was " << (double)relativeErrorEstimate << std::endl;
 		return 0;
 	}
 }

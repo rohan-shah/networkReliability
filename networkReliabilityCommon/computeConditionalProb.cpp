@@ -7,7 +7,7 @@ namespace networkReliability
 		mpfr_class ret = 0;
 		for(std::vector<mpfr_class>::const_iterator i = rates.begin(); i != rates.end(); i++)
 		{
-			mpfr_class part = mpfr::exp(-(*i), MPFR_RNDN);
+			mpfr_class part = boost::multiprecision::exp(-(*i));
 			for(std::vector<mpfr_class>::const_iterator j = rates.begin(); j != rates.end(); j++)
 			{
 				if(j != i)
@@ -29,7 +29,7 @@ namespace networkReliability
 		scratchMemory.resize(rates.size());
 		for (std::vector<mpfr_class>::const_iterator i = rates.begin(); i != rates.end(); i++)
 		{
-			scratchMemory[std::distance(rates.begin(), i)] = mpfr::exp(-(*i), MPFR_RNDN) * productRates / *i;
+			scratchMemory[std::distance(rates.begin(), i)] = boost::multiprecision::exp(-(*i)) * productRates / *i;
 		}
 		for (std::vector<mpfr_class>::const_iterator i = rates.begin(); i != rates.end(); i++)
 		{
