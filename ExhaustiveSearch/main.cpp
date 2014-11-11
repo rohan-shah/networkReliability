@@ -2,6 +2,7 @@
 #include <boost/filesystem.hpp>
 #include <windows.h>
 #include "Arguments.h"
+#include "ArgumentsMPFR.h"
 #include "graphAlgorithms.h"
 #include <boost/graph/adjacency_matrix.hpp>
 #include <iomanip>

@@ -5,10 +5,10 @@
 #include "computeConditionalProb.h"
 namespace networkReliability
 {
-	TurnipInput::TurnipInput(boost::mt19937& randomSource, const Context::internalGraph* graph, const std::vector<int>& interestVertices)
+	TurnipEqualRateInput::TurnipEqualRateInput(boost::mt19937& randomSource, const Context::internalGraph* graph, const std::vector<int>& interestVertices)
 		:randomSource(randomSource), graph(graph), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false), interestVertices(interestVertices)
 	{}
-	void turnip(TurnipInput& input)
+	void turnipEqualRate(TurnipEqualRateInput& input)
 	{
 		const Context::internalGraph& graph = *input.graph;
 		const std::vector<int>& interestVertices = input.interestVertices;
@@ -25,7 +25,7 @@ namespace networkReliability
 			boost::tie(current, end) = boost::edges(graph);
 			for (; current != end; current++)
 			{
-				input.edges[boost::get(boost::edge_index, graph, *current)] = std::make_pair(current->m_source, current->m_target);
+				input.edges[boost::get(boost::edge_index, graph, *current)] = std::make_pair((int)current->m_source, (int)current->m_target);
 			}
 		}
 		//The sum of all the conditional probabilities (Used to get estimate and estimate of variance of estimate)
@@ -36,11 +36,7 @@ namespace networkReliability
 		std::vector<int> edgeOrdering(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges));
 
 		//The initial rate at the start
-		mpfr_class sumAllRates = 0;
-		for (std::vector<mpfr_class>::iterator i = input.exponentialRates.begin(); i != input.exponentialRates.end(); i++)
-		{
-			sumAllRates += *i;
-		}
+		mpfr_class sumAllRates = nEdges*input.exponentialRate;
 
 		//The edges which are still under consideration
 		std::vector<bool> alreadySeen(nEdges);
@@ -68,6 +64,12 @@ namespace networkReliability
 			componentIDs.insert(componentIDs.begin(), boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nVertices));
 			while (true)
 			{
+				//If we get to a situtation with permutationCounter == nEdges, then the graph is 
+				//disconnected EVEN when all the edges are repaired. 
+				if (permutationCounter == nEdges)
+				{
+					break;
+				}
 				//get out the edge index
 				int edgeIndex = edgeOrdering[permutationCounter];
 				//Has this edge been removed from consideration already?
@@ -78,7 +80,7 @@ namespace networkReliability
 					//Mark the edge as seen
 					alreadySeen[edgeIndex] = true;
 					//subtract the rate from the current rate
-					currentRate -= input.exponentialRates[edgeIndex];
+					currentRate -= input.exponentialRate;
 					//Get the old component IDs
 					int firstComponentID = componentIDs[input.edges[edgeIndex].first];
 					int secondComponentID = componentIDs[input.edges[edgeIndex].second];
@@ -91,7 +93,7 @@ namespace networkReliability
 							if ((componentIDs[firstVertex] == secondComponentID || componentIDs[firstVertex] == firstComponentID) && (componentIDs[secondVertex] == firstComponentID || componentIDs[secondVertex] == secondComponentID))
 							{
 								alreadySeen[j] = true;
-								currentRate -= input.exponentialRates[j];
+								currentRate -= input.exponentialRate;
 							}
 						}
 					}
@@ -106,11 +108,19 @@ namespace networkReliability
 				}
 				permutationCounter++;
 			}
-			mpfr_class additionalPart = computeConditionalProb(ratesForPMC, computeConditionalProbScratch);
-			//mpfr_class additionalPart2 = computeConditionalProb(ratesForPMC);
-			if ((additionalPart > 1 || additionalPart < 0) && !input.warnedStability)
+			mpfr_class additionalPart;
+			if (permutationCounter == nEdges)
 			{
-				input.warnedStability = true;
+				additionalPart = 1;
+			}
+			else
+			{
+				additionalPart = computeConditionalProb(ratesForPMC, computeConditionalProbScratch);
+				//mpfr_class additionalPart2 = computeConditionalProb(ratesForPMC);
+				if ((additionalPart > 1 || additionalPart < 0) && !input.warnedStability)
+				{
+					input.warnedStability = true;
+				}
 			}
 			sumConditional += additionalPart;
 			sumSquaredConditional += additionalPart*additionalPart;

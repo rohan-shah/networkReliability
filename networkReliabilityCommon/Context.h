@@ -39,7 +39,6 @@ namespace networkReliability
 		const std::vector<int>& getInterestVertices() const;
 		const std::vector<vertexPosition>& getVertexPositions() const;
 		const mpfr_class& getOperationalProbability() const;
-		void loadDistributions(std::string path);
 		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
 		std::size_t getMinCutEdges() const;
 		std::vector<int>& getCapacityVector() const;
@@ -65,7 +64,6 @@ namespace networkReliability
 		
 		std::size_t minCutEdges;
 
-		std::vector<std::string> distributionPaths;
 		//These are used in the min paths call. Stored here so they can be reused. 
 		mutable std::vector<int> edgeResidualCapacityVector;
 		mutable std::vector<int> capacityVector;

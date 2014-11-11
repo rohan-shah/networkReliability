@@ -103,7 +103,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\..\..\Libraries\AllPointsMaxFlow\AllPointsMaxFlow;..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;../networkReliabilityCommon;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;BOOST_AUTO_LINK_TAGGED;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -139,7 +139,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\..\..\Libraries\AllPointsMaxFlow\AllPointsMaxFlow;..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;../networkReliabilityCommon;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;BOOST_AUTO_LINK_TAGGED;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

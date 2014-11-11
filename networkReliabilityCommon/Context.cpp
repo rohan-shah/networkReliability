@@ -85,7 +85,6 @@ namespace networkReliability
 		allDistributions.swap(other.allDistributions);
 		std::swap(minCutEdges, other.minCutEdges);
 
-		distributionPaths.swap(other.distributionPaths);
 		edgeResidualCapacityVector.swap(other.edgeResidualCapacityVector);
 		capacityVector.swap(other.capacityVector);
 		directedGraph.swap(other.directedGraph);
@@ -107,7 +106,6 @@ namespace networkReliability
 		allDistributions.swap(other.allDistributions);
 		std::swap(minCutEdges, other.minCutEdges);
 
-		distributionPaths.swap(other.distributionPaths);
 		edgeResidualCapacityVector.swap(other.edgeResidualCapacityVector);
 		capacityVector.swap(other.capacityVector);
 		directedGraph.swap(other.directedGraph);
@@ -201,28 +199,6 @@ namespace networkReliability
 			}
 			minCutEdges = maxFlow;
 		}
-	}
-	void Context::loadDistributions(std::string path)
-	{
-		std::ifstream ifs(path, std::fstream::binary);
-		if(ifs.is_open())
-		{
-			boost::archive::binary_iarchive ia(ifs);
-
-			mpfr_class readProbability;
-			ia >> readProbability;
-			if(readProbability != operationalProbability)
-			{
-				return;
-			}
-			::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection readDistributions;
-			ia >> readDistributions;
-			for(std::move_iterator<std::map<::TruncatedBinomialDistribution::TruncatedBinomialDistribution::key, ::TruncatedBinomialDistribution::TruncatedBinomialDistribution, ::TruncatedBinomialDistribution::TruncatedBinomialDistribution::sorter>::iterator> i = std::make_move_iterator(readDistributions.data.begin()); i != std::make_move_iterator(readDistributions.data.end()); i++)
-			{
-				allDistributions.data.insert(allDistributions.data.begin(), *i);
-			}
-		}
-		distributionPaths.push_back(path);
 	}
 	void Context::constructEdgeDistances()
 	{
@@ -460,15 +436,6 @@ namespace networkReliability
 	}
 	Context::~Context()
 	{
-		if(distributionPaths.size() == 1)
-		{
-			std::ofstream ofs(distributionPaths[0], std::fstream::binary);
-			boost::archive::binary_oarchive oa(ofs);
-			oa << operationalProbability;
-			oa << allDistributions;
-			ofs.flush();
-			ofs.close();
-		}
 	}
 	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& Context::getDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
 	{

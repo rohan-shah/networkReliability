@@ -2,6 +2,7 @@
 #include <boost/random.hpp>
 #include <Windows.h>
 #include "Arguments.h"
+#include "ArgumentsMPFR.h"
 #include "Context.h"
 #include "ObservationVisualiser.h"
 #include <QApplication>
@@ -36,7 +37,7 @@ namespace networkReliability
 			("gridGraph", boost::program_options::value<int>(), "(int) The dimension of the square grid graph to use.")
 			("graphFile", boost::program_options::value<std::string>(), "(string) The path to a graphml file. ")
 			("completeGraph", boost::program_options::value<int>(), "(int) The number of vertices of the complete graph to use. ")
-			("opProbability", boost::program_options::value<double>(), "(float) The probability that an edge is operational")
+			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational")
 			("seed", boost::program_options::value<int>(), "(int) The random seed used to generate the random graphs")
 			("pointSize", boost::program_options::value<float>(), "(float) The size of graph vertices. Defaults to 0.1")
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
@@ -66,8 +67,8 @@ namespace networkReliability
 		boost::mt19937 randomSource;
 		readSeed(variableMap, randomSource);
 
-		double probability;
-		if(!readProbability(variableMap, probability))
+		mpfr_class probability;
+		if(!readProbabilityString(variableMap, probability))
 		{
 			return 0;
 		}

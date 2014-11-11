@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include "Context.h"
 #include "arguments.h"
+#include "argumentsMPFR.h"
 #include <QApplication>
 #include "splittingVisualiser.h"
 namespace networkReliability
@@ -34,12 +35,11 @@ namespace networkReliability
 		options.add_options()
 			("gridGraph", boost::program_options::value<int>(), "(int) The dimension of the square grid graph to use. Incompatible with graphFile. ")
 			("graphFile", boost::program_options::value<std::string>(), "(string) The path to a graphml file. Incompatible with gridGraph")
-			("opProbability", boost::program_options::value<double>(), "(float) The probability that an edge is operational")
+			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational")
 			("seed", boost::program_options::value<int>(), "(int) The random seed used to generate the random graphs")
 			("pointSize", boost::program_options::value<float>(), "(float) The size of graph vertices. Defaults to 0.1")
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
-			("distributionsCache", boost::program_options::value<std::vector<std::string> >()->multitoken(), "(path) The paths to files that contain truncated binomial distribution data")
 			("help", "Display this message");
 
 		boost::program_options::variables_map variableMap;
@@ -67,8 +67,8 @@ namespace networkReliability
 			seed = variableMap["seed"].as<int>();
 		}
 
-		double probability;
-		if(!readProbability(variableMap, probability))
+		mpfr_class probability;
+		if(!readProbabilityString(variableMap, probability))
 		{
 			return 0;
 		}
