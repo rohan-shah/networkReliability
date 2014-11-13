@@ -8,6 +8,7 @@
 #include <boost/filesystem.hpp>
 #include <locale>
 #include <codecvt>
+#include <boost/math/distributions.hpp>
 namespace networkReliability
 {
 	int main(int argc, char** argv)
@@ -17,6 +18,7 @@ namespace networkReliability
 		boost::program_options::options_description exhaustiveProbabilityOptions("Usage");
 		exhaustiveProbabilityOptions.add_options()
 			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational. ")
+			("minimumFailedEdges", boost::program_options::value<int>(), "(int) Condition on having at least this number of edges failed")
 			("zeroProbability", boost::program_options::value<unsigned long long>(), "(Positive integer) Output the probability of getting a zero estimate from CMC, with specified number of samples");
 			("help", "Display this message");
 		boost::program_options::variables_map exhaustiveProbabilityVariableMap;
@@ -139,13 +141,31 @@ namespace networkReliability
 			sizeCounters[i] = mpfr_class(splitCounterLine[1]);
 		}
 
+		int minimumFailedEdges;
+		if (exhaustiveProbabilityVariableMap.count("minimumFailedEdges") > 0)
+		{
+			minimumFailedEdges = exhaustiveProbabilityVariableMap["minimumFailedEdges"].as<int>();
+			if (minimumFailedEdges < 0)
+			{
+				std::cout << "Input minimumFailedEdges must be non-negative" << std::endl;
+				return 0;
+			}
+		}
+		else minimumFailedEdges = 0;
+
 		mpfr_class result = 0;
-		for(int i = 0; i < nEdges+1; i++)
+		for(int i = 0; i < nEdges+1-minimumFailedEdges; i++)
 		{
 			mpfr_class probabilityPower = boost::multiprecision::pow(probability_mpfr, i);
 			mpfr_class compProbabilityPower = boost::multiprecision::pow(compProbability_mpfr, (unsigned long)(nEdges - i));
 
 			result += sizeCounters[i] * compProbabilityPower * probabilityPower;
+		}
+
+		if (minimumFailedEdges > 0)
+		{
+			boost::math::binomial_distribution<mpfr_class> dist(nEdges, probability_mpfr);
+			result /= boost::math::cdf(dist, nEdges - minimumFailedEdges);
 		}
 		mpfr_class unreliability = 1 - result;
 		
