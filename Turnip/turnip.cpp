@@ -68,15 +68,11 @@ namespace networkReliability
 		const Context::internalGraph& graph = context.getGraph();
 		const std::size_t nEdges = context.getNEdges();
 	
-		TurnipInput input(randomSource, &graph, context.getInterestVertices());
+		TurnipEqualRateInput input(randomSource, &graph, context.getInterestVertices());
 		//set up exponential rates
-		input.exponentialRates.resize(nEdges);
-		{
-			mpfr_class exponentialRate = -boost::multiprecision::log(1 - opProbability);
-			std::fill(input.exponentialRates.begin(), input.exponentialRates.end(), exponentialRate);
-		}
+		input.exponentialRate = -boost::multiprecision::log(1 - opProbability);
 		input.n = n;
-		turnip(input);
+		turnipEqualRate(input);
 		if (input.warnedStability)
 		{
 			std::cout << "Numerical stability problem detected" << std::endl;
