@@ -9,7 +9,10 @@
 #include <boost/accumulators/statistics/sum.hpp>
 #include <boost/random/bernoulli_distribution.hpp>
 #include "includeMPFR.h"
-#include "Turnip.h"
+#include "ArgumentsMPFR.h"
+#include "ConditionalTurnip.h"
+#include <boost/multiprecision/cpp_dec_float.hpp>
+#include <boost/math/special_functions.hpp>
 namespace networkReliability
 {
 	std::string toString(mpfr_class number)
@@ -24,18 +27,16 @@ namespace networkReliability
 	int main(int argc, char **argv)
 	{
 		typedef NetworkReliabilityObs::conditioning_type calculation_type;
-		mpfr_class::default_precision(20);
 
 		boost::program_options::options_description options("Usage");
 		options.add_options()
 			("gridGraph", boost::program_options::value<int>(), "(int) The dimension of the square grid graph to use. Incompatible with graphFile. ")
 			("graphFile", boost::program_options::value<std::string>(), "(string) The path to a graphml file. Incompatible with gridGraph")
-			("opProbability", boost::program_options::value<double>(), "(float) The probability that an edge is operational")
+			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational")
 			("seed", boost::program_options::value<int>(), "(int) The random seed used to generate the random graphs")
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
 			("splittingFactor", boost::program_options::value<std::vector<float> >()->multitoken(), "(float) The splitting factor to use at every step")
-			("distributionsCache", boost::program_options::value<std::vector<std::string> >()->multitoken(), "(path) The paths to files that contain truncated binomial distribution data")
 			("n", boost::program_options::value<int>(), "(int) The number of graphs initially generated")
 			("variance", "Output variance estimate")
 			("relativeError", "Output relative error")
@@ -60,8 +61,8 @@ namespace networkReliability
 			return 0;
 		}
 
-		double opProbability;
-		if(!readProbability(variableMap, opProbability))
+		mpfr_class opProbability;
+		if(!readProbabilityString(variableMap, opProbability))
 		{
 			return 0;
 		}
@@ -156,18 +157,18 @@ namespace networkReliability
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
 		std::size_t totalSamples = 0;
 
-		//additional working data for getRadius1ReducedGraph
-		std::vector<int> edgeCounts;
-		mpfr_class exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
-		std::vector<int> reducedGraphInterestVertices(interestVertices.size());
-
 		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > firstMomentSum(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
 		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > secondMomentSum(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
 		//If the usePMC flag is set, don't use splitting on the last step. Instead use PMC. 
 		int finalSplittingStep;
 		if (usePMC) finalSplittingStep = initialRadius - 1;
 		else finalSplittingStep = initialRadius;
-		TurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
+
+		//additional working data for getRadius1ReducedGraph
+		std::vector<int> edgeCounts;
+		std::vector<int> reducedGraphInterestVertices(interestVertices.size());
+		ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
+		turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
 
 		for(int i = 0; i < n; i++)
 		{
@@ -232,32 +233,41 @@ namespace networkReliability
 				for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 				{
 					Context::internalGraph reducedGraph;
-					j->getRadius1ReducedGraph(reducedGraph, edgeCounts, components, stack, colorMap);
+					j->getRadius1ReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
+					turnipInput.n = *splittingFactorsPerRun.rbegin();
 					turnipInput.graph = &reducedGraph;
 					const std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
 					const std::size_t nReducedEdges = boost::num_edges(reducedGraph);
-
-					turnipInput.exponentialRates.clear();
-					turnipInput.exponentialRates.resize(nReducedEdges);
+					//If the graph is DEFINITELY disconnected, add a value of 1 and continue.
+					if (nReducedEdges == 0)
+					{
+						perTopLevelSum(j->getConditioningProb() * turnipInput.n);
+						continue;
+					}
 					turnipInput.edges.clear();
 					turnipInput.edges.resize(nReducedEdges);
+					turnipInput.edgeCounts.resize(nReducedEdges);
 					Context::internalGraph::edge_iterator current, end;
 					boost::tie(current, end) = boost::edges(reducedGraph);
 					for (; current != end; current++)
 					{
 						int edgeIndex = boost::get(boost::edge_index, reducedGraph, *current);
-						turnipInput.exponentialRates[edgeIndex] = (edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices]) * exponentialRate;
+						if (current->m_target != current->m_source)
+						{
+							turnipInput.edgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices];
+						}
+						else
+						{
+							turnipInput.edgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices];
+						}
 						turnipInput.edges[edgeIndex] = std::make_pair((int)current->m_source, (int)current->m_target);
 					}
-					turnipInput.n = *splittingFactorsPerRun.rbegin();
 					for (int k = 0; k < interestVertices.size(); k++)
 					{
 						reducedGraphInterestVertices[k] = components[interestVertices[k]];
 					}
-					turnip(turnipInput);
-					std::string part = j->getConditioningProb().str();
-					part = turnipInput.estimateFirstMoment.str();
-					perTopLevelSum(j->getConditioningProb() * turnipInput.n * turnipInput.estimateFirstMoment);
+					conditionalTurnip(turnipInput);
+					perTopLevelSum(j->getGeneratedObservationConditioningProb() * turnipInput.n * turnipInput.estimateFirstMoment);
 				}
 			}
 			calculation_type term = boost::accumulators::sum(perTopLevelSum) / calculation_type(productSplittingFactorsPerRun);

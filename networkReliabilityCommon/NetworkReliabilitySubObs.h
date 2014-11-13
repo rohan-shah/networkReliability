@@ -5,6 +5,7 @@
 #include "EdgeState.h"
 #include <boost/shared_array.hpp>
 #include "includeMPFR.h"
+#include "graphAlgorithms.h"
 namespace networkReliability
 {
 	class NetworkReliabilityObs;
@@ -20,6 +21,8 @@ namespace networkReliability
 		NetworkReliabilitySubObs& operator=(NetworkReliabilitySubObs&& other);
 		int getConditioningCount() const;
 		const conditioning_type& getConditioningProb() const;
+		void getRadius1ReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
+		NetworkReliabilitySubObs::conditioning_type getGeneratedObservationConditioningProb() const;
 	private:
 		Context const& context;
 		boost::shared_array<EdgeState> state;

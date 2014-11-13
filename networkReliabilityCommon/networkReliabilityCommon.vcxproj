@@ -154,6 +154,7 @@
     <ClInclude Include="Arguments.h" />
     <ClInclude Include="ArgumentsMPFR.h" />
     <ClInclude Include="computeConditionalProb.h" />
+    <ClInclude Include="conditionalTurnip.h" />
     <ClInclude Include="connected_components_restricted.hpp" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="depth_first_search_restricted.hpp" />
@@ -169,6 +170,7 @@
     <ClCompile Include="Arguments.cpp" />
     <ClCompile Include="ArgumentsMPFR.cpp" />
     <ClCompile Include="computeConditionalProb.cpp" />
+    <ClCompile Include="conditionalTurnip.cpp" />
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="graphAlgorithms.cpp" />
     <ClCompile Include="NetworkReliabilityObs.cpp" />

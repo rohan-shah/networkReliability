@@ -4,6 +4,7 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/math/distributions/binomial.hpp>
+#include "graphAlgorithms.h"
 namespace networkReliability
 {
 	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, int radius, int conditioningCount, conditioning_type conditioningProb)
@@ -34,6 +35,43 @@ namespace networkReliability
 	int NetworkReliabilitySubObs::getMinCut() const
 	{
 		return minCut;
+	}
+	void NetworkReliabilitySubObs::getRadius1ReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
+	{
+		int nComponents = countComponents(context, state.get(), components, stack, colorMap);
+		edgeCounts.clear();
+		edgeCounts.resize(nComponents * nComponents);
+
+		//determine the rates between all the different super-vertices
+		Context::internalGraph::edge_iterator current, end;
+		const Context::internalGraph& graph = context.getGraph();
+		boost::tie(current, end) = boost::edges(graph);
+		for (; current != end; current++)
+		{
+			int edgeIndex = boost::get(boost::edge_index, graph, *current);
+			//is it an edge between super-nodes?
+			if (state[edgeIndex] & UNFIXED_MASK)
+			{
+				edgeCounts[components[current->m_source] + components[current->m_target] * nComponents]++;
+			}
+		}
+		outputGraph = Context::internalGraph(nComponents);
+		int edgeCounter = 0;
+		for (int i = 0; i < nComponents; i++)
+		{
+			if (edgeCounts[i + i * nComponents] > 0)
+			{
+				boost::add_edge(i, i, edgeCounter++, outputGraph);
+			}
+			for (int j = i + 1; j < nComponents; j++)
+			{
+				if (edgeCounts[i + j * nComponents] + edgeCounts[j + i * nComponents] > 0)
+				{
+					boost::add_edge(i, j, edgeCounter++, outputGraph);
+				}
+			}
+		}
+		minimumInoperative = minCut;//std::max(0, conditioningCount - fixedInop);
 	}
 	const NetworkReliabilitySubObs::conditioning_type& NetworkReliabilitySubObs::getConditioningProb() const
 	{
@@ -111,6 +149,32 @@ namespace networkReliability
 		}
 		else newConditioningProb = 1;
 		return NetworkReliabilityObs(context, newState, newConditioningCount, newConditioningProb*conditioningProb);
+	}
+	NetworkReliabilitySubObs::conditioning_type NetworkReliabilitySubObs::getGeneratedObservationConditioningProb() const
+	{
+		conditioning_type newConditioningProb;
+		int newConditioningCount = std::max(fixedInop + minCut, conditioningCount);
+		if (fixedInop + minCut > conditioningCount && minCut > 0)
+		{
+			boost::math::binomial_distribution<> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
+			if (conditioningCount > fixedInop)
+			{
+				const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
+				const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
+				newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
+
+				/*double tmp1 = (1 - boost::math::cdf(relevantBinomial, minCut - 1)) / (1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));
+				double tmp2 = 1 - cdf[minCut - conditioningCount + fixedInop - 1].get_d();
+				assert(abs(tmp1 - tmp2) < 1e-6);
+				newConditioningProb = conditioning_type(1 - boost::math::cdf(relevantBinomial, minCut - 1)) / conditioning_type(1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));*/
+			}
+			else
+			{
+				newConditioningProb = (1 - boost::math::cdf(relevantBinomial, minCut - 1));
+			}
+		}
+		else newConditioningProb = 1;
+		return newConditioningProb * conditioningProb;
 	}
 	const EdgeState* NetworkReliabilitySubObs::getState() const
 	{
