@@ -20,8 +20,6 @@ namespace networkReliability
 		std::vector<int> workingEdgeCounts;
 		//The number of original edges between each connected group, after random edges are fixed as being off.
 		std::vector<int> workingEdgeCounts2;
-		//times that are used to construct the permutation
-		std::vector<int> permutation;
 		//exponential rates after edges are removed
 		std::vector<mpfr_class> exponentialRates;
 		size_t n;

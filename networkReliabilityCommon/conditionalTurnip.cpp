@@ -91,7 +91,7 @@ namespace networkReliability
 			memcpy(&(input.workingEdgeCounts2[0]), &(input.edgeCounts[0]), sizeof(int)*input.edgeCounts.size());
 			//determine which edges are going to be left out (it'll be the last ones of this shuffled vector)
 			boost::random_shuffle(input.workingEdgeCounts, generator);
-			/*for (std::vector<int>::reverse_iterator j = input.workingEdgeCounts.rbegin(); j != input.workingEdgeCounts.rbegin() + input.minimumInoperative; j++)
+			for (std::vector<int>::reverse_iterator j = input.workingEdgeCounts.rbegin(); j != input.workingEdgeCounts.rbegin() + input.minimumInoperative; j++)
 			{
 				input.workingEdgeCounts2[*j]--;
 			}
@@ -99,19 +99,8 @@ namespace networkReliability
 			{
 				input.exponentialRates[j] = input.workingEdgeCounts2[j] * input.exponentialRate;
 			}
-			//The shuffled vector also determines the permutation
-			std::fill(alreadySeen.begin(), alreadySeen.end(), false);
-			input.permutation.clear();
-			for (int j = 0; j < originalEdges - input.minimumInoperative; j++)
-			{
-				if (!alreadySeen[input.workingEdgeCounts[j]])
-				{
-					alreadySeen[input.workingEdgeCounts[j]] = true;
-					input.permutation.push_back(input.workingEdgeCounts[j]);
-				}
-			}
 			//No edges have yet been seen
-			std::fill(alreadySeen.begin(), alreadySeen.end(), false);*/
+			std::fill(alreadySeen.begin(), alreadySeen.end(), false);
 			//The first rate is going to be this
 			mpfr_class currentRate = sumAllRates;
 			//which edge in the permutation are we currently looking at?
@@ -137,16 +126,16 @@ namespace networkReliability
 				int firstComponentID = componentIDs[input.edges[edgeIndex].first];
 				int secondComponentID = componentIDs[input.edges[edgeIndex].second];
 				//Has this edge been removed from consideration already?
-				/*if (!alreadySeen[edgeIndex])
-				{*/
+				if (!alreadySeen[edgeIndex])
+				{
 					//If not, add the current rate
 					ratesForPMC.push_back(currentRate);
 					//Mark the edge as seen
-					//alreadySeen[edgeIndex] = true;
+					alreadySeen[edgeIndex] = true;
 					//subtract the rate from the current rate
-					currentRate -= input.exponentialRate;
+					currentRate -= input.exponentialRates[edgeIndex];
 					//go through all the edges that haven't been seen yet. 
-					/*for (int j = 0; j < nEdges; j++)
+					for (int j = 0; j < nEdges; j++)
 					{
 						if (!alreadySeen[j])
 						{
@@ -158,7 +147,7 @@ namespace networkReliability
 							}
 						}
 					}
-				}*/
+				}
 				{
 					std::replace(componentIDs.begin(), componentIDs.end(), std::max(firstComponentID, secondComponentID), std::min(firstComponentID, secondComponentID));
 					//determine whether or not we've hit the critical threshold
