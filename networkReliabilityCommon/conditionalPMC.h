@@ -1,5 +1,5 @@
-#ifndef CONDITIONAL_TURNIP_HEADER_GUARD
-#define CONDITIONAL_TURNIP_HEADER_GUARD
+#ifndef CONDITIONAL_PMC_HEADER_GUARD
+#define CONDITIONAL_PMC_HEADER_GUARD
 #include <boost/random/mersenne_twister.hpp>
 #include <algorithm>
 #include "includeMPFR.h"
@@ -27,6 +27,6 @@ namespace networkReliability
 		bool warnedStability;
 		int minimumInoperative;
 	};
-	void conditionalTurnip(ConditionalTurnipInput& input);
+	void conditionalPMC(ConditionalTurnipInput& input);
 }
 #endif

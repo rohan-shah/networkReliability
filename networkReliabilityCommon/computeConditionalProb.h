@@ -7,5 +7,6 @@ namespace networkReliability
 {
 	mpfr_class computeConditionalProb(const std::vector<mpfr_class>& rates);
 	mpfr_class computeConditionalProb(const std::vector<mpfr_class>& rates, std::vector<mpfr_class>& scratchMemory);
+	mpfr_class computeConditionalProbLarger(const std::vector<mpfr_class>& firstRates, const std::vector<mpfr_class>& secondRates, std::vector<mpfr_class>& scratchMemory);
 }
 #endif

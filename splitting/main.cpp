@@ -10,7 +10,7 @@
 #include <boost/random/bernoulli_distribution.hpp>
 #include "includeMPFR.h"
 #include "ArgumentsMPFR.h"
-#include "ConditionalTurnip.h"
+#include "conditionalPMC.h"
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/math/special_functions.hpp>
 namespace networkReliability
@@ -103,30 +103,14 @@ namespace networkReliability
 		}
 		bool validSplittingFactors = true;
 
-		bool integerSplittingFactors = true;
 		for(std::vector<float>::const_iterator i = splittingFactors.begin(); i != splittingFactors.end(); i++)
 		{
-			if(*i != std::floor(*i))
-			{
-				integerSplittingFactors = false;
-			}
 			if(*i < 1) validSplittingFactors = false;
 		}
 		if(!validSplittingFactors)
 		{
 			std::cout << "Input splittingFactors must contain numbers greater than 1" << std::endl;
 			return 0;
-		}
-		//If we have non-integer splitting factors then we need to generate integer splitting factors for each run through. 
-		std::vector<int> splittingFactorsPerRun(splittingFactors.size());
-		int productSplittingFactorsPerRun = 1;
-		if(integerSplittingFactors)
-		{
-			for(int i = 0; i < splittingFactors.size(); i++)
-			{
-				splittingFactorsPerRun[i] = (int)splittingFactors[i];
-				productSplittingFactorsPerRun *= (int)splittingFactors[i];
-			}
 		}
 
 		int n;
@@ -155,10 +139,10 @@ namespace networkReliability
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
-		std::size_t totalSamples = 0;
+		double totalSamples = n;
+		for (std::vector<float>::iterator k = splittingFactors.begin(); k != splittingFactors.end(); k++) totalSamples *= *k;
 
-		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > firstMomentSum(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
-		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > secondMomentSum(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
+		calculation_type firstMomentSum = 0, secondMomentSum = 0;
 		//If the usePMC flag is set, don't use splitting on the last step. Instead use PMC. 
 		int finalSplittingStep;
 		if (usePMC) finalSplittingStep = initialRadius - 1;
@@ -170,109 +154,103 @@ namespace networkReliability
 		ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
 		turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
 
-		for(int i = 0; i < n; i++)
+		for (int i = 0; i < n; i++)
 		{
-
-			//Used to work out the variance. This involves adding up the getConditioningProb() values from everything in observations, dividing by productSplittingFactorsPerRun, and then adding the value to the accumulator
-			boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > perTopLevelSum(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
-
-			if(!integerSplittingFactors)
-			{
-				productSplittingFactorsPerRun = 1;
-				for(int i = 0; i < splittingFactors.size(); i++)
-				{
-					splittingFactorsPerRun[i] = (int)splittingFactors[i];
-					boost::random::bernoulli_distribution<float> additional(splittingFactors[i] - floor(splittingFactors[i]));
-					if(additional(randomSource))
-					{
-						splittingFactorsPerRun[i]++;
-					}
-					productSplittingFactorsPerRun *= splittingFactorsPerRun[i];
-				}
-			}
-			totalSamples += productSplittingFactorsPerRun;
 			NetworkReliabilityObs currentObs = NetworkReliabilityObs::constructConditional(context, randomSource);
 			conditioningProbabilities[0](currentObs.getConditioningProb());
 			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(initialRadius);
-			
-			if(isSingleComponent(context, subObs.getState(), components, stack, colorMap))
+
+			if (isSingleComponent(context, subObs.getState(), components, stack, colorMap))
 			{
 				probabilities[0](0);
-				firstMomentSum(0);
-				secondMomentSum(0);
-				continue;
 			}
-			probabilities[0](1);
-
-			observations.clear();
-			observations.push_back(std::move(subObs));
-
-			for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
+			else
 			{
-				nextStepObservations.clear();
-				for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+				probabilities[0](1);
+				observations.push_back(std::move(subObs));
+			}
+		}
+		for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
+		{
+			nextStepObservations.clear();
+			boost::random::bernoulli_distribution<float> bernoulli(splittingFactors[splittingLevel] - floor(splittingFactors[splittingLevel]));
+			for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+			{
+				int integerSplittingFactor = (int)floor(splittingFactors[splittingLevel]) + bernoulli(randomSource);
+				for(int k = 0; k < integerSplittingFactor; k++)
 				{
-					for(int k = 0; k < splittingFactorsPerRun[splittingLevel]; k++)
+					NetworkReliabilityObs newObs = j->getObservation(randomSource);
+					conditioningProbabilities[splittingLevel+1](newObs.getConditioningProb());
+					NetworkReliabilitySubObs sub = newObs.getSubObservation(initialRadius - splittingLevel - 1);
+					if(!isSingleComponent(context, sub.getState(), components, stack, colorMap))
 					{
-						NetworkReliabilityObs newObs = j->getObservation(randomSource);
-						conditioningProbabilities[splittingLevel+1](newObs.getConditioningProb());
-						NetworkReliabilitySubObs sub = newObs.getSubObservation(initialRadius - splittingLevel - 1);
-						if(!isSingleComponent(context, sub.getState(), components, stack, colorMap))
+						probabilities[splittingLevel+1](newObs.getConditioningProb());
+						if (splittingLevel == initialRadius - 1)
 						{
-							probabilities[splittingLevel+1](newObs.getConditioningProb());
-							if (splittingLevel == initialRadius - 1) perTopLevelSum(newObs.getConditioningProb());
-
-							nextStepObservations.push_back(std::move(sub));
+							firstMomentSum += newObs.getConditioningProb();
+							secondMomentSum += newObs.getConditioningProb()*newObs.getConditioningProb();
 						}
+						nextStepObservations.push_back(std::move(sub));
 					}
 				}
-				observations.swap(nextStepObservations);
 			}
-			if (usePMC)
+			observations.swap(nextStepObservations);
+		}
+		if (usePMC)
+		{
+			boost::random::bernoulli_distribution<float> bernoulli(*splittingFactors.rbegin() - floor(*splittingFactors.rbegin()));
+			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
-				for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+				Context::internalGraph reducedGraph;
+				j->getRadius1ReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
+				turnipInput.n = (int)*splittingFactors.rbegin() + bernoulli(randomSource);
+				turnipInput.graph = &reducedGraph;
+				const std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
+				const std::size_t nReducedEdges = boost::num_edges(reducedGraph);
+				//If the graph is DEFINITELY disconnected, add a value of 1 and continue.
+				if (nReducedEdges == 0)
 				{
-					Context::internalGraph reducedGraph;
-					j->getRadius1ReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
-					turnipInput.n = *splittingFactorsPerRun.rbegin();
-					turnipInput.graph = &reducedGraph;
-					const std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
-					const std::size_t nReducedEdges = boost::num_edges(reducedGraph);
-					//If the graph is DEFINITELY disconnected, add a value of 1 and continue.
-					if (nReducedEdges == 0)
+					bool alwaysConnected = true;
+					for (int interestCounter = 1; interestCounter < interestVertices.size(); interestCounter++)
 					{
-						perTopLevelSum(j->getConditioningProb() * turnipInput.n);
-						continue;
-					}
-					turnipInput.edges.clear();
-					turnipInput.edges.resize(nReducedEdges);
-					turnipInput.edgeCounts.resize(nReducedEdges);
-					Context::internalGraph::edge_iterator current, end;
-					boost::tie(current, end) = boost::edges(reducedGraph);
-					for (; current != end; current++)
-					{
-						int edgeIndex = boost::get(boost::edge_index, reducedGraph, *current);
-						if (current->m_target != current->m_source)
+						if (components[interestVertices[interestCounter]] != components[interestVertices[0]])
 						{
-							turnipInput.edgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices];
+							alwaysConnected = false;
+							break;
 						}
-						else
-						{
-							turnipInput.edgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices];
-						}
-						turnipInput.edges[edgeIndex] = std::make_pair((int)current->m_source, (int)current->m_target);
 					}
-					for (int k = 0; k < interestVertices.size(); k++)
-					{
-						reducedGraphInterestVertices[k] = components[interestVertices[k]];
-					}
-					conditionalTurnip(turnipInput);
-					perTopLevelSum(j->getGeneratedObservationConditioningProb() * turnipInput.n * turnipInput.estimateFirstMoment);
+					if (alwaysConnected) throw std::runtime_error("Internal error");
+					firstMomentSum += j->getConditioningProb() * turnipInput.n;
+					secondMomentSum += j->getConditioningProb() * j->getConditioningProb() * turnipInput.n;
+					continue;
 				}
+				turnipInput.edges.clear();
+				turnipInput.edges.resize(nReducedEdges);
+				turnipInput.edgeCounts.resize(nReducedEdges);
+				Context::internalGraph::edge_iterator current, end;
+				boost::tie(current, end) = boost::edges(reducedGraph);
+				for (; current != end; current++)
+				{
+					int edgeIndex = boost::get(boost::edge_index, reducedGraph, *current);
+					if (current->m_target != current->m_source)
+					{
+						turnipInput.edgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices];
+					}
+					else
+					{
+						turnipInput.edgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices];
+					}
+					turnipInput.edges[edgeIndex] = std::make_pair((int)current->m_source, (int)current->m_target);
+				}
+				for (int k = 0; k < interestVertices.size(); k++)
+				{
+					reducedGraphInterestVertices[k] = components[interestVertices[k]];
+				}
+				conditionalPMC(turnipInput);
+				firstMomentSum += j->getGeneratedObservationConditioningProb() * turnipInput.n * turnipInput.estimateFirstMoment;
+				calculation_type tmp = j->getGeneratedObservationConditioningProb() * turnipInput.estimateFirstMoment;
+				secondMomentSum += tmp * tmp * turnipInput.n;
 			}
-			calculation_type term = boost::accumulators::sum(perTopLevelSum) / calculation_type(productSplittingFactorsPerRun);
-			firstMomentSum(term);
-			secondMomentSum(term*term);
 		}
 		if (estimateParts)
 		{
@@ -309,10 +287,10 @@ namespace networkReliability
 		//Estimate as the product of the various parts
 		calculation_type estimate = boost::accumulators::sum(probabilities[initialRadius]) / calculation_type(boost::lexical_cast<std::string>(totalSamples));
 		//...but this is the one we're actually using
-		estimate = boost::accumulators::sum(firstMomentSum) / n;
+		estimate = firstMomentSum / totalSamples;
 		//This is the variance of the distribution we're taking the empirical expectation of. Hence
 		//the /n in everything below - Variance of the estimate decreases at rate 1/n
-		calculation_type estimatedVariance = boost::accumulators::sum(secondMomentSum) / n - (estimate * estimate);
+		calculation_type estimatedVariance = secondMomentSum / totalSamples - (estimate * estimate);
 		if (variance)
 		{
 			std::cout << "Estimated variance is " << toString(estimatedVariance/n) << std::endl;
@@ -321,7 +299,7 @@ namespace networkReliability
 		{
 			std::cout << "Estimated relative error is " << toString(boost::multiprecision::sqrt(estimatedVariance / n) / estimate) << std::endl;
 		}
-		std::cout << "Estimate is " << toString(boost::accumulators::sum(firstMomentSum) / n) << std::endl;
+		std::cout << "Estimate is " << toString(estimate) << std::endl;
 		return 0;
 	}
 }
