@@ -57,9 +57,6 @@
     <ClInclude Include="conditionalPMC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="conditionalTurnip.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Context.cpp">
@@ -90,9 +87,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="conditionalPMC.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="conditionalTurnip.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{FD2E027F-6AB5-4555-8BF9-6074FFE44507}</ProjectGuid>
-    <RootNamespace>networkReliabilityCommon</RootNamespace>
+    <ProjectGuid>{BCC9D907-B22D-437F-A136-F6911DEAFB4F}</ProjectGuid>
+    <RootNamespace>generateGrid</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -30,10 +30,10 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -43,7 +43,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -55,6 +55,7 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\BoostInclude.props" />
+    <Import Project="..\..\..\Mathematica.props" />
     <Import Project="..\..\..\mpfr.props" />
     <Import Project="..\..\..\MPIR.props" />
   </ImportGroup>
@@ -65,11 +66,11 @@
     <Import Project="..\..\..\Mathematica.props" />
     <Import Project="..\..\..\mpfr.props" />
     <Import Project="..\..\..\MPIR.props" />
-    <Import Project="..\..\..\QTDebug.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\BoostInclude.props" />
+    <Import Project="..\..\..\Mathematica.props" />
     <Import Project="..\..\..\mpfr.props" />
     <Import Project="..\..\..\MPIR.props" />
   </ImportGroup>
@@ -80,7 +81,6 @@
     <Import Project="..\..\..\Mathematica.props" />
     <Import Project="..\..\..\mpfr.props" />
     <Import Project="..\..\..\MPIR.props" />
-    <Import Project="..\..\..\QTRelease.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
@@ -89,7 +89,6 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -100,18 +99,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;BOOST_AUTO_LINK_TAGGED;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\AllPointsMaxFlow\AllPointsMaxFlow;..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;../networkReliabilityCommon;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>../$(Platform)/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>networkReliabilityCommon.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <Lib>
-      <AdditionalDependencies>TruncatedBinomialDistribution.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Lib>
-    <Lib>
-      <AdditionalLibraryDirectories>..\..\..\Libraries\TruncatedBinomialDistribution\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -120,7 +114,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BOOST_ALL_DYN_LINK;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -135,48 +128,19 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\Libraries\AllPointsMaxFlow\AllPointsMaxFlow;..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Libraries\TruncatedBinomialDistribution\TruncatedBinomialDistribution;../networkReliabilityCommon;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>../$(Platform)/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>networkReliabilityCommon.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <Lib>
-      <AdditionalDependencies>TruncatedBinomialDistribution.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Lib>
-    <Lib>
-      <AdditionalLibraryDirectories>..\..\..\Libraries\TruncatedBinomialDistribution\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Arguments.h" />
-    <ClInclude Include="ArgumentsMPFR.h" />
-    <ClInclude Include="computeConditionalProb.h" />
-    <ClInclude Include="conditionalPMC.h" />
-    <ClInclude Include="connected_components_restricted.hpp" />
-    <ClInclude Include="Context.h" />
-    <ClInclude Include="depth_first_search_restricted.hpp" />
-    <ClInclude Include="EdgeState.h" />
-    <ClInclude Include="graphAlgorithms.h" />
-    <ClInclude Include="includeMPFR.h" />
-    <ClInclude Include="NetworkReliabilityObs.h" />
-    <ClInclude Include="NetworkReliabilitySubObs.h" />
-    <ClInclude Include="Turnip.h" />
-    <ClInclude Include="ZoomGraphicsView.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Arguments.cpp" />
-    <ClCompile Include="ArgumentsMPFR.cpp" />
-    <ClCompile Include="computeConditionalProb.cpp" />
-    <ClCompile Include="conditionalPMC.cpp" />
-    <ClCompile Include="Context.cpp" />
-    <ClCompile Include="graphAlgorithms.cpp" />
-    <ClCompile Include="NetworkReliabilityObs.cpp" />
-    <ClCompile Include="NetworkReliabilitySubObs.cpp" />
-    <ClCompile Include="Turnip.cpp" />
-    <ClCompile Include="ZoomGraphicsView.cpp" />
+    <ClCompile Include="generateGrid.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
