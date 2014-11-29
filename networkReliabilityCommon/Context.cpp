@@ -82,7 +82,8 @@ namespace networkReliability
 		vertexPositions.swap(other.vertexPositions);
 		edgeDistances.swap(other.edgeDistances);
 		std::swap(operationalProbability, other.operationalProbability);
-		allDistributions.swap(other.allDistributions);
+		allOpDistributions.swap(other.allOpDistributions);
+		allInopDistributions.swap(other.allInopDistributions);
 		std::swap(minCutEdges, other.minCutEdges);
 
 		edgeResidualCapacityVector.swap(other.edgeResidualCapacityVector);
@@ -94,6 +95,7 @@ namespace networkReliability
 
 		std::swap(nEdges, other.nEdges);
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
+		std::swap(_useMinCut, other._useMinCut);
 		return *this;
 	}
 	Context::Context(Context&& other)
@@ -103,7 +105,8 @@ namespace networkReliability
 		vertexPositions.swap(other.vertexPositions);
 		edgeDistances.swap(other.edgeDistances);
 		std::swap(operationalProbability, other.operationalProbability);
-		allDistributions.swap(other.allDistributions);
+		allOpDistributions.swap(other.allOpDistributions);
+		allInopDistributions.swap(other.allInopDistributions);
 		std::swap(minCutEdges, other.minCutEdges);
 
 		edgeResidualCapacityVector.swap(other.edgeResidualCapacityVector);
@@ -115,9 +118,10 @@ namespace networkReliability
 
 		std::swap(nEdges, other.nEdges);
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
+		std::swap(_useMinCut, other._useMinCut);
 	}
 	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability)
-		:vertexPositions(vertexPositions), interestVertices(interestVertices), operationalProbability(operationalProbability)
+		:vertexPositions(vertexPositions), interestVertices(interestVertices), operationalProbability(operationalProbability), _useMinCut(false)
 	{
 		mpfr_class inoperationalProbability = (1 - operationalProbability);
 		inoperationalProbabilityD = (double)inoperationalProbability;
@@ -245,7 +249,7 @@ namespace networkReliability
 		}
 	}
 	Context::Context()
-		:graph(NULL), directedGraph(NULL), vertexPositions(NULL), nEdges(0)
+		:graph(NULL), directedGraph(NULL), vertexPositions(NULL), nEdges(0), _useMinCut(false)
 	{}
 	Context Context::emptyContext()
 	{
@@ -284,6 +288,7 @@ namespace networkReliability
 		result.distanceVector.resize(2);
 
 		result.nEdges = 0;
+		result._useMinCut = false;
 
 		return result;
 	}
@@ -437,7 +442,7 @@ namespace networkReliability
 	Context::~Context()
 	{
 	}
-	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& Context::getDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
+	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& Context::getOpDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
 	{
 		::TruncatedBinomialDistribution::TruncatedBinomialDistribution::key key;
 		key.firstAllowedValue = firstAllowedValue;
@@ -445,11 +450,27 @@ namespace networkReliability
 		key.n = n;
 
 		::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection::mapType::iterator searchIterator;
-		searchIterator = allDistributions.data.find(key);
-		if(searchIterator == allDistributions.data.end())
+		searchIterator = allOpDistributions.data.find(key);
+		if (searchIterator == allOpDistributions.data.end())
+		{
+			::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection::mapType::value_type toInsert(key, ::TruncatedBinomialDistribution::TruncatedBinomialDistribution(n, firstAllowedValue, lastAllowedValue, operationalProbability));
+			return allOpDistributions.data.insert(std::move(toInsert)).first->second;
+		}
+		else return searchIterator->second;
+	}
+	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& Context::getInopDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
+	{
+		::TruncatedBinomialDistribution::TruncatedBinomialDistribution::key key;
+		key.firstAllowedValue = firstAllowedValue;
+		key.lastAllowedValue = lastAllowedValue;
+		key.n = n;
+
+		::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection::mapType::iterator searchIterator;
+		searchIterator = allInopDistributions.data.find(key);
+		if(searchIterator == allInopDistributions.data.end())
 		{
 			::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection::mapType::value_type toInsert(key, ::TruncatedBinomialDistribution::TruncatedBinomialDistribution(n, firstAllowedValue, lastAllowedValue, 1-operationalProbability));
-			return allDistributions.data.insert(std::move(toInsert)).first->second;
+			return allInopDistributions.data.insert(std::move(toInsert)).first->second;
 		}
 		else return searchIterator->second;
 	}
@@ -552,6 +573,10 @@ namespace networkReliability
 			}
 		}
 	}
+	bool Context::useMinCut() const
+	{
+		return _useMinCut;
+	}
 	std::size_t Context::getNEdges() const
 	{
 		return nEdges;
@@ -559,5 +584,9 @@ namespace networkReliability
 	double Context::getInoperationalProbabilityD() const
 	{
 		return inoperationalProbabilityD;
+	}
+	void Context::setMinCut(bool useMinCut)
+	{
+		this->_useMinCut = useMinCut;
 	}
 }

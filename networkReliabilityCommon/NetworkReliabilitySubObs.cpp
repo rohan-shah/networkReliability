@@ -71,7 +71,14 @@ namespace networkReliability
 				}
 			}
 		}
-		minimumInoperative = minCut;//std::max(0, conditioningCount - fixedInop);
+		if (context.useMinCut())
+		{
+			minimumInoperative = minCut;
+		}
+		else
+		{
+			minimumInoperative = std::max(0, conditioningCount - fixedInop);
+		}
 	}
 	const NetworkReliabilitySubObs::conditioning_type& NetworkReliabilitySubObs::getConditioningProb() const
 	{
@@ -106,9 +113,17 @@ namespace networkReliability
 			return NetworkReliabilityObs(context, state, conditioningCount, 1.0);
 		}
 		const std::size_t nEdges = context.getNEdges();
-		//The minimum and maximum number of deactivated edges (before we do the conditioning step which says we need fixedInop + minCut to reach the end
-		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& distribution = context.getDistribution(std::max(minCut, conditioningCount - fixedInop), couldBeDeactivated.size(), couldBeDeactivated.size());
-		std::size_t nDeactivated = distribution(randomSource);
+		std::size_t nDeactivated;
+		if (context.useMinCut())
+		{
+			const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& distribution = context.getInopDistribution(std::max(minCut, conditioningCount - fixedInop), couldBeDeactivated.size(), couldBeDeactivated.size());
+			nDeactivated = distribution(randomSource);
+		}
+		else
+		{
+			const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& distribution = context.getInopDistribution(std::max(0, conditioningCount - fixedInop), couldBeDeactivated.size(), couldBeDeactivated.size());
+			nDeactivated = distribution(randomSource);
+		}
 
 		boost::shared_array<EdgeState> newState(new EdgeState[nEdges]);
 		memcpy(newState.get(), state.get(), sizeof(EdgeState)*nEdges);
@@ -126,55 +141,65 @@ namespace networkReliability
 			std::swap(indices[generated], *indices.rbegin());
 			indices.pop_back();
 		}
-		conditioning_type newConditioningProb;
-		int newConditioningCount = std::max(fixedInop + minCut, conditioningCount);
-		if(fixedInop + minCut > conditioningCount && minCut > 0)
+		if (context.useMinCut())
 		{
-			boost::math::binomial_distribution<> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
-			if(conditioningCount > fixedInop)
+			conditioning_type newConditioningProb;
+			int newConditioningCount = std::max(fixedInop + minCut, conditioningCount);
+			if(fixedInop + minCut > conditioningCount && minCut > 0)
 			{
-				const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
-				const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
-				newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
+				boost::math::binomial_distribution<> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
+				if(conditioningCount > fixedInop)
+				{
+					const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getInopDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
+					const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
+					newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
 
-				/*double tmp1 = (1 - boost::math::cdf(relevantBinomial, minCut - 1)) / (1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));
-				double tmp2 = 1 - cdf[minCut - conditioningCount + fixedInop - 1].get_d();
-				assert(abs(tmp1 - tmp2) < 1e-6);
-				newConditioningProb = conditioning_type(1 - boost::math::cdf(relevantBinomial, minCut - 1)) / conditioning_type(1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));*/
+					/*double tmp1 = (1 - boost::math::cdf(relevantBinomial, minCut - 1)) / (1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));
+					double tmp2 = 1 - cdf[minCut - conditioningCount + fixedInop - 1].get_d();
+					assert(abs(tmp1 - tmp2) < 1e-6);
+					newConditioningProb = conditioning_type(1 - boost::math::cdf(relevantBinomial, minCut - 1)) / conditioning_type(1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));*/
+				}
+				else
+				{
+					newConditioningProb = (1 - boost::math::cdf(relevantBinomial, minCut - 1));
+				}
 			}
-			else
-			{
-				newConditioningProb = (1 - boost::math::cdf(relevantBinomial, minCut - 1));
-			}
+			else newConditioningProb = 1;
+			return NetworkReliabilityObs(context, newState, newConditioningCount, newConditioningProb*conditioningProb);
 		}
-		else newConditioningProb = 1;
-		return NetworkReliabilityObs(context, newState, newConditioningCount, newConditioningProb*conditioningProb);
+		else
+		{
+			return NetworkReliabilityObs(context, newState, conditioningCount, conditioningProb);
+		}
 	}
 	NetworkReliabilitySubObs::conditioning_type NetworkReliabilitySubObs::getGeneratedObservationConditioningProb() const
 	{
-		conditioning_type newConditioningProb;
-		int newConditioningCount = std::max(fixedInop + minCut, conditioningCount);
-		if (fixedInop + minCut > conditioningCount && minCut > 0)
+		if (context.useMinCut())
 		{
-			boost::math::binomial_distribution<> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
-			if (conditioningCount > fixedInop)
+			conditioning_type newConditioningProb;
+			int newConditioningCount = std::max(fixedInop + minCut, conditioningCount);
+			if (fixedInop + minCut > conditioningCount && minCut > 0)
 			{
-				const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
-				const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
-				newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
-
-				/*double tmp1 = (1 - boost::math::cdf(relevantBinomial, minCut - 1)) / (1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));
-				double tmp2 = 1 - cdf[minCut - conditioningCount + fixedInop - 1].get_d();
-				assert(abs(tmp1 - tmp2) < 1e-6);
-				newConditioningProb = conditioning_type(1 - boost::math::cdf(relevantBinomial, minCut - 1)) / conditioning_type(1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));*/
+				boost::math::binomial_distribution<> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
+				if (conditioningCount > fixedInop)
+				{
+					const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getInopDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
+					const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
+					newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
+					/*double tmp1 = (1 - boost::math::cdf(relevantBinomial, minCut - 1)) / (1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));
+					double tmp2 = 1 - cdf[minCut - conditioningCount + fixedInop - 1].get_d();
+					assert(abs(tmp1 - tmp2) < 1e-6);
+					newConditioningProb = conditioning_type(1 - boost::math::cdf(relevantBinomial, minCut - 1)) / conditioning_type(1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));*/
+				}
+				else
+				{
+					newConditioningProb = (1 - boost::math::cdf(relevantBinomial, minCut - 1));
+				}
 			}
-			else
-			{
-				newConditioningProb = (1 - boost::math::cdf(relevantBinomial, minCut - 1));
-			}
+			else newConditioningProb = 1;
+			return newConditioningProb * conditioningProb;
 		}
-		else newConditioningProb = 1;
-		return newConditioningProb * conditioningProb;
+		return conditioningProb;
 	}
 	const EdgeState* NetworkReliabilitySubObs::getState() const
 	{
@@ -183,5 +208,20 @@ namespace networkReliability
 	int NetworkReliabilitySubObs::getConditioningCount() const
 	{
 		return conditioningCount;
+	}
+	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context)
+		:context(context)
+	{}
+	NetworkReliabilitySubObs NetworkReliabilitySubObs::copyWithConditioningProb(const conditioning_type& conditioningProb) const
+	{
+		NetworkReliabilitySubObs copy(context);
+		copy.conditioningProb = conditioningProb;
+		copy.state = state;
+		copy.radius = radius;
+		copy.minCut = minCut;
+		copy.couldBeDeactivated.insert(copy.couldBeDeactivated.begin(), couldBeDeactivated.begin(), couldBeDeactivated.end());
+		copy.conditioningCount = conditioningCount;
+		copy.fixedInop = fixedInop;
+		return copy;
 	}
 }

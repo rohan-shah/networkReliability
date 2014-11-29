@@ -39,13 +39,17 @@ namespace networkReliability
 		const std::vector<int>& getInterestVertices() const;
 		const std::vector<vertexPosition>& getVertexPositions() const;
 		const mpfr_class& getOperationalProbability() const;
-		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
+		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getInopDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
+		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getOpDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
 		std::size_t getMinCutEdges() const;
 		std::vector<int>& getCapacityVector() const;
 		int getMinCut(std::vector<int>& capacityVector) const;
 		static Context completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability);
 		double getInoperationalProbabilityD() const;
+		bool useMinCut() const;
+		void setMinCut(bool useMinCut);
 	private:
+		bool _useMinCut;
 		//Context& operator=(Context const& other);
 		Context();
 		void constructEdgeDistances();
@@ -60,7 +64,8 @@ namespace networkReliability
 		boost::shared_array<int> edgeDistances;
 		mpfr_class operationalProbability;
 		double inoperationalProbabilityD;
-		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allDistributions;
+		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allInopDistributions;
+		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allOpDistributions;
 		
 		std::size_t minCutEdges;
 

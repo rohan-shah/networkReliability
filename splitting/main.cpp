@@ -13,6 +13,9 @@
 #include "conditionalPMC.h"
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/math/special_functions.hpp>
+#include <fstream>
+#include <boost/random/uniform_real_distribution.hpp>
+#include "AliasMethod.h"
 namespace networkReliability
 {
 	std::string toString(mpfr_class number)
@@ -37,11 +40,13 @@ namespace networkReliability
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
 			("splittingFactor", boost::program_options::value<std::vector<float> >()->multitoken(), "(float) The splitting factor to use at every step")
-			("n", boost::program_options::value<int>(), "(int) The number of graphs initially generated")
+			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
 			("variance", "Output variance estimate")
+			("useMinCut", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Should we use the min-cut algorithm at every step?")
 			("relativeError", "Output relative error")
 			("parts", "Output estimates for transition probabilities")
 			("usePMC", "(Flag) Use PMC for the last step")
+			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the edge distribution of the conditional distribution")
 			("help", "Display this message");
 
 		boost::program_options::variables_map variableMap;
@@ -113,7 +118,7 @@ namespace networkReliability
 			return 0;
 		}
 
-		int n;
+		std::size_t n;
 		if(!readN(variableMap, n))
 		{
 			return 0;
@@ -139,7 +144,7 @@ namespace networkReliability
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
-		double totalSamples = n;
+		double totalSamples = (double)n;
 		for (std::vector<float>::iterator k = splittingFactors.begin(); k != splittingFactors.end(); k++) totalSamples *= *k;
 
 		calculation_type firstMomentSum = 0, secondMomentSum = 0;
@@ -153,6 +158,9 @@ namespace networkReliability
 		std::vector<int> reducedGraphInterestVertices(interestVertices.size());
 		ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
 		turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
+
+		//If we specify the useMinCut option then we need to do resampling. This vector holds the probabilities
+		std::vector<double> resamplingProbabilities;
 
 		for (int i = 0; i < n; i++)
 		{
@@ -194,7 +202,27 @@ namespace networkReliability
 					}
 				}
 			}
-			observations.swap(nextStepObservations);
+			if (!context.useMinCut())
+			{
+				observations.swap(nextStepObservations);
+			}
+			else
+			{
+				observations.clear();
+				resamplingProbabilities.clear();
+				mpfr_class sum = 0;
+				for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
+				{
+					sum += j->getConditioningProb();
+					resamplingProbabilities.push_back((double)j->getConditioningProb());
+				}
+				mpfr_class averageWeight = sum / nextStepObservations.size();
+				aliasMethod::aliasMethod alias(resamplingProbabilities, (double)sum);
+				for (int k = 0; k < nextStepObservations.size(); k++)
+				{
+					observations.push_back(nextStepObservations[alias(randomSource)].copyWithConditioningProb(averageWeight));
+				}
+			}
 		}
 		if (usePMC)
 		{
@@ -252,11 +280,37 @@ namespace networkReliability
 				secondMomentSum += tmp * tmp * turnipInput.n;
 			}
 		}
+		else
+		{
+			if (variableMap.count("outputConditionalDistribution") > 0)
+			{
+				const std::size_t nEdges = context.getNEdges();
+				std::vector<boost::multiprecision::mpz_int> counts(nEdges+1, 0);
+				for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+				{
+					const EdgeState* state = j->getState();
+					int nUpEdges = 0;
+					for (const EdgeState* currentState = state; currentState != state + nEdges; currentState++)
+					{
+						if (*currentState & OP_MASK) nUpEdges++;
+					}
+					counts[nUpEdges]++;
+				}
+				std::string outputConditionalDistribution = variableMap["outputConditionalDistribution"].as<std::string>();
+				std::ofstream outputStream(outputConditionalDistribution.c_str(), std::ios_base::out);
+				for (int j = 0; j < nEdges + 1; j++)
+				{
+					outputStream << std::setw(3) << j << ":  " << counts[j] << std::endl;
+				}
+				outputStream.flush();
+				outputStream.close();
+			}
+		}
 		if (estimateParts)
 		{
 			calculation_type factor = boost::accumulators::sum(conditioningProbabilities[0]) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[0])));
 			std::cout << "Step 0, conditioning on event " << toString(factor) << std::endl;
-			factor = boost::accumulators::sum(probabilities[0]) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[0])));
+			factor = boost::accumulators::sum(probabilities[0]) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(probabilities[0])));
 			std::cout << "Step 0, event " << toString(factor) << std::endl;
 			if (initialRadius > 0)
 			{

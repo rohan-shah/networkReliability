@@ -29,7 +29,7 @@ namespace networkReliability
 		const Context::internalGraph& graph = context.getGraph();
 		const std::size_t nEdges = boost::num_edges(graph);
 		const std::size_t minCutEdges = context.getMinCutEdges();
-		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getDistribution(minCutEdges, nEdges, nEdges);
+		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(minCutEdges, nEdges, nEdges);
 
 		const std::size_t nRemovedEdges = dist(randomSource);
 		boost::shared_array<EdgeState> state(new EdgeState[nEdges]);
@@ -44,8 +44,8 @@ namespace networkReliability
 			std::swap(indices[index], *indices.rbegin());
 			indices.pop_back();
 		}
-		boost::math::binomial_distribution<> relevantDistribution((double)nEdges, context.getInoperationalProbabilityD());
-		double conditioningProb = 1-boost::math::cdf(relevantDistribution, minCutEdges-1);
+		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& originalDist = context.getOpDistribution(0, nEdges, nEdges);
+		mpfr_class conditioningProb = originalDist.getCumulativeProbabilities()[nEdges - minCutEdges];
 		return NetworkReliabilityObs(context, state, (int)minCutEdges, conditioningProb);
 	}
 	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::shared_array<EdgeState> state, int conditioningCount, conditioning_type conditioningProb)
