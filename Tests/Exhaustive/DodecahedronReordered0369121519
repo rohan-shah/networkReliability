@@ -1,0 +1,33 @@
+Command ExhaustiveSearch.exe run from directory "C:\math\Thesis\Implementations\NetworkReliabilityCode\networkReliability\x64\Release" with arguments "--graphFile ..\..\dodecahedronReordered.graphml --interestVertices 0 3 6 9 12 15 19"
+Number of connected subgraphs with that number of edges
+  0:  0
+  1:  0
+  2:  0
+  3:  0
+  4:  0
+  5:  0
+  6:  0
+  7:  0
+  8:  3
+  9:  77
+ 10:  994
+ 11:  8554
+ 12:  54360
+ 13:  266255
+ 14:  1023472
+ 15:  3112081
+ 16:  7495879
+ 17:  14194440
+ 18:  20709120
+ 19:  22523773
+ 20:  17757703
+ 21:  10558538
+ 22:  4934166
+ 23:  1856673
+ 24:  566860
+ 25:  139574
+ 26:  27199
+ 27:  4053
+ 28:  435
+ 29:  30
+ 30:  1

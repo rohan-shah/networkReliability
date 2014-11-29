@@ -77,6 +77,12 @@ namespace networkReliability
 			return 0;
 		}
 
+		if (lines[1] != L"Number of connected subgraphs with that number of edges")
+		{
+			std::cout << "Second line was badly formatted" << std::endl;
+			return 0;
+		}
+
 		/*boost::system::error_code ec;
 		boost::filesystem::path workingDirectory(splitFirstLine[1]);
 		boost::filesystem::current_path(workingDirectory, ec);

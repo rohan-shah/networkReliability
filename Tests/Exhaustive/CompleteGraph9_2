@@ -1,5 +1,5 @@
 Command c:\math\Thesis\Implementations\networkReliability\x64\Release\ExhaustiveSearch.exe run from directory "c:\math\Thesis\Implementations\networkReliability\Tests\Exhaustive" with arguments "--completeGraph 9 --interestVertices 2"
-Number of suitable subgraphs with that number of edges
+Number of connected subgraphs with that number of edges
   0:  0
   1:  1
   2:  42

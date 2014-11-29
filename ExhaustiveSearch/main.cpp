@@ -11,7 +11,7 @@ namespace networkReliability
 {
 	int main(int argc, char **argv)
 	{
-		omp_set_num_threads(4);
+		omp_set_num_threads(6);
 
 		boost::program_options::options_description options("Usage");
 		options.add_options()
@@ -19,6 +19,7 @@ namespace networkReliability
 			("graphFile", boost::program_options::value<std::string>(), "(string) The path to a graphml file. Incompatible with gridGraph")
 			("completeGraph", boost::program_options::value<int>(), "(int) The number of vertices of the complete graph to use. ")
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
+			("countDisconnected", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Should we count the number of disconnected subgraphs?")
 			("help", "Display this message");
 		boost::program_options::variables_map variableMap;
 		try
@@ -41,6 +42,7 @@ namespace networkReliability
 			return 0;
 		}
 
+		bool countDisconnected = variableMap["countDisconnected"].as<bool>();
 		Context context = Context::emptyContext();
 		if(!readContext(variableMap, context, 0.5))
 		{
@@ -92,7 +94,12 @@ namespace networkReliability
 						edgeStatePtr[edgeCounter] = UNFIXED_INOP;
 					}
 				}
-				if(isSingleComponent(context, edgeStatePtr, privateConnectedComponents, stack, colorMap))
+				bool currentGraphConnected = isSingleComponent(context, edgeStatePtr, privateConnectedComponents, stack, colorMap);
+				if(!countDisconnected && currentGraphConnected)
+				{
+					privateSizeCounters[nEdgesThisGraph]++;
+				}
+				else if (countDisconnected && !currentGraphConnected)
 				{
 					privateSizeCounters[nEdgesThisGraph]++;
 				}
@@ -108,14 +115,15 @@ namespace networkReliability
 		}
 		
 		//
-		std::cout << "Command " << argv[0] << "run from directory \"" << boost::filesystem::current_path().string() << "\" with arguments \"";
+		std::cout << "Command " << argv[0] << " run from directory \"" << boost::filesystem::current_path().string() << "\" with arguments \"";
 		for(int i = 1; i < argc-1; i++)
 		{
 			std::cout << argv[i] << " "; 
 		}
 		std::cout << argv[argc-1] << "\"" << std::endl;
 
-		std::cout << "Number of suitable subgraphs with that number of edges" << std::endl;
+		if (countDisconnected) std::cout << "Number of disconnected subgraphs with that number of edges" << std::endl;
+		else std::cout << "Number of connected subgraphs with that number of edges" << std::endl;
 		for(int i = 0; i < nEdges+1; i++)
 		{
 			std::cout << std::setw(3) << i << ":  " << sizeCounters[i] << std::endl;
