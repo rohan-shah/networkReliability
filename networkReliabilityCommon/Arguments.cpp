@@ -2,15 +2,15 @@
 #include <boost/iterator/counting_iterator.hpp>
 namespace networkReliability
 {
-	bool readN(boost::program_options::variables_map& variableMap, int& out)
+	bool readN(boost::program_options::variables_map& variableMap, std::size_t& out)
 	{
-		if(variableMap.count("n") != 1)
+		if (variableMap.count("n") != 1)
 		{
 			std::cout << "Please enter a single value for input `n'" << std::endl;
 			return false;
 		}
-		out = variableMap["n"].as<int>();
-		if(out <= 0)
+		out = variableMap["n"].as<std::size_t>();
+		if (out <= 0)
 		{
 			std::cout << "Input `n' must be a positive integer" << std::endl;
 			return false;
@@ -32,6 +32,7 @@ namespace networkReliability
 		}
 		return true;
 	}
+
 	bool readProbability(boost::program_options::variables_map& variableMap, double& out)
 	{
 		if(variableMap.count("opProbability") != 1)

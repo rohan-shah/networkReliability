@@ -20,7 +20,7 @@ namespace networkReliability
 			("completeGraph", boost::program_options::value<int>(), "(int) The number of vertices in the complete graph to use. Incompatible with graphFile and gridGraph. ")
 			("gridGraph", boost::program_options::value<int>(), "(int) The dimension of the square grid graph to use. Incompatible with graphFile and completeGraph. ")
 			("graphFile", boost::program_options::value<std::string>(), "(string) The path to a graphml file. Incompatible with gridGraph and completeGraph. ")
-			("n", boost::program_options::value<int>(), "(int) The number of simulations to perform. ")
+			("n", boost::program_options::value<std::size_t>(), "(int) The number of simulations to perform. ")
 			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational. ")
 			("seed", boost::program_options::value<int>(), "(int) The random seed used to generate the random graphs. ")
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
@@ -45,7 +45,7 @@ namespace networkReliability
 			std::cout << options << std::endl;
 			return 0;
 		}
-		int n;
+		std::size_t n;
 		if(!readN(variableMap, n))
 		{
 			return 0;
