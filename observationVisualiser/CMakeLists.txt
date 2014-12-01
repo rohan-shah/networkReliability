@@ -1,0 +1,7 @@
+if(QT5_FOUND AND WIN32)
+	add_executable(observationVisualiser main.cpp ObservationVisualiser.cpp ObservationVisualiser.h)
+	target_link_libraries(observationVisualiser PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)
+	target_link_libraries(observationVisualiser PUBLIC networkReliabilityCommon mpfr ${Boost_LIBRARIES})
+	target_compile_features(observationVisualiser PUBLIC cxx_rvalue_references cxx_lambdas)
+	target_include_directories(observationVisualiser PUBLIC ${Boost_INCLUDE_DIRS})
+endif()

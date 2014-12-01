@@ -124,7 +124,7 @@ namespace networkReliability
 		:vertexPositions(vertexPositions), interestVertices(interestVertices), operationalProbability(operationalProbability), _useMinCut(false)
 	{
 		mpfr_class inoperationalProbability = (1 - operationalProbability);
-		inoperationalProbabilityD = (double)inoperationalProbability;
+		inoperationalProbabilityD = inoperationalProbability.convert_to<double>();
 
 		std::size_t nVertices = boost::num_vertices(*unorderedGraph);
 		nEdges = boost::num_edges(*unorderedGraph);
@@ -249,7 +249,7 @@ namespace networkReliability
 		}
 	}
 	Context::Context()
-		:graph(NULL), directedGraph(NULL), vertexPositions(NULL), nEdges(0), _useMinCut(false)
+		:graph(), directedGraph(), vertexPositions(), nEdges(0), _useMinCut(false)
 	{}
 	Context Context::emptyContext()
 	{
@@ -257,20 +257,20 @@ namespace networkReliability
 
 		boost::shared_ptr<Context::internalGraph> graph(new Context::internalGraph(2));
 		boost::add_edge(0, 1, 0, *graph);
-		result.graph.swap(boost::static_pointer_cast<const Context::internalGraph>(graph));
+		result.graph = boost::static_pointer_cast<const Context::internalGraph>(graph);
 
 		boost::shared_ptr<Context::internalDirectedGraph> directedGraph(new Context::internalDirectedGraph(2));
 		boost::add_edge(0, 1, 0, *directedGraph);
 		boost::add_edge(1, 0, 1, *directedGraph);
-		result.directedGraph.swap(boost::static_pointer_cast<const Context::internalDirectedGraph>(directedGraph));
+		result.directedGraph = boost::static_pointer_cast<const Context::internalDirectedGraph>(directedGraph);
 
 		boost::shared_ptr<std::vector<int> > interestVertices(new std::vector<int>(2));
 		(*interestVertices)[0] = 0; (*interestVertices)[1] = 1;
-		result.interestVertices.swap(boost::static_pointer_cast<const std::vector<int> >(interestVertices));
+		result.interestVertices = boost::static_pointer_cast<const std::vector<int> >(interestVertices);
 
 		boost::shared_ptr<std::vector<vertexPosition> > vertexPositions(new std::vector<vertexPosition>(2));
 		(*vertexPositions)[0] = vertexPosition(vertexPosition::first_type(0.0), vertexPosition::second_type(0.0)); (*vertexPositions)[1] = vertexPosition(vertexPosition::first_type(10.0), vertexPosition::second_type(0.0));
-		result.vertexPositions.swap(boost::static_pointer_cast<const std::vector<vertexPosition> >(vertexPositions));
+		result.vertexPositions = boost::static_pointer_cast<const std::vector<vertexPosition> >(vertexPositions);
 		
 		boost::shared_array<int> edgeDistances(new int[4]);
 		edgeDistances[0] = edgeDistances[3] = 0;
@@ -349,7 +349,7 @@ namespace networkReliability
 	}
 	Context Context::fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability)
 	{
-		std::ifstream input(path);
+		std::ifstream input(path.c_str());
 		if(!input.is_open())
 		{
 			successful = false;
@@ -502,7 +502,7 @@ namespace networkReliability
 			current++;
 		}
 
-		this->directedGraph.swap(boost::static_pointer_cast<const internalDirectedGraph>(directedGraph));
+		this->directedGraph = boost::static_pointer_cast<const internalDirectedGraph>(directedGraph);
 	}
 	const Context::internalDirectedGraph& Context::getDirectedGraph() const
 	{

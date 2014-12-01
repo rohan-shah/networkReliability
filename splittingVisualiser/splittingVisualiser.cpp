@@ -7,22 +7,13 @@
 #include <boost/lexical_cast.hpp>
 namespace networkReliability
 {
-	namespace splittingVisualiserImpl
+	bool sortByFirst(Context::vertexPosition const& first, Context::vertexPosition const& second)
 	{
-		template <typename Proj> struct less_by_t 
-		{
-			Proj p;
-			template <typename T>
-			bool operator ()(T const& a, T const& b) const {
-				return p(a) < p(b);
-			};
-		};
-		template <typename Proj> less_by_t<Proj> less_by(Proj p) 
-		{
-			less_by_t<Proj> ret;
-			ret.p = p;
-			return ret;
-		};
+		first.first < second.first;
+	}
+	bool sortBySecond(Context::vertexPosition const& first, Context::vertexPosition const& second)
+	{
+		first.second < second.second;
 	}
 	splittingVisualiser::splittingVisualiser(Context const& context, int seed, float pointSize, int initialRadius)
 		:context(context), pointSize(pointSize), initialRadius(initialRadius), obs(context, randomSource), currentRadius(initialRadius), seed(seed), nextAction(RESIMULATE)
@@ -49,14 +40,10 @@ namespace networkReliability
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
 
-		auto xLambda = [](Context::vertexPosition const& x){ return x.first;};
-		auto yLambda = [](Context::vertexPosition const& x){ return x.second;};
-		auto xPredicate = splittingVisualiserImpl::less_by(xLambda);
-		auto yPredicate = splittingVisualiserImpl::less_by(yLambda);
-		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), xPredicate)->first - pointSize;
-		maxX = std::max_element(vertexPositions.begin(), vertexPositions.end(), xPredicate)->first + pointSize;
-		minY = std::min_element(vertexPositions.begin(), vertexPositions.end(), yPredicate)->second - pointSize;
-		maxY = std::max_element(vertexPositions.begin(), vertexPositions.end(), yPredicate)->second + pointSize;
+		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first - pointSize;
+		maxX = std::max_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first + pointSize;
+		minY = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortBySecond)->second - pointSize;
+		maxY = std::max_element(vertexPositions.begin(), vertexPositions.end(), sortBySecond)->second + pointSize;
 
 		setCentralWidget(graphicsView);
 

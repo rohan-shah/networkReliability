@@ -7,7 +7,6 @@
 #include "ArgumentsMPFR.h"
 #include <boost/filesystem.hpp>
 #include <locale>
-#include <codecvt>
 #include <boost/math/distributions.hpp>
 namespace networkReliability
 {
@@ -55,12 +54,11 @@ namespace networkReliability
 		}
 		mpfr_class compProbability_mpfr = 1 - probability_mpfr;
 
-		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-		std::vector<std::wstring> lines;
+		std::vector<std::string> lines;
 		std::string line;
 		while(std::getline(std::cin, line))
 		{
-			lines.push_back(converter.from_bytes(line.c_str()));
+			lines.push_back(line);
 		}
 		std::size_t nLines = lines.size();
 		if(nLines <= 2)
@@ -69,15 +67,15 @@ namespace networkReliability
 			return 0;
 		}
 
-		std::vector<std::wstring> splitFirstLine;
+		std::vector<std::string> splitFirstLine;
 		boost::split(splitFirstLine, lines[0], boost::is_any_of("\""), boost::token_compress_on);
-		if(splitFirstLine.size() != 5 || !boost::starts_with(splitFirstLine[0], L"Command ") || splitFirstLine[2] != L" with arguments " || splitFirstLine[4] != L"") 
+		if(splitFirstLine.size() != 5 || !boost::starts_with(splitFirstLine[0], "Command ") || splitFirstLine[2] != " with arguments " || splitFirstLine[4] != "") 
 		{
 			std::cout << "First line was badly formatted" << std::endl;
 			return 0;
 		}
 
-		if (lines[1] != L"Number of connected subgraphs with that number of edges")
+		if (lines[1] != "Number of connected subgraphs with that number of edges")
 		{
 			std::cout << "Second line was badly formatted" << std::endl;
 			return 0;

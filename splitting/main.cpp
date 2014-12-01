@@ -15,7 +15,7 @@
 #include <boost/math/special_functions.hpp>
 #include <fstream>
 #include <boost/random/uniform_real_distribution.hpp>
-#include "AliasMethod.h"
+#include "aliasMethod.h"
 namespace networkReliability
 {
 	std::string toString(mpfr_class number)
@@ -69,12 +69,14 @@ namespace networkReliability
 		mpfr_class opProbability;
 		if(!readProbabilityString(variableMap, opProbability))
 		{
+			std::cout << "Unable to read input opProbability" << std::endl;
 			return 0;
 		}
 
 		Context context = Context::emptyContext();
 		if(!readContext(variableMap, context, opProbability))
 		{
+			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
 		}
 

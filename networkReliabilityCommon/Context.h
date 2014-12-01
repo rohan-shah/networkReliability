@@ -9,7 +9,7 @@
 #define HIGH_CAPACITY 100000
 namespace networkReliability
 {
-	class Context : public boost::noncopyable
+	class Context : private boost::noncopyable
 	{
 	public:
 		friend class boost::serialization::access;

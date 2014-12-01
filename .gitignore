@@ -3,4 +3,6 @@ networkReliability.sdf
 networkReliability.v11.suo
 networkReliability.opensdf
 networkReliability.v12.suo
-cache0.*
+debug/
+release/
+cmake

@@ -1,8 +1,7 @@
 #include "NetworkReliabilityObs.h"
-#include <Windows.h>
 #include "Context.h"
-#include "arguments.h"
-#include "argumentsMPFR.h"
+#include "Arguments.h"
+#include "ArgumentsMPFR.h"
 #include <QApplication>
 #include "splittingVisualiser.h"
 namespace networkReliability

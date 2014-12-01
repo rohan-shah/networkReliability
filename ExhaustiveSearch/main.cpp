@@ -1,6 +1,5 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-#include <windows.h>
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include "graphAlgorithms.h"
