@@ -3,6 +3,7 @@
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include <QApplication>
+#include <windows.h>
 #include "splittingVisualiser.h"
 namespace networkReliability
 {
@@ -12,7 +13,7 @@ namespace networkReliability
 		if(!pluginDir)
 		{
 			WCHAR pathArray[500];
-			GetModuleFileName(NULL, pathArray, 500);
+			GetModuleFileNameW(NULL, pathArray, 500);
 			int error = GetLastError();
 			if(error != ERROR_SUCCESS) 
 			{

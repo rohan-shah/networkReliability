@@ -1,3 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
 add_executable(turnip turnip.cpp)
-target_link_libraries(turnip PUBLIC networkReliabilityCommon mpfr ${Boost_LIBRARIES})
+target_link_libraries(turnip PUBLIC networkReliabilityCommon mpfr)
+target_compile_definitions(turnip PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+set_target_properties(turnip PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/ PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/)

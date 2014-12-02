@@ -1,3 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 add_executable(generateGrid generateGrid.cpp)
-target_link_libraries(generateGrid PUBLIC networkReliabilityCommon mpfr ${Boost_LIBRARIES})
+target_link_libraries(generateGrid PUBLIC networkReliabilityCommon mpfr)
+target_compile_definitions(generateGrid PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+if(WIN32)
+	set_target_properties(generateGrid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/ PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/)
+endif()

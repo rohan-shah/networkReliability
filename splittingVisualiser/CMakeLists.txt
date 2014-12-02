@@ -1,8 +1,10 @@
 if(Qt5_FOUND AND WIN32)
-	add_executable(splittingVisualiser splittingVisualiser.cpp splittingVisualiser.h main.cpp)
+	qt5_wrap_cpp(splittingVisualiser_MOC_SOURCES splittingVisualiser.h)
+	add_executable(splittingVisualiser splittingVisualiser.cpp splittingVisualiser.h main.cpp ${splittingVisualiser_MOC_SOURCES})
+	set_target_properties(splittingVisualiser PROPERTIES LINK_FLAGS "/SUBSYSTEM:windows" RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/ PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/)
 	target_link_libraries(splittingVisualiser PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)
-	target_link_libraries(splittingVisualiser PUBLIC networkReliabilityCommon mpfr ${Boost_LIBRARIES})
-	target_compile_features(splittingVisualiser PUBLIC cxx_rvalue_references cxx_lambdas)
+	target_link_libraries(splittingVisualiser PUBLIC networkReliabilityCommon mpfr)
 	target_include_directories(splittingVisualiser PUBLIC ${Boost_INCLUDE_DIRS})
+	target_compile_definitions(splittingVisualiser PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
 endif()
 

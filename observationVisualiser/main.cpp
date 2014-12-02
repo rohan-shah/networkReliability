@@ -14,7 +14,7 @@ namespace networkReliability
 		if(!pluginDir)
 		{
 			WCHAR pathArray[500];
-			GetModuleFileName(NULL, pathArray, 500);
+			GetModuleFileNameW(NULL, pathArray, 500);
 			int error = GetLastError();
 			if(error != ERROR_SUCCESS) 
 			{

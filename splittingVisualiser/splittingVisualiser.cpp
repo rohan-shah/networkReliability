@@ -9,11 +9,11 @@ namespace networkReliability
 {
 	bool sortByFirst(Context::vertexPosition const& first, Context::vertexPosition const& second)
 	{
-		first.first < second.first;
+		return first.first < second.first;
 	}
 	bool sortBySecond(Context::vertexPosition const& first, Context::vertexPosition const& second)
 	{
-		first.second < second.second;
+		return first.second < second.second;
 	}
 	splittingVisualiser::splittingVisualiser(Context const& context, int seed, float pointSize, int initialRadius)
 		:context(context), pointSize(pointSize), initialRadius(initialRadius), obs(context, randomSource), currentRadius(initialRadius), seed(seed), nextAction(RESIMULATE)
