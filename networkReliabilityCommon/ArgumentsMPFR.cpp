@@ -97,7 +97,6 @@ namespace networkReliability
 			}
 			out = Context::completeContext(nVertices, minInterest, probability);
 		}
-		if(variableMap.count("useMinCut") > 0) out.setMinCut(variableMap["useMinCut"].as<bool>());
 		return true;
 	}
 
