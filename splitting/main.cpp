@@ -216,10 +216,10 @@ namespace networkReliability
 				for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
 				{
 					sum += j->getConditioningProb();
-					resamplingProbabilities.push_back((double)j->getConditioningProb());
+					resamplingProbabilities.push_back(j->getConditioningProb().convert_to<double>());
 				}
 				mpfr_class averageWeight = sum / nextStepObservations.size();
-				aliasMethod::aliasMethod alias(resamplingProbabilities, (double)sum);
+				aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>());
 				for (int k = 0; k < nextStepObservations.size(); k++)
 				{
 					observations.push_back(nextStepObservations[alias(randomSource)].copyWithConditioningProb(averageWeight));

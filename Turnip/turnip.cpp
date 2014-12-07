@@ -55,7 +55,7 @@ namespace networkReliability
 		{
 			std::cout << "Error parsing numeric argument opProbability" << std::endl;
 		}
-		double opProbabilityD = (double)opProbability;
+		double opProbabilityD = opProbability.convert_to<double>();
 		Context context = Context::emptyContext();
 		if(!readContext(variableMap, context, opProbabilityD))
 		{
@@ -82,8 +82,8 @@ namespace networkReliability
 		mpfr_class sqrtVarianceEstimate = boost::multiprecision::sqrt(varianceEstimate / input.n);
 		mpfr_class relativeErrorEstimate = sqrtVarianceEstimate / input.estimateFirstMoment;
 
-		std::cout << "Unreliability probability estimate was " << (double)input.estimateFirstMoment << std::endl;
-		std::cout << "Relative error was " << (double)relativeErrorEstimate << std::endl;
+		std::cout << "Unreliability probability estimate was " << input.estimateFirstMoment.convert_to<double>() << std::endl;
+		std::cout << "Relative error was " << relativeErrorEstimate.convert_to<double>() << std::endl;
 		return 0;
 	}
 }
