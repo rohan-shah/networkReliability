@@ -41,8 +41,6 @@ namespace networkReliability
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
 			("splittingFactor", boost::program_options::value<std::vector<float> >()->multitoken(), "(float) The splitting factor to use at every step")
 			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
-			("variance", "Output variance estimate")
-			("relativeError", "Output relative error")
 			("parts", "Output estimates for transition probabilities")
 			("usePMC", "(Flag) Use PMC for the last step")
 			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the edge distribution of the conditional distribution")
@@ -80,8 +78,6 @@ namespace networkReliability
 		}
 
 		bool estimateParts = variableMap.count("parts") > 0;
-		bool variance = variableMap.count("variance") > 0;
-		bool relativeError = variableMap.count("relativeError") > 0;
 		bool usePMC = variableMap.count("usePMC") > 0;
 
 		std::string message;
@@ -323,14 +319,6 @@ namespace networkReliability
 		//This is the variance of the distribution we're taking the empirical expectation of. Hence
 		//the /n in everything below - Variance of the estimate decreases at rate 1/n
 		calculation_type estimatedVariance = secondMomentSum / totalSamples - (estimate * estimate);
-		if (variance)
-		{
-			std::cout << "Estimated variance is " << toString(estimatedVariance/n) << std::endl;
-		}
-		if (relativeError)
-		{
-			std::cout << "Estimated relative error is " << toString(boost::multiprecision::sqrt(estimatedVariance / n) / estimate) << std::endl;
-		}
 		std::cout << "Estimate is " << toString(estimate) << std::endl;
 		return 0;
 	}
