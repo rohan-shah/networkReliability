@@ -145,6 +145,11 @@ namespace networkReliability
 				observations.push_back(std::move(subObs));
 			}
 		}
+		if(observations.size() == 0)
+		{
+			estimate = 0;
+			goto returnEstimate;
+		}
 		for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
 		{
 			nextStepObservations.clear();
@@ -159,6 +164,11 @@ namespace networkReliability
 					nextStepObservations.push_back(std::move(sub));
 				}
 			}
+			if(nextStepObservations.size() == 0)
+			{
+				estimate = 0;
+				goto returnEstimate;
+			}
 			int previousSize = observations.size();
 			//resampling step
 			observations.clear();
@@ -169,6 +179,7 @@ namespace networkReliability
 				sum += j->getConditioningProb();
 				resamplingProbabilities.push_back(j->getConditioningProb().convert_to<double>());
 			}
+			if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
 			mpfr_class averageWeight = sum / previousSize;
 			aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>());
 			for (int k = 0; k < previousSize; k++)
@@ -257,6 +268,7 @@ namespace networkReliability
 				outputStream.close();
 			}
 		}
+returnEstimate:
 		std::cout << "Estimate is " << toString(estimate) << std::endl;
 		return 0;
 	}
