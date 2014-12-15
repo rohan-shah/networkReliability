@@ -92,6 +92,7 @@ namespace networkReliability
 		if(variableMap.count("function") + variableMap.count("functionFile") != 1)
 		{
 			std::cout << "Exactly one of `function' or `functionFile' is requied" << std::endl;
+			return 0;
 		}
 
 		if(nEdges > 36)
@@ -244,7 +245,9 @@ namespace networkReliability
 
 		for(int i = 0; i < (nEdges+1)*functionValues; i++)
 		{
-			std::cout << std::setw(3) << i << ":  " << sizeCounters[i] << std::endl;
+			int functionValue = i % functionValues;
+			int nEdges = i / functionValues;
+			std::cout << std::setw(3) << nEdges << " edges, value " << std::setw(3) << functionValue  << ":  " << sizeCounters[i] << std::endl;
 		}
 		delete[] sizeCounters;
 		return 0;
