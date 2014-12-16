@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-BISON_TARGET(formulaParser formulaParser.yy ${CMAKE_CURRENT_BINARY_DIR}/formulaParser.cpp COMPILE_FLAGS " -L c++ ")
-FLEX_TARGET(formulaScanner formulaScanner.ll ${CMAKE_CURRENT_BINARY_DIR}/formulaScanner.cc)
-ADD_FLEX_BISON_DEPENDENCY(formulaScanner formulaParser)
-
-add_executable(exhaustiveFunctionSearch formulaDriver.h formulaDriver.cpp ${BISON_formulaParser_OUTPUTS} ${FLEX_formulaScanner_OUTPUTS} exhaustiveFunction.cpp)
-target_include_directories(exhaustiveFunctionSearch PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_executable(exhaustiveFunctionSearch exhaustiveFunction.cpp)
 target_link_libraries(exhaustiveFunctionSearch PUBLIC networkReliabilityCommon mpfr)
 target_compile_options(exhaustiveFunctionSearch PRIVATE ${OpenMP_CXX_FLAGS})
 target_compile_definitions(exhaustiveFunctionSearch PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)

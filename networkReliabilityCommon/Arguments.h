@@ -9,5 +9,6 @@ namespace networkReliability
 	bool readProbability(boost::program_options::variables_map& variableMap, double& out);
 	void readSeed(boost::program_options::variables_map& variableMap, boost::mt19937& randomSource);
 	bool readInitialRadius(boost::program_options::variables_map& variableMap, int& out, std::string& message);
+	bool readFunctionFile(boost::program_options::variables_map& variableMap, std::string& functionFile, std::string& function, std::string& message);
 }
 #endif

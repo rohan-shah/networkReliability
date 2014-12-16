@@ -43,6 +43,7 @@ namespace networkReliability
 		mpfr_class opProbability;
 		if(!readProbabilityString(variableMap, opProbability))
 		{
+			std::cout << "Unable to read input `opProbability'" << std::endl;
 			return 0;
 		}
 		mpfr_class inopProbability = 1 - opProbability;
@@ -67,14 +68,14 @@ namespace networkReliability
 		}
 		//Now look at second line
 		int nEdges;
-		int result = sscanf(lines[1].c_str(), "Graph had %d edges", nEdges);
+		int result = sscanf(lines[1].c_str(), "Graph had %d edges", &nEdges);
 		if(result != 1)
 		{
 			std::cout << "Second line was badly formatted" << std::endl;
 			return 0;
 		}
 		int nValues;
-		result = sscanf(lines[2].c_str(), "Function took on %d values", nValues);
+		result = sscanf(lines[2].c_str(), "Function took on %d values", &nValues);
 		if(result != 1)
 		{
 			std::cout << "Third line was badly formatted" << std::endl;
@@ -84,7 +85,7 @@ namespace networkReliability
 		for(std::vector<std::string>::iterator i = lines.begin() + 3; i != lines.end(); i++)
 		{
 			functionData readData;
-			result = sscanf(i->c_str(), "%llu %lli %llu", readData.nEdges, readData.functionValue, readData.count);
+			result = sscanf(i->c_str(), "%llu edges, value %lli : %llu", &readData.nEdges, &readData.functionValue, &readData.count);
 			if(result != 3)
 			{
 				std::cout << "Input data line was badly formatted" << std::endl;
@@ -92,12 +93,14 @@ namespace networkReliability
 			}
 			allFunctionData.push_back(readData);
 		}
-		mpfr_class expectedValue = 0;
+		mpfr_class expectedValue = 0, probabilitySum = 0;
 		for(std::vector<functionData>::iterator i = allFunctionData.begin(); i != allFunctionData.end(); i++)
 		{
 			expectedValue += boost::multiprecision::pow(opProbability, i->nEdges) * boost::multiprecision::pow(inopProbability, nEdges - i->nEdges) * i->count * i->functionValue;
+			probabilitySum += boost::multiprecision::pow(opProbability, i->nEdges) * boost::multiprecision::pow(inopProbability, nEdges - i->nEdges) * i->count;
 		}
-		std::cout << "Expected value was " << expectedValue.str() << std::endl;
+		mpfr_class scaledExpectedValue = expectedValue/probabilitySum;
+		std::cout << "Expected value was " << scaledExpectedValue.str() << std::endl;
 		return 0;
 	}
 }

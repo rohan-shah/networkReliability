@@ -9,46 +9,9 @@
 #include "formulaDriver.h"
 #include <fstream>
 #include <dlfcn.h>
+#include "createFunctionBinary.h"
 namespace networkReliability
 {
-	std::string createFunctionBinary(std::string function, const std::vector<int>& edgeIDs)
-	{
-		char codeFile[] = "./codeFileXXXXXX";
-		mkstemps(codeFile, 0);
-		std::ofstream outputCodeStream(codeFile, std::ios::out);
-		outputCodeStream << "int compiledFunction(long edgeMask)" << std::endl;
-		outputCodeStream << "{" << std::endl;
-		for(std::vector<int>::const_iterator relevantEdgeIterator = edgeIDs.begin(); relevantEdgeIterator != edgeIDs.end(); relevantEdgeIterator++)
-		{
-			outputCodeStream << "\tint e" << *relevantEdgeIterator << " = (edgeMask & (1 << " << *relevantEdgeIterator << ")) >> " << *relevantEdgeIterator << ";" << std::endl;
-		}
-		outputCodeStream << "\treturn " << function << ";" << std::endl;
-		outputCodeStream << "}" << std::endl;
-		outputCodeStream.flush();
-		outputCodeStream.close();
-		char binaryFile[] = "./binaryFileXXXXXX.o";
-		mkstemps(binaryFile, 2);
-
-		std::string binaryFileString = binaryFile;
-		//Compile .o file
-		std::stringstream commandStream;
-		commandStream << "gcc -fpic -x c -O3 -c " << codeFile << " -o " << binaryFileString;
-		system(commandStream.str().c_str());
-		commandStream.str("");
-		commandStream.clear();
-		//We don't need code file any more
-		unlink(codeFile);
-
-		char sharedObjectFile[] = "./binaryFileXXXXXX.so";
-		mkstemps(sharedObjectFile, 3);
-		std::string sharedObjectString = sharedObjectFile;
-		//compile .so file
-		commandStream << "gcc -shared -o " << sharedObjectString << " "  << binaryFileString;
-		system(commandStream.str().c_str());
-		//We don't need .o file any more
-		unlink(binaryFileString.c_str());
-		return sharedObjectString;
-	}
 	int main(int argc, char **argv)
 	{
 		omp_set_num_threads(6);
@@ -89,12 +52,6 @@ namespace networkReliability
 			return 0;
 		}
 		const std::size_t nEdges = context.getNEdges();
-		if(variableMap.count("function") + variableMap.count("functionFile") != 1)
-		{
-			std::cout << "Exactly one of `function' or `functionFile' is requied" << std::endl;
-			return 0;
-		}
-
 		if(nEdges > 36)
 		{
 			std::cout << "This program can be run with at most 36 edges" << std::endl;
@@ -104,27 +61,11 @@ namespace networkReliability
 		const std::size_t nVertices = boost::num_vertices(graph);
 		const std::vector<int> interestVertices = context.getInterestVertices();
 		
-		std::string functionFile, function;
-		if(variableMap.count("function") > 0)
+		std::string functionFile, message, function;
+		if(!readFunctionFile(variableMap, functionFile, function, message))
 		{
-			function = variableMap["function"].as<std::string>();
-			char tmpFunctionFile[] = "./functionFileXXXXXX";
-			mkstemp(tmpFunctionFile);
-			functionFile = tmpFunctionFile;
-			FILE* tmpFunctionFileHandle = fopen(functionFile.c_str(), "w");
-			fwrite(function.c_str(), sizeof(char), function.size(), tmpFunctionFileHandle);
-			fclose(tmpFunctionFileHandle);
-		}
-		else 
-		{
-			functionFile = variableMap["functionFile"].as<std::string>();
-			std::ifstream functionFileStream(functionFile, std::ios::in);
-			if(!functionFileStream)
-			{
-				std::cout << "Unable to read data from function file" << std::endl;
-				return 0;
-			}
-			function = std::string(std::istreambuf_iterator<char>(functionFileStream), std::istreambuf_iterator<char>());
+			std::cout << message << std::endl;
+			return 0;
 		}
 
 		formulaDriver driver(nEdges);
@@ -137,7 +78,7 @@ namespace networkReliability
 		if(parseResult != 0 || driver.message.size() != 0)
 		{
 			std::cout << "Errors parsing function:" << std::endl;
-			std::cout << driver.message;
+			std::cout << driver.message << std::endl;;
 			return 0;
 		}
 		//Work out the range of the function
@@ -217,7 +158,7 @@ namespace networkReliability
 					}
 				}
 				bool currentGraphConnected = isSingleComponent(context, edgeStatePtr, privateConnectedComponents, stack, colorMap);
-				if(currentGraphConnected)
+				if(!currentGraphConnected)
 				{
 					int functionValue = compiledFunction(state);
 					privateSizeCounters[nEdgesThisGraph*functionValues + (functionValue - functionMin)]++;

@@ -1,5 +1,6 @@
 #include "Arguments.h"
 #include <boost/iterator/counting_iterator.hpp>
+#include <fstream>
 namespace networkReliability
 {
 	bool readN(boost::program_options::variables_map& variableMap, std::size_t& out)
@@ -55,5 +56,36 @@ namespace networkReliability
 		{
 			randomSource.seed(variableMap["seed"].as<int>());
 		}
+	}
+	bool readFunctionFile(boost::program_options::variables_map& variableMap, std::string& functionFile, std::string& function, std::string& message)
+	{
+		if(variableMap.count("function") + variableMap.count("functionFile") != 1)
+		{
+			message = "Exactly one of `function' or `functionFile' is requied";
+			return false;
+		}
+		if(variableMap.count("function") > 0)
+		{
+			function = variableMap["function"].as<std::string>();
+			char tmpFunctionFile[] = "./functionFileXXXXXX";
+			mkstemp(tmpFunctionFile);
+			functionFile = tmpFunctionFile;
+			FILE* tmpFunctionFileHandle = fopen(functionFile.c_str(), "w");
+			fwrite(function.c_str(), sizeof(char), function.size(), tmpFunctionFileHandle);
+			fclose(tmpFunctionFileHandle);
+		}
+		else
+		{
+			functionFile = variableMap["functionFile"].as<std::string>();
+			std::ifstream functionFileStream(functionFile, std::ios::in);
+			if(!functionFileStream)
+			{
+					message = "Unable to read data from function file";
+					return false;
+			}
+			function = std::string(std::istreambuf_iterator<char
+>(functionFileStream), std::istreambuf_iterator<char>());
+		}
+		return true;
 	}
 }
