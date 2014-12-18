@@ -66,41 +66,56 @@ namespace networkReliability
 			std::cout << "First line was badly formatted" << std::endl;
 			return 0;
 		}
+
 		//Now look at second line
-		int nEdges;
-		int result = sscanf(lines[1].c_str(), "Graph had %d edges", &nEdges);
+		int nFunctions;
+		int result = sscanf(lines[1].c_str(), "%d functions input", &nFunctions);
 		if(result != 1)
 		{
 			std::cout << "Second line was badly formatted" << std::endl;
-			return 0;
 		}
-		int nValues;
-		result = sscanf(lines[2].c_str(), "Function took on %d values", &nValues);
+
+		//Now look at third line
+		int nEdges;
+		result = sscanf(lines[2].c_str(), "Graph had %d edges", &nEdges);
 		if(result != 1)
 		{
 			std::cout << "Third line was badly formatted" << std::endl;
 			return 0;
 		}
-		std::vector<functionData> allFunctionData;
-		for(std::vector<std::string>::iterator i = lines.begin() + 3; i != lines.end(); i++)
+		int lineCounter = 3;
+		for(int functionCounter = 0; functionCounter < nFunctions; functionCounter++)
 		{
-			functionData readData;
-			result = sscanf(i->c_str(), "%llu edges, value %lli : %llu", &readData.nEdges, &readData.functionValue, &readData.count);
-			if(result != 3)
+			int nValues;
+			result = sscanf(lines[lineCounter++].c_str(), ("Function " + boost::lexical_cast<std::string>(functionCounter) + " took on %d values").c_str(), &nValues);
+			if(result != 1)
 			{
-				std::cout << "Input data line was badly formatted" << std::endl;
+				std::cout << "Line " << lineCounter << " was badly formatted" << std::endl;
 				return 0;
 			}
-			allFunctionData.push_back(readData);
+			std::vector<functionData> allFunctionData;
+			std::vector<std::string>::iterator endIterator = lines.begin() + lineCounter + nValues * nEdges;
+			for(std::vector<std::string>::iterator i = lines.begin() + lineCounter; i != endIterator; i++)
+			{
+				functionData readData;
+				result = sscanf(i->c_str(), "%llu edges, value %lli : %llu", &readData.nEdges, &readData.functionValue, &readData.count);
+				if(result != 3)
+				{
+					std::cout << "Input data line was badly formatted" << std::endl;
+					return 0;
+				}
+				allFunctionData.push_back(readData);
+			}
+			mpfr_class expectedValue = 0, probabilitySum = 0;
+			for(std::vector<functionData>::iterator i = allFunctionData.begin(); i != allFunctionData.end(); i++)
+			{
+				expectedValue += boost::multiprecision::pow(opProbability, i->nEdges) * boost::multiprecision::pow(inopProbability, nEdges - i->nEdges) * i->count * i->functionValue;
+				probabilitySum += boost::multiprecision::pow(opProbability, i->nEdges) * boost::multiprecision::pow(inopProbability, nEdges - i->nEdges) * i->count;
+			}
+			mpfr_class scaledExpectedValue = expectedValue/probabilitySum;
+			std::cout << "Expected value of function " << functionCounter << " was " << scaledExpectedValue.str() << std::endl;
+			lineCounter += nValues*(nEdges+1);
 		}
-		mpfr_class expectedValue = 0, probabilitySum = 0;
-		for(std::vector<functionData>::iterator i = allFunctionData.begin(); i != allFunctionData.end(); i++)
-		{
-			expectedValue += boost::multiprecision::pow(opProbability, i->nEdges) * boost::multiprecision::pow(inopProbability, nEdges - i->nEdges) * i->count * i->functionValue;
-			probabilitySum += boost::multiprecision::pow(opProbability, i->nEdges) * boost::multiprecision::pow(inopProbability, nEdges - i->nEdges) * i->count;
-		}
-		mpfr_class scaledExpectedValue = expectedValue/probabilitySum;
-		std::cout << "Expected value was " << scaledExpectedValue.str() << std::endl;
 		return 0;
 	}
 }

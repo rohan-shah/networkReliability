@@ -1,6 +1,7 @@
 #include "Arguments.h"
 #include <boost/iterator/counting_iterator.hpp>
 #include <fstream>
+#include <boost/algorithm/string.hpp>
 namespace networkReliability
 {
 	bool readN(boost::program_options::variables_map& variableMap, std::size_t& out)
@@ -57,8 +58,9 @@ namespace networkReliability
 			randomSource.seed(variableMap["seed"].as<int>());
 		}
 	}
-	bool readFunctionFile(boost::program_options::variables_map& variableMap, std::string& functionFile, std::string& function, std::string& message)
+	bool readFunctionFile(boost::program_options::variables_map& variableMap, formulaDriver& driver, std::string& function, std::string& message)
 	{
+		std::string functionFile;
 		if(variableMap.count("function") + variableMap.count("functionFile") != 1)
 		{
 			message = "Exactly one of `function' or `functionFile' is requied";
@@ -85,6 +87,33 @@ namespace networkReliability
 			}
 			function = std::string(std::istreambuf_iterator<char
 >(functionFileStream), std::istreambuf_iterator<char>());
+		}
+
+		int parseResult = driver.parse(functionFile);
+		//Unlike the temporary file, if we used one.
+		if(variableMap.count("function")) unlink(functionFile.c_str());
+		//Get out the unique edges that are of interest for this function.
+		for(std::vector<std::vector<int> >::iterator i = driver.edgeIDs.begin(); i != driver.edgeIDs.end(); i++)
+		{
+			std::sort(i->begin(), i->end());
+			i->erase(std::unique(i->begin(), i->end()), i->end());
+		}
+		if(parseResult != 0 || driver.message.size() != 0)
+		{
+		        message = "Errors parsing function: " + driver.message;
+		        return false;
+		}
+		std::vector<std::string> functions;
+		boost::split(functions, function, boost::is_any_of(","), boost::token_compress_on);
+		if(functions.size() != driver.result.size() || functions.size() != driver.edgeIDs.size())
+		{
+			message = "Inconsistent number of functions";
+			return false;
+		}
+		if(functions.size() == 0)
+		{
+			message = "Zero functions were input";
+			return false;
 		}
 		return true;
 	}

@@ -15,8 +15,10 @@ namespace networkReliability
 	class formulaDriver
 	{	
 	public:
-		boost::shared_ptr<node> result;
-		std::vector<int> edgeIDs;
+		std::vector<boost::shared_ptr<node> > result;
+		std::vector<int> currentEdgeIDs;
+		//Somewhere to store the edgeIDs involved in each formula
+		std::vector<std::vector<int> > edgeIDs;
 		formulaDriver(int nEdges);
 		virtual ~formulaDriver();
 		std::string file;

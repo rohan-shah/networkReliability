@@ -37,6 +37,7 @@
 	TIMES	"*"
 	LPAREN	"("
 	RPAREN	")"
+	COMMA	","
 	INTEGER
 	EDGE
 ;
@@ -49,7 +50,18 @@
 
 %%
 %start unit;
-unit: 	exp	{ driver.result = boost::shared_ptr<node>($1); }
+unit: 	exp
+		{ 
+			driver.result.push_back(boost::shared_ptr<node>($1));
+			driver.edgeIDs.push_back(std::move(driver.currentEdgeIDs));
+			driver.currentEdgeIDs.clear();
+		}
+	| unit COMMA exp 		
+		{
+			driver.result.push_back(boost::shared_ptr<node>($3)); 
+			driver.edgeIDs.push_back(std::move(driver.currentEdgeIDs));
+			driver.currentEdgeIDs.clear();
+		}
 exp:
 	  exp PLUS exp		{ $$ = new plusNode($1, $3); }
 	| exp MINUS exp		{ $$ = new minusNode($1, $3); }
@@ -67,7 +79,7 @@ exp:
 				error(@$, ss.str());
 				$$ = NULL;
 			}
-			driver.edgeIDs.push_back($1);
+			driver.currentEdgeIDs.push_back($1);
 			$$ = new edgeNode($1);
 		}
 %%

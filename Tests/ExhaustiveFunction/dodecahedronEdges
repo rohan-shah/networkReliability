@@ -1,0 +1,5 @@
+#PBS -l walltime=0:10:00,nodes=1:ppn=8,vmem=4gb
+cd $PBS_O_WORKDIR
+module unload intel-cc intel-fc
+module load gcc/4.7.2
+OMP_NUM_THREADS=$(cat /proc/cpuinfo | grep processor | wc -l) ~/math/Thesis/Implementations/NetworkReliabilityCode/networkReliability/release/ExhaustiveFunctionSearch/exhaustiveFunctionSearch --graphFile ~/math/Thesis/Implementations/NetworkReliabilityCode/Graphs/dodecahedronReordered.graphml --interestVertices 0 19 --function $(echo -n e0; for i in `seq 1 29`; do echo -n ,e$i; done) > dodecahedronEdgesOutput

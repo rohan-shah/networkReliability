@@ -4,6 +4,6 @@
 #include <vector>
 namespace networkReliability
 {
-	std::string createFunctionBinary(std::string function, const std::vector<int>& edgeIDs);
+	bool createFunctionsBinary(std::string function, const std::vector<std::vector<int> >& edgeIDs, std::string& message, std::string& outputFile);
 }
 #endif

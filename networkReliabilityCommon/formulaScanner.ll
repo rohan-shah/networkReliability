@@ -26,6 +26,7 @@ loc.step();
 "*"		return yy::formulaParser::make_TIMES(loc);
 "("		return yy::formulaParser::make_LPAREN(loc);
 ")"		return yy::formulaParser::make_RPAREN(loc);
+","		return yy::formulaParser::make_COMMA(loc);
 {integer}	{
 			errno = 0;
 			long n = strtol(yytext, NULL, 10);

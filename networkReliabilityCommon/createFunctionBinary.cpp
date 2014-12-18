@@ -2,21 +2,32 @@
 #include <fstream>
 #include <sstream>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 namespace networkReliability
 {
-	std::string createFunctionBinary(std::string function, const std::vector<int>& edgeIDs)
+	bool createFunctionsBinary(std::string function, const std::vector<std::vector<int> >& edgeIDs, std::string& message, std::string& outputFile)
 	{
+		std::vector<std::string> functions;
+		boost::split(functions, function, boost::is_any_of(","), boost::token_compress_on);
+		if(functions.size() != edgeIDs.size())
+		{
+			message = "Inconsistent number of functions";
+			return false;
+		}
 		char codeFile[] = "./codeFileXXXXXX";
 		mkstemps(codeFile, 0);
 		std::ofstream outputCodeStream(codeFile, std::ios::out);
-		outputCodeStream << "int compiledFunction(long edgeMask)" << std::endl;
-		outputCodeStream << "{" << std::endl;
-		for(std::vector<int>::const_iterator relevantEdgeIterator = edgeIDs.begin(); relevantEdgeIterator != edgeIDs.end(); relevantEdgeIterator++)
+		for(int i = 0; i  < functions.size(); i++)
 		{
-			outputCodeStream << "\tint e" << *relevantEdgeIterator << " = (edgeMask & (1 << " << *relevantEdgeIterator << ")) >> " << *relevantEdgeIterator << ";" << std::endl;
+			outputCodeStream << "int compiledFunction" << i << "(long edgeMask)" << std::endl;
+			outputCodeStream << "{" << std::endl;
+			for(std::vector<int>::const_iterator relevantEdgeIterator = edgeIDs[i].begin(); relevantEdgeIterator != edgeIDs[i].end(); relevantEdgeIterator++)
+			{
+				outputCodeStream << "\tint e" << *relevantEdgeIterator << " = (edgeMask & (1 << " << *relevantEdgeIterator << ")) >> " << *relevantEdgeIterator << ";" << std::endl;
+			}
+			outputCodeStream << "\treturn " << functions[i] << ";" << std::endl;
+			outputCodeStream << "}" << std::endl;
 		}
-		outputCodeStream << "\treturn " << function << ";" << std::endl;
-		outputCodeStream << "}" << std::endl;
 		outputCodeStream.flush();
 		outputCodeStream.close();
 		char binaryFile[] = "./binaryFileXXXXXX.o";
@@ -40,6 +51,7 @@ namespace networkReliability
 		system(commandStream.str().c_str());
 		//We don't need .o file any more
 		unlink(binaryFileString.c_str());
-		return sharedObjectString;
+		outputFile = sharedObjectString;
+		return true;
 	}
 }

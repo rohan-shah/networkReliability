@@ -41,7 +41,7 @@ namespace networkReliability
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
 			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
 			("nPMC", boost::program_options::value<std::size_t>()->default_value(0ULL)->implicit_value(0ULL), "(int) Number of PMC samples to use")
-			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the edge distribution of the conditional distribution")
+			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
 			("help", "Display this message");
 
 		boost::program_options::variables_map variableMap;
@@ -186,7 +186,6 @@ namespace networkReliability
 			{
 				observations.push_back(nextStepObservations[alias(randomSource)].copyWithConditioningProb(averageWeight));
 			}
-			observations.swap(nextStepObservations);
 		}
 		if (nPMC > 0)
 		{
@@ -247,23 +246,39 @@ namespace networkReliability
 			if (variableMap.count("outputConditionalDistribution") > 0)
 			{
 				const std::size_t nEdges = context.getNEdges();
-				std::vector<boost::multiprecision::mpz_int> counts(nEdges+1, 0);
+				std::string outputConditionalDistribution = variableMap["outputConditionalDistribution"].as<std::string>();
+				std::ofstream outputStream(outputConditionalDistribution.c_str(), std::ios_base::binary);
+				outputStream.write((char*)&nEdges, sizeof(std::size_t));
+				const std::size_t sampleSize = observations.size();
+				outputStream.write((char*)&sampleSize, sizeof(std::size_t));
+				//write by individual bits
+				int nStoredBits = 0;
+				unsigned int currentValue = 0;
 				for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 				{
 					const EdgeState* state = j->getState();
-					int nUpEdges = 0;
-					for (const EdgeState* currentState = state; currentState != state + nEdges; currentState++)
+					for(int k = 0; k < nEdges; k++)
 					{
-						if (*currentState & OP_MASK) nUpEdges++;
+						nStoredBits++;
+						currentValue<<=1;
+						currentValue += ((state[k] & OP_MASK) > 0);
+						if(nStoredBits == sizeof(int)*8) 
+						{
+							outputStream.write((char*)&currentValue, sizeof(int));
+							currentValue = nStoredBits = 0;
+						}
 					}
-					counts[nUpEdges]++;
 				}
-				std::string outputConditionalDistribution = variableMap["outputConditionalDistribution"].as<std::string>();
-				std::ofstream outputStream(outputConditionalDistribution.c_str(), std::ios_base::out);
-				for (int j = 0; j < nEdges + 1; j++)
+				if(nStoredBits != 0) outputStream.write((char*)&currentValue, sizeof(int));
+				//Alternative is to write by whole bytes
+				/*for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 				{
-					outputStream << std::setw(3) << j << ":  " << counts[j] << std::endl;
-				}
+					const EdgeState* state = j->getState();
+					for(int k = 0; k < nEdges; k++)
+					{
+						outputStream << (char)((state[k] & OP_MASK) > 0);
+					}
+				}*/
 				outputStream.flush();
 				outputStream.close();
 			}
