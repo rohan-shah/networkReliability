@@ -58,6 +58,7 @@ namespace networkReliability
 			randomSource.seed(variableMap["seed"].as<int>());
 		}
 	}
+#ifdef HAS_BISON_AND_FLEX
 	bool readFunctionFile(boost::program_options::variables_map& variableMap, formulaDriver& driver, std::string& function, std::string& message)
 	{
 		std::string functionFile;
@@ -117,4 +118,5 @@ namespace networkReliability
 		}
 		return true;
 	}
+#endif
 }
