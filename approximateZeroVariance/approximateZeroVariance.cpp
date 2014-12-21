@@ -18,6 +18,8 @@ namespace networkReliability
 			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational. ")
 			("seed", boost::program_options::value<int>(), "(int) The random seed used to generate the random graphs. ")
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
+			("relativeError", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Output relative error estimate")
+			("standardDeviation", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Output standard deviation estimate")
 			("help", "Display this message");
 		
 		boost::program_options::variables_map variableMap;
@@ -58,6 +60,8 @@ namespace networkReliability
 		}
 		boost::mt19937 randomSource;
 		readSeed(variableMap, randomSource);
+		bool relativeError = variableMap["relativeError"].as<bool>();
+		bool standardDeviation = variableMap["standardDeviation"].as<bool>();
 		const std::size_t nEdges = context.getNEdges();
 		
 		boost::random::uniform_01<float,float> uniformReal;
@@ -66,7 +70,7 @@ namespace networkReliability
 		//Vector used for mincut calculations
 		std::vector<int> state(2*nEdges);
 		//Sum over all the n simulations
-		mpfr_class sum = 0;
+		mpfr_class firstMoment = 0, secondMoment = 0;
 		//likelihood ratio of current term
 		mpfr_class currentLikelihoodRatio = 0;
 
@@ -165,10 +169,23 @@ namespace networkReliability
 					}
 				}
 			}
-			sum += indicatorValue * currentLikelihoodRatio;
+			firstMoment += indicatorValue * currentLikelihoodRatio;
+			secondMoment += indicatorValue * currentLikelihoodRatio * currentLikelihoodRatio;
 		}
-		mpfr_class estimate = (sum / n);
+		mpfr_class estimate = (firstMoment / n);
+		mpfr_class variance = (secondMoment/n) - estimate*estimate;
+		mpfr_class sqrtVariance = boost::multiprecision::sqrt(variance / n);
 		std::cout << "Estimated unreliability was " << estimate.convert_to<std::string>() << std::endl;
+		if(relativeError)
+		{
+			mpfr_class relativeError = sqrtVariance / estimate;
+			std::cout << "Estimated relative error was " << relativeError.convert_to<std::string>() << std::endl;
+		}
+		if(standardDeviation)
+		{
+			mpfr_class standardDeviation = boost::multiprecision::sqrt(variance);
+			std::cout << "Standard deviation was " << standardDeviation << std::endl;
+		}
 		return 0;
 	}
 }
