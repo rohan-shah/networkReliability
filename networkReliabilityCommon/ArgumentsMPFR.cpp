@@ -30,7 +30,7 @@ namespace networkReliability
 		}
 		if (variableMap.count("graphFile") + variableMap.count("gridGraph") + variableMap.count("torusGraph") + variableMap.count("completeGraph") != 1)
 		{
-			std::cout << "Please enter exactly one of `completeGrahp', `gridGraph', `graphFile' or `torusGraph'" << std::endl;
+			std::cout << "Please enter exactly one of `completeGraph', `gridGraph', `graphFile' or `torusGraph'" << std::endl;
 			return false;
 		}
 		else if (variableMap.count("graphFile") == 1)

@@ -366,7 +366,16 @@ namespace networkReliability
 		properties.property("x", xProperty);
 		properties.property("y", yProperty);
 
-		boost::read_graphml(input, *graph, properties);
+		try
+		{
+			boost::read_graphml(input, *graph, properties);
+		}
+		catch(...)
+		{
+			message = "Error parsing graphml file";
+			successful = false;
+			return Context();
+		}
 		const std::size_t nEdges = boost::num_edges(*graph);
 
 		boost::shared_ptr<std::vector<vertexPosition> > vertexPositions(new std::vector<vertexPosition>());
