@@ -553,7 +553,7 @@ namespace networkReliability
 			//Otherwise just call max-flow a bunch of times (the naive version)
 			else
 			{
-				std::vector<int> maxFlowResults(nInterestVertices * nInterestVertices, std::numeric_limits<int>::max());
+				maxFlowResults.resize(nInterestVertices * nInterestVertices, std::numeric_limits<int>::max());
 				typedef boost::property_map<Context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMapType;
 				typedef boost::property_map<Context::internalDirectedGraph, boost::vertex_index_t>::const_type vertexIndexMapType;
 				typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMapType> edgeCapacityMapType;

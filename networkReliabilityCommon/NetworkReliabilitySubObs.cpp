@@ -12,6 +12,13 @@ namespace networkReliability
 	{
 		std::vector<int>& capacityVector = context.getCapacityVector();
 		const std::size_t nEdges = boost::num_edges(context.getGraph());
+		//Profiling has indicated that the push_back below costs in terms of calls to new[]. 
+		int couldBeDeactivatedCounter = 0;
+		for(int i = 0; i < nEdges; i++)
+		{
+			if(state[i] & (UNFIXED_INOP | UNFIXED_OP)) couldBeDeactivatedCounter++;
+		}
+		couldBeDeactivated.reserve(couldBeDeactivatedCounter);
 		for(int i = 0; i < nEdges; i++)
 		{
 			if(state[i] == FIXED_OP) 

@@ -112,6 +112,9 @@ namespace networkReliability
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		//Working data for alias method
+		std::vector<std::ptrdiff_t> aliasMethodTemporary1, aliasMethodTemporary2;
+		std::vector<std::pair<double, std::ptrdiff_t> > aliasMethodTemporary3;
 
 		calculation_type estimate = 0;
 
@@ -181,7 +184,7 @@ namespace networkReliability
 			}
 			if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
 			mpfr_class averageWeight = sum / previousSize;
-			aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>());
+			aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
 			for (int k = 0; k < previousSize; k++)
 			{
 				observations.push_back(nextStepObservations[alias(randomSource)].copyWithConditioningProb(averageWeight));
