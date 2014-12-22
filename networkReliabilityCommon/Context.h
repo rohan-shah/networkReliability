@@ -23,18 +23,18 @@ namespace networkReliability
 		> internalDirectedGraph;
 		typedef std::pair<float, float> vertexPosition;
 
-		Context(boost::shared_ptr<const inputGraph> graph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability);
+		Context(boost::shared_ptr<const inputGraph> graph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances = boost::shared_array<double>());
 
 		Context& operator=(Context&& other);
 		Context(Context&& other);
 		~Context();
 		
 		static Context gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpfr_class& operationalProbability);
-		static Context fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability);
+		static Context fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability, bool useSpatialDistances);
 		static Context emptyContext();
 		const internalGraph& getGraph() const;
 		const internalDirectedGraph& getDirectedGraph() const;
-		const int* getEdgeDistances() const;
+		const double* getEdgeDistances() const;
 		std::size_t getNEdges() const;
 		const std::vector<int>& getInterestVertices() const;
 		const std::vector<vertexPosition>& getVertexPositions() const;
@@ -61,7 +61,7 @@ namespace networkReliability
 
 		std::size_t nEdges;
 
-		boost::shared_array<int> edgeDistances;
+		boost::shared_array<double> edgeDistances;
 		mpfr_class operationalProbability;
 		double inoperationalProbabilityD;
 		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allInopDistributions;

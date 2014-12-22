@@ -42,6 +42,7 @@ namespace networkReliability
 			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
 			("nPMC", boost::program_options::value<std::size_t>()->default_value(0ULL)->implicit_value(0ULL), "(int) Number of PMC samples to use")
 			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
+			("useSpatialDistances", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Use spatial rather than combinatoric distances")
 			("help", "Display this message");
 
 		boost::program_options::variables_map variableMap;

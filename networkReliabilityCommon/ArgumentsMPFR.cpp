@@ -40,10 +40,14 @@ namespace networkReliability
 				std::cout << "Input `interestVertices' must contain at least two vertex indices" << std::endl;
 				return false;
 			}
-
+			bool useSpatialDistances = false;
+			if(variableMap.count("useSpatialDistances") > 0)
+			{
+				useSpatialDistances = variableMap["useSpatialDistances"].as<bool>();
+			}
 			bool successful;
 			std::string message;
-			out = Context::fromFile(variableMap["graphFile"].as<std::string>(), successful, interestVertices, message, probability);
+			out = Context::fromFile(variableMap["graphFile"].as<std::string>(), successful, interestVertices, message, probability, useSpatialDistances);
 			if (!successful)
 			{
 				std::cout << "Error reading graphml file. " << message << ". Exiting..." << std::endl;
@@ -58,7 +62,11 @@ namespace networkReliability
 				std::cout << "Input `interestVertices' must contain at least two vertex indices" << std::endl;
 				return false;
 			}
-
+			if(variableMap.count("useSpatialDistances") > 1)
+			{
+				std::cout << "Argument `useSpatialDistances' is only valid with argument `graphFile'" << std::endl;
+				return false;
+			}
 			int gridDimension = variableMap["gridGraph"].as<int>();
 			if (gridDimension <= 0)
 			{
@@ -93,6 +101,11 @@ namespace networkReliability
 			if (minInterest > nVertices)
 			{
 				std::cout << "Input interestVertices was too large" << std::endl;
+				return false;
+			}
+			if(variableMap.count("useSpatialDistances") > 1)
+			{
+				std::cout << "Argument `useSpatialDistances' is only valid with argument `graphFile'" << std::endl;
 				return false;
 			}
 			out = Context::completeContext(nVertices, minInterest, probability);

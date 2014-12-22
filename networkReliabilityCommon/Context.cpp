@@ -120,7 +120,7 @@ namespace networkReliability
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
 		std::swap(_useMinCut, other._useMinCut);
 	}
-	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability)
+	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances)
 		:vertexPositions(vertexPositions), interestVertices(interestVertices), operationalProbability(operationalProbability), _useMinCut(false)
 	{
 		mpfr_class inoperationalProbability = (1 - operationalProbability);
@@ -166,7 +166,14 @@ namespace networkReliability
 
 		graph = orderedGraph;
 		constructDirectedGraph();
-		constructEdgeDistances();
+		if(inputEdgeDistances)
+		{
+			edgeDistances = inputEdgeDistances;
+		}
+		else
+		{
+			constructEdgeDistances();
+		}
 
 		//are we looking at the all-terminal reliability problem?
 		if(interestVertices->size() == nVertices)
@@ -219,8 +226,8 @@ namespace networkReliability
 		boost::johnson_all_pairs_shortest_paths(*graph, tmp, boost::weight_map(edgeWeights));
 		
 		
-		edgeDistances = boost::shared_array<int>(new int[nEdges * nEdges]);
-		int* edgeDistancePtr = edgeDistances.get();
+		edgeDistances = boost::shared_array<double>(new double[nEdges * nEdges]);
+		double* edgeDistancePtr = edgeDistances.get();
 		memset(edgeDistancePtr, (int)(sizeof(int)*nEdges*nEdges), 0);
 
 		Context::internalGraph::edge_iterator currentFirst, end;
@@ -272,7 +279,7 @@ namespace networkReliability
 		(*vertexPositions)[0] = vertexPosition(vertexPosition::first_type(0.0), vertexPosition::second_type(0.0)); (*vertexPositions)[1] = vertexPosition(vertexPosition::first_type(10.0), vertexPosition::second_type(0.0));
 		result.vertexPositions = boost::static_pointer_cast<const std::vector<vertexPosition> >(vertexPositions);
 		
-		boost::shared_array<int> edgeDistances(new int[4]);
+		boost::shared_array<double> edgeDistances(new double[4]);
 		edgeDistances[0] = edgeDistances[3] = 0;
 		edgeDistances[1] = edgeDistances[2] = 1;
 		result.edgeDistances.swap(edgeDistances);
@@ -347,7 +354,7 @@ namespace networkReliability
 	{
 		return *vertexPositions;
 	}
-	Context Context::fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability)
+	Context Context::fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability, bool useSpatialDistances)
 	{
 		std::ifstream input(path.c_str());
 		if(!input.is_open())
@@ -438,9 +445,46 @@ namespace networkReliability
 			message = "Invalid vertex indices entered for input interestVertices";
 			return Context();
 		}
-		return Context(graph, ordering, interestVertices, vertexPositions, operationalProbability);
+		boost::shared_array<double> inputEdgeDistances;
+		if(useSpatialDistances)
+		{
+			inputEdgeDistances.reset(new double[nEdges*nEdges]);
+			memset(inputEdgeDistances.get(), 0, sizeof(double)*nEdges*nEdges);
+			Context::inputGraph::edge_iterator end, firstEdge, secondEdge;
+
+			boost::tie(firstEdge, end) = boost::edges(*graph);
+			std::vector<vertexPosition> edgeCentres(nEdges);
+			std::vector<int>::iterator orderIterator = ordering->begin();
+			for(;firstEdge != end; firstEdge++,orderIterator++)
+			{
+				int edgeIndex = *orderIterator;
+				vertexPosition& currentCentre = edgeCentres[edgeIndex];
+				currentCentre.first = ((*vertexPositions)[firstEdge->m_source].first + (*vertexPositions)[firstEdge->m_target].first)/2;
+				currentCentre.second = ((*vertexPositions)[firstEdge->m_source].second + (*vertexPositions)[firstEdge->m_target].second)/2;
+			}
+
+			boost::tie(firstEdge, end) = boost::edges(*graph);
+			orderIterator = ordering->begin();
+			for(;firstEdge != end; firstEdge++, orderIterator++)
+			{
+				int firstEdgeIndex = *orderIterator;
+				boost::tie(secondEdge, end) = boost::edges(*graph);
+				vertexPosition& firstEdgeCentre = edgeCentres[firstEdgeIndex];
+				std::vector<int>::iterator secondOrderIterator = ordering->begin();
+				for(; secondEdge != end; secondEdge++, secondOrderIterator++)
+				{
+					if(firstEdge != secondEdge)
+					{
+						int secondEdgeIndex = *secondOrderIterator;
+						vertexPosition& secondEdgeCentre = edgeCentres[secondEdgeIndex];
+						inputEdgeDistances[firstEdgeIndex + secondEdgeIndex * nEdges] = sqrt((firstEdgeCentre.first - secondEdgeCentre.first)*(firstEdgeCentre.first - secondEdgeCentre.first) + (firstEdgeCentre.second - secondEdgeCentre.second)*(firstEdgeCentre.second - secondEdgeCentre.second));
+					}
+				}
+			}
+		}
+		return Context(graph, ordering, interestVertices, vertexPositions, operationalProbability, inputEdgeDistances);
 	}
-	const int* Context::getEdgeDistances() const
+	const double* Context::getEdgeDistances() const
 	{
 		return edgeDistances.get();
 	}

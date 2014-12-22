@@ -77,7 +77,7 @@ namespace networkReliability
 		
 		const EdgeState* oldEdgeStatesPtr = state.get();
 
-		const int* edgeDistances = context.getEdgeDistances();
+		const double* edgeDistances = context.getEdgeDistances();
 
 		std::size_t sourceEdge = 0;
 		while(sourceEdge < nEdges)
