@@ -6,6 +6,7 @@
 #include <boost/shared_array.hpp>
 #include <vector>
 #include "TruncatedBinomialDistribution.h"
+#include "allPointsMaxFlow.hpp"
 #define HIGH_CAPACITY 100000
 namespace networkReliability
 {
@@ -75,6 +76,9 @@ namespace networkReliability
 		mutable std::vector<internalDirectedGraph::edge_descriptor> vertexPredecessorVector;
 		mutable std::vector<boost::default_color_type> colorVector;
 		mutable std::vector<int> distanceVector;
+		//Temporary storage for Context::getMinCut()
+		mutable std::vector<int> maxFlowResults;
+		mutable allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
 	};
 }
 namespace boost

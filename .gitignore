@@ -6,3 +6,4 @@ networkReliability.v12.suo
 debug/
 release/
 cmake
+relWithDebInfo/

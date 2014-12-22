@@ -12,7 +12,6 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/iterator/counting_iterator.hpp>
-#include "allPointsMaxFlow.hpp"
 namespace networkReliability
 {
 	namespace ContextImpl
@@ -583,8 +582,7 @@ namespace networkReliability
 			//Use the all-points max flow
 			if(interestVertices->size() * (interestVertices->size() - 1) / 2 > nVertices - 1)
 			{
-				std::vector<int> maxFlowResults(nVertices * nVertices, std::numeric_limits<int>::max());
-				allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
+				maxFlowResults.resize(nVertices * nVertices, std::numeric_limits<int>::max());
 				allPointsMaxFlow::allPointsMaxFlow<Context::internalDirectedGraph, int>(maxFlowResults, capacityVector, *directedGraph, scratch);
 				int minimum = std::numeric_limits<int>::max();
 				for(std::size_t i = 0; i < nInterestVertices; i++)
@@ -599,7 +597,7 @@ namespace networkReliability
 			//Otherwise just call max-flow a bunch of times (the naive version)
 			else
 			{
-				std::vector<int> maxFlowResults(nInterestVertices * nInterestVertices, std::numeric_limits<int>::max());
+				maxFlowResults.resize(nInterestVertices * nInterestVertices, std::numeric_limits<int>::max());
 				typedef boost::property_map<Context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMapType;
 				typedef boost::property_map<Context::internalDirectedGraph, boost::vertex_index_t>::const_type vertexIndexMapType;
 				typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMapType> edgeCapacityMapType;
