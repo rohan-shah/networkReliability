@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles Arguments.cpp ArgumentsMPFR.cpp Context.cpp NetworkReliabilityObs.cpp NetworkReliabilitySubObs.cpp Turnip.cpp ZoomGraphicsView.cpp computeConditionalProb.cpp conditionalPMC.cpp createFunctionBinary.cpp formulaDriver.cpp graphAlgorithms.cpp)
-set(HeaderFiles Arguments.h ArgumentsMPFR.h Context.h EdgeState.h NetworkReliabilityObs.h NetworkReliabilitySubObs.h Turnip.h ZoomGraphicsView.h computeConditionalProb.h conditionalPMC.h createFunctionBinary.h formulaDriver.h graphAlgorithms.h includeMPFR.h astCode.hpp)
+set(CppFiles Arguments.cpp ArgumentsMPFR.cpp Context.cpp NetworkReliabilityObs.cpp NetworkReliabilitySubObs.cpp Turnip.cpp ZoomGraphicsView.cpp computeConditionalProb.cpp conditionalPMC.cpp createFunctionBinary.cpp formulaDriver.cpp graphAlgorithms.cpp empiricalDistribution.cpp)
+set(HeaderFiles Arguments.h ArgumentsMPFR.h Context.h EdgeState.h NetworkReliabilityObs.h NetworkReliabilitySubObs.h Turnip.h ZoomGraphicsView.h computeConditionalProb.h conditionalPMC.h createFunctionBinary.h formulaDriver.h graphAlgorithms.h includeMPFR.h astCode.hpp empiricalDistribution.h)
 
 if(WIN32)
 	list(REMOVE_ITEM CppFiles createFunctionBinary.cpp formulaDriver.cpp)
