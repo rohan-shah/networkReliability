@@ -16,6 +16,7 @@
 #include <fstream>
 #include <boost/random/uniform_real_distribution.hpp>
 #include "aliasMethod.h"
+#include "empiricalDistribution.h"
 namespace networkReliability
 {
 	std::string toString(mpfr_class number)
@@ -249,42 +250,20 @@ namespace networkReliability
 			estimate = (boost::accumulators::sum(probabilities[finalSplittingStep]) / n);
 			if (variableMap.count("outputConditionalDistribution") > 0)
 			{
-				const std::size_t nEdges = context.getNEdges();
-				std::string outputConditionalDistribution = variableMap["outputConditionalDistribution"].as<std::string>();
-				std::ofstream outputStream(outputConditionalDistribution.c_str(), std::ios_base::binary);
-				outputStream.write((char*)&nEdges, sizeof(std::size_t));
-				const std::size_t sampleSize = observations.size();
-				outputStream.write((char*)&sampleSize, sizeof(std::size_t));
-				//write by individual bits
-				int nStoredBits = 0;
-				unsigned int currentValue = 0;
-				for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+				empiricalDistribution outputDistributions(false, context.getNEdges());
+				for(std::vector<NetworkReliabilitySubObs>::iterator i = observations.begin(); i != observations.end(); i++)
 				{
-					const EdgeState* state = j->getState();
-					for(int k = 0; k < nEdges; k++)
-					{
-						nStoredBits++;
-						currentValue<<=1;
-						currentValue += ((state[k] & OP_MASK) > 0);
-						if(nStoredBits == sizeof(int)*8) 
-						{
-							outputStream.write((char*)&currentValue, sizeof(int));
-							currentValue = nStoredBits = 0;
-						}
-					}
+					outputDistributions.add(i->getState());
 				}
-				if(nStoredBits != 0) outputStream.write((char*)&currentValue, sizeof(int));
-				//Alternative is to write by whole bytes
-				/*for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+				try
 				{
-					const EdgeState* state = j->getState();
-					for(int k = 0; k < nEdges; k++)
-					{
-						outputStream << (char)((state[k] & OP_MASK) > 0);
-					}
-				}*/
-				outputStream.flush();
-				outputStream.close();
+					outputDistributions.save(variableMap["outputConditionalDistribution"].as<std::string>());
+				}
+				catch(std::runtime_error& err)
+				{
+					std::cout << "Error saving empirical distributions to file: " << err.what() << std::endl;
+					return 0;
+				}
 			}
 		}
 returnEstimate:

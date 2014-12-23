@@ -3,6 +3,7 @@
 #include "ArgumentsMPFR.h"
 #include <fstream>
 #include "formulaDriver.h"
+#include "empiricalDistribution.h"
 namespace networkReliability
 {
 	int main(int argc, char **argv)
@@ -38,15 +39,9 @@ namespace networkReliability
 			return 0;
 		}
 		std::string distributionFile = variableMap["distributionFile"].as<std::string>();
-		std::ifstream distributionsStream(distributionFile, std::ios_base::in | std::ios_base::binary);
-		if(!distributionsStream)
-		{
-			std::cout << "Unable to open specified file" << std::endl;
-			return 0;
-		}
-		std::size_t nEdges, sampleSize;
-		distributionsStream.read((char*)&nEdges, sizeof(std::size_t));
-		distributionsStream.read((char*)&sampleSize, sizeof(std::size_t));
+		empiricalDistribution loadedDistribution = empiricalDistribution::load(distributionFile);
+		const std::size_t nEdges = loadedDistribution.getNEdges();
+		const std::size_t sampleSize = loadedDistribution.getNSamples();
 
 		std::string function, message;
 		formulaDriver driver(nEdges);
@@ -61,48 +56,13 @@ namespace networkReliability
 		std::vector<int> edges(nEdges, 0);
 		std::vector<mpfr_class> sums(nEdges, 0);
 		
-		//read by bytes
-		/*for(int j = 0;j < sampleSize; j++)
+		for(std::size_t sampleCounter = 0; sampleCounter < sampleSize; sampleCounter++)
 		{
-			for(int i = 0; i < nEdges; i++)
-			{
-				char c;
-				distributionsStream >> c;
-				edges[i] = c;
-			}
+			loadedDistribution.expand(sampleCounter, edges);
 			for(int i = 0; i < nFunctions; i++)
 			{
 				sums[i] += driver.result[i]->calculate(edges);
 			}
-		}*/
-		//read by bits
-		int nStoredBits = 0;
-		unsigned int currentValue = 0;
-		for(int j = 0;j < sampleSize; j++)
-		{
-			for(int i = 0; i < nEdges; i++)
-			{
-				if(!nStoredBits)
-				{
-					distributionsStream.read((char*)&currentValue, sizeof(int));
-					nStoredBits = sizeof(int)*8;
-				}
-				edges[i] = (currentValue & (1U << (8*sizeof(int)-1))) > 0;
-				currentValue<<=1;
-				nStoredBits--;
-			}
-			for(int i = 0; i < nFunctions; i++)
-			{
-				sums[i] += driver.result[i]->calculate(edges);
-			}
-		}
-		int position = distributionsStream.tellg();
-		distributionsStream.seekg(0, distributionsStream.end);
-		int length = distributionsStream.tellg();
-		if(position != length)
-		{
-			std::cout << "Empirical distributions file was too long. Finished reading at position " << position << " of " << length << std::endl;
-			return 0;
 		}
 		for(int i = 0; i < nFunctions; i++)
 		{
