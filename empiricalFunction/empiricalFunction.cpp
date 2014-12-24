@@ -38,35 +38,46 @@ namespace networkReliability
 			std::cout << "Please enter a single value for input `distributionFile'" << std::endl;
 			return 0;
 		}
-		std::string distributionFile = variableMap["distributionFile"].as<std::string>();
-		empiricalDistribution loadedDistribution = empiricalDistribution::load(distributionFile);
-		const std::size_t nEdges = loadedDistribution.getNEdges();
-		const std::size_t sampleSize = loadedDistribution.getNSamples();
+		try
+		{
+			std::string distributionFile = variableMap["distributionFile"].as<std::string>();
+			empiricalDistribution loadedDistribution = empiricalDistribution::load(distributionFile);
+			const std::size_t nEdges = loadedDistribution.getNEdges();
+			const std::size_t sampleSize = loadedDistribution.getNSamples();
 
-		std::string function, message;
-		formulaDriver driver(nEdges);
-		
-		if(!readFunctionFile(variableMap, driver, function, message))
-		{
-			std::cout << message << std::endl;
-			return 0;
-		}
-		const std::size_t nFunctions = driver.result.size();
-		//States of individual edges
-		std::vector<int> edges(nEdges, 0);
-		std::vector<mpfr_class> sums(nEdges, 0);
-		
-		for(std::size_t sampleCounter = 0; sampleCounter < sampleSize; sampleCounter++)
-		{
-			loadedDistribution.expand(sampleCounter, edges);
+			std::string function, message;
+			formulaDriver driver(nEdges);
+			
+			if(!readFunctionFile(variableMap, driver, function, message))
+			{
+				std::cout << message << std::endl;
+				return 0;
+			}
+			const std::size_t nFunctions = driver.result.size();
+			//States of individual edges
+			std::vector<int> edges(nEdges, 0);
+			std::vector<mpfr_class> sums(nEdges, 0);
+			mpfr_class sumAllWeights = 0;
+			for(std::size_t sampleCounter = 0; sampleCounter < sampleSize; sampleCounter++)
+			{
+				loadedDistribution.expand(sampleCounter, edges);
+				double weight = 1;
+				if(loadedDistribution.isWeighted()) weight = loadedDistribution.getWeight(sampleCounter);
+				for(int i = 0; i < nFunctions; i++)
+				{
+					sums[i] += weight * driver.result[i]->calculate(edges);
+				}
+				sumAllWeights += weight;
+			}
 			for(int i = 0; i < nFunctions; i++)
 			{
-				sums[i] += driver.result[i]->calculate(edges);
+				std::cout << "Estimated value of function " << i << " was " << (sums[i]/sumAllWeights) << std::endl;
 			}
 		}
-		for(int i = 0; i < nFunctions; i++)
+		catch(std::runtime_error& err)
 		{
-			std::cout << "Estimated value of function " << i << " was " << (sums[i]/sampleSize) << std::endl;
+			std::cout << "Runtime error: " << err.what() << std::endl;
+			return 0;
 		}
 		return 0;
 	}

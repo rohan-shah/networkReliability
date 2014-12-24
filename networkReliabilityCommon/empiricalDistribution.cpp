@@ -3,12 +3,12 @@
 #include <fstream>
 namespace networkReliability
 {
-	empiricalDistribution::empiricalDistribution(bool isWeighted, std::size_t nEdges)
-	:isWeighted(isWeighted), nStoredBits(0), storedBits(0), nEdges(nEdges), sampleSize(0)
+	empiricalDistribution::empiricalDistribution(bool _isWeighted, std::size_t nEdges)
+	:_isWeighted(_isWeighted), nStoredBits(0), storedBits(0), nEdges(nEdges), sampleSize(0)
 	{}
 	void empiricalDistribution::hintDataCount(std::size_t size)
 	{
-		if(isWeighted) weights.reserve(size);
+		if(_isWeighted) weights.reserve(size);
 		std::size_t nBitsRequired = size*nEdges;
 		std::size_t nWholeIntsRequired = nBitsRequired / (8*sizeof(int));
 		if(nWholeIntsRequired * sizeof(int)*8 == nBitsRequired)
@@ -32,9 +32,18 @@ namespace networkReliability
 		}
 		sampleSize++;
 	}
+	bool empiricalDistribution::isWeighted() const
+	{
+		return _isWeighted;
+	}
+	double empiricalDistribution::getWeight(std::size_t index) const
+	{
+		if(!_isWeighted) throw std::runtime_error("Trying to get weight of unweighted empirical distribution");
+		return weights[index];
+	}
 	void empiricalDistribution::add(const EdgeState* state)
 	{
-		if(isWeighted)
+		if(_isWeighted)
 		{
 			throw std::runtime_error("Attempting to add unweighted point to weighted empirical distribution");
 		}
@@ -42,7 +51,7 @@ namespace networkReliability
 	}
 	void empiricalDistribution::add(const EdgeState* state, double weight)
 	{
-		if(!isWeighted)
+		if(!_isWeighted)
 		{
 			throw std::runtime_error("Attempting to add weighted point to unweighted empirical distribution");
 		}
@@ -51,7 +60,7 @@ namespace networkReliability
 	}
 	empiricalDistribution& empiricalDistribution::operator=(empiricalDistribution&& other)
 	{
-		isWeighted = other.isWeighted;
+		_isWeighted = other._isWeighted;
 		weights.swap(other.weights);
 		data.swap(other.data);
 		nStoredBits = other.nStoredBits;
@@ -60,7 +69,7 @@ namespace networkReliability
 	}
 	empiricalDistribution::empiricalDistribution(empiricalDistribution&& other)
 	{
-		isWeighted = other.isWeighted;
+		_isWeighted = other._isWeighted;
 		weights.swap(other.weights);
 		data.swap(other.data);
 		nStoredBits = other.nStoredBits;
@@ -79,11 +88,11 @@ namespace networkReliability
 		std::getline(stream, weightString, '\0');
 		if(weightString == "weighted")
 		{
-			loaded.isWeighted = true;
+			loaded._isWeighted = true;
 		}
 		else if(weightString == "unweighted")
 		{
-			loaded.isWeighted = false;
+			loaded._isWeighted = false;
 		}
 		else
 		{
@@ -101,12 +110,12 @@ namespace networkReliability
 		{
 			loaded.data.resize(wholeIntsRequired+1);
 		}
-		if(loaded.isWeighted) 
+		if(loaded._isWeighted) 
 		{
 			loaded.weights.resize(loaded.sampleSize);
 			stream.read((char*)&(loaded.weights[0]), sizeof(double)*loaded.sampleSize);
 			std::string endWeights;
-			stream >> endWeights;
+			std::getline(stream, endWeights, '\0');
 			if(endWeights != "end_weights")
 			{
 				throw std::runtime_error("Weights sections must end with the string 'end_weights'");
@@ -176,7 +185,7 @@ namespace networkReliability
 		{
 			return false;
 		}
-		if(isWeighted)
+		if(_isWeighted)
 		{
 			std::string weighted = "weighted";
 			stream << weighted << '\0';
@@ -188,11 +197,11 @@ namespace networkReliability
 		}
 		stream.write((char*)&nEdges, sizeof(std::size_t));
 		stream.write((char*)&sampleSize, sizeof(std::size_t));
-		if(isWeighted)
+		if(_isWeighted)
 		{
 			stream.write((char*)&(weights[0]), sizeof(double)*weights.size());
 			std::string endWeights = "end_weights";
-			stream << endWeights;
+			stream << endWeights << '\0';
 		}
 		stream.write((char*)&(data[0]), sizeof(int)*data.size());
 		if(nStoredBits > 0)

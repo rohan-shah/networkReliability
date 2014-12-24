@@ -20,12 +20,14 @@ namespace networkReliability
 		void expand(int count, std::vector<int>& output);
 		std::size_t getNSamples() const;
 		std::size_t getNEdges() const;
+		bool isWeighted() const;
+		double getWeight(std::size_t index) const;
 	private:
 		void internalAdd(const EdgeState* state);
 		empiricalDistribution();
 		std::size_t nEdges;
 		std::size_t sampleSize;
-		bool isWeighted;
+		bool _isWeighted;
 		std::vector<double> weights;
 		std::vector<int> data;
 		int nStoredBits;

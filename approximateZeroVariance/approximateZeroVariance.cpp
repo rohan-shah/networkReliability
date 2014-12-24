@@ -5,6 +5,7 @@
 #include "EdgeState.h"
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/uniform_01.hpp>
+#include "empiricalDistribution.h"
 namespace networkReliability
 {
 	int main(int argc, char** argv)
@@ -20,6 +21,7 @@ namespace networkReliability
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
 			("relativeError", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Output relative error estimate")
 			("standardDeviation", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Output standard deviation estimate")
+			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
 			("help", "Display this message");
 		
 		boost::program_options::variables_map variableMap;
@@ -53,6 +55,7 @@ namespace networkReliability
 			return 0;
 		}
 		inopProbability = 1 - opProbability;
+		double inopProbabilityD = inopProbability.convert_to<double>();
 		Context context = Context::emptyContext();
 		if(!readContext(variableMap, context, opProbability))
 		{
@@ -60,15 +63,24 @@ namespace networkReliability
 		}
 		boost::mt19937 randomSource;
 		readSeed(variableMap, randomSource);
+		bool outputConditionalDistribution = variableMap.count("outputConditionalDistribution") > 0;
 		bool relativeError = variableMap["relativeError"].as<bool>();
 		bool standardDeviation = variableMap["standardDeviation"].as<bool>();
 		const std::size_t nEdges = context.getNEdges();
 		
+		empiricalDistribution dist(true, nEdges);
+		if(outputConditionalDistribution)
+		{
+			dist.hintDataCount(n);
+		}
+
 		boost::random::uniform_01<float,float> uniformReal;
 
 
 		//Vector used for mincut calculations
 		std::vector<int> state(2*nEdges);
+		//Similar vector of states, used to output the conditional distribution
+		std::vector<EdgeState> outputStates(nEdges);
 		//Sum over all the n simulations
 		mpfr_class firstMoment = 0, secondMoment = 0;
 		//likelihood ratio of current term
@@ -92,7 +104,6 @@ namespace networkReliability
 		mpfr_class qTilde;
 		mpfr_class initialQTilde = inopProbability*minCutDownProb;
 		initialQTilde = initialQTilde / (initialQTilde  + opProbability * minCutUpProb);
-		double tmp = initialQTilde.convert_to<double>();
 		for(long i = 0; i < n; i++)
 		{
 			//we might break out of this loop early because the value of the indicator function is already known.
@@ -103,11 +114,11 @@ namespace networkReliability
 			std::fill(state.begin(), state.end(), 1);
 
 			float random = uniformReal(randomSource);
+			int edgeCounter = 0;
 			if(random < initialQTilde)
 			{
-				state[0] = state[1] = 0;
+				state[0] = state[1] = 0; outputStates[0] = UNFIXED_INOP;
 				currentLikelihoodRatio = inopProbability / initialQTilde;
-				tmp = currentLikelihoodRatio.convert_to<double>();
 				if(initialMinCutSizeDown == 0)
 				{
 					indicatorValue = 1;
@@ -116,9 +127,8 @@ namespace networkReliability
 			}
 			else 
 			{
-				state[0] = state[1] = HIGH_CAPACITY;
+				state[0] = state[1] = HIGH_CAPACITY; outputStates[0] = UNFIXED_OP;
 				currentLikelihoodRatio = (1-inopProbability) / (1-initialQTilde);
-				tmp = currentLikelihoodRatio.convert_to<double>();
 				if(initialMinCutSizeUp >= HIGH_CAPACITY)
 				{
 					indicatorValue = 0;
@@ -127,7 +137,7 @@ namespace networkReliability
 			}
 			if(!exitedEarly)
 			{
-				for(int edgeCounter = 1; edgeCounter < nEdges; edgeCounter++)
+				for(edgeCounter = 1; edgeCounter < nEdges; edgeCounter++)
 				{
 					state[2*edgeCounter] = state[2*edgeCounter+1] = 0;
 					int minCutSizeDown = context.getMinCut(state);
@@ -143,13 +153,11 @@ namespace networkReliability
 
 					qTilde = inopProbability * minCutDownProb;
 					qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
-					tmp = qTilde.convert_to<double>();
 					float random = uniformReal(randomSource);
 					if(random < qTilde)
 					{
-						state[2*edgeCounter] = state[2*edgeCounter+1] = 0;
+						state[2*edgeCounter] = state[2*edgeCounter+1] = 0; outputStates[edgeCounter] = UNFIXED_INOP;
 						currentLikelihoodRatio *= inopProbability / qTilde;
-						tmp = currentLikelihoodRatio.convert_to<double>();
 						if(minCutSizeDown == 0)
 						{
 							indicatorValue = 1;
@@ -158,9 +166,8 @@ namespace networkReliability
 					}
 					else 
 					{
-						state[2*edgeCounter] = state[2*edgeCounter+1] = HIGH_CAPACITY;
+						state[2*edgeCounter] = state[2*edgeCounter+1] = HIGH_CAPACITY; outputStates[edgeCounter] = UNFIXED_OP;
 						currentLikelihoodRatio *= opProbability / (1-qTilde);
-						tmp = currentLikelihoodRatio.convert_to<double>();
 						if(minCutSizeUp >= HIGH_CAPACITY)
 						{
 							indicatorValue = 0;
@@ -171,6 +178,17 @@ namespace networkReliability
 			}
 			firstMoment += indicatorValue * currentLikelihoodRatio;
 			secondMoment += indicatorValue * currentLikelihoodRatio * currentLikelihoodRatio;
+			//If we're outputting the conditional distribution then we need to simulate a state for the remaining edges
+			if(outputConditionalDistribution && indicatorValue)
+			{
+				edgeCounter++;
+				for(; edgeCounter < nEdges; edgeCounter++)
+				{
+					if(uniformReal(randomSource) < inopProbabilityD) outputStates[edgeCounter] = UNFIXED_INOP;
+					else outputStates[edgeCounter] = UNFIXED_OP;
+				}
+				dist.add(&(outputStates[0]), currentLikelihoodRatio.convert_to<double>());
+			}
 		}
 		mpfr_class estimate = (firstMoment / n);
 		mpfr_class variance = (secondMoment/n) - estimate*estimate;
@@ -185,6 +203,18 @@ namespace networkReliability
 		{
 			mpfr_class standardDeviation = boost::multiprecision::sqrt(variance);
 			std::cout << "Standard deviation was " << standardDeviation << std::endl;
+		}
+		if(outputConditionalDistribution)
+		{
+			try
+			{
+				dist.save(variableMap["outputConditionalDistribution"].as<std::string>());
+			}
+			catch(std::runtime_error& err)
+			{
+				std::cout << "Error saving output distribution: " << err.what() << std::endl;
+				return 0;
+			}
 		}
 		return 0;
 	}
