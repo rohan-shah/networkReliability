@@ -30,6 +30,12 @@ namespace networkReliability
 		free(resultCStr);
 		return resultStr.substr(0, 1) + "." + resultStr.substr(1, resultStr.size() - 1) + "e" + boost::lexical_cast<std::string>(exponent - 1);
 	}
+	inline int factorial(int input)
+	{
+		int output = 1;
+		for(int count = 2; count <= input; count++) output *= count;
+		return output;
+	}
 	std::string toString(double number);
 	int main(int argc, char **argv)
 	{
@@ -346,15 +352,16 @@ namespace networkReliability
 								while(currentIndex != -1)
 								{
 									currentPart = 1;
+									unsigned long binomialPart = 1;
 									for(int reducedEdgeCounter = 0; reducedEdgeCounter != nReducedEdges; reducedEdgeCounter++)
 									{
-										currentPart *= boost::math::binomial_coefficient<float>(maximalReducedEdgeCounts[reducedEdgeCounter], reducedEdgeCounts[reducedEdgeCounter]);
+										binomialPart *= factorial(maximalReducedEdgeCounts[reducedEdgeCounter])/(factorial(reducedEdgeCounts[reducedEdgeCounter])*factorial(maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter]));
 										int opCounter = reducedEdgeCounts[reducedEdgeCounter], inopCounter = maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter];
 										currentPart *= powers[opCounter + nEdges*inopCounter];
 										/*currentPart *= boost::multiprecision::pow(opProbability, reducedEdgeCounts[reducedEdgeCounter]);
 										currentPart *= boost::multiprecision::pow(inopProbability, maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter]);*/
 									}
-									currentEstimate += currentPart;
+									currentEstimate += currentPart * binomialPart;
 									currentIndex = nReducedEdges-1;
 									do
 									{
