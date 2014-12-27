@@ -82,6 +82,7 @@ namespace networkReliability
 			return 0;
 		}
 		context.setMinCut(true);
+		const std::size_t nEdges = context.getNEdges();
 		const std::vector<int>& interestVertices = context.getInterestVertices();
 
 		std::size_t nPMC = variableMap["nPMC"].as<std::size_t>();
@@ -267,6 +268,20 @@ namespace networkReliability
 			std::vector<EdgeState> edgeStates;
 			std::vector<int> reducedEdgeCounts, maximalReducedEdgeCounts;
 			std::vector<int> components2;
+			std::vector<mpfr_class> powers(nEdges*nEdges);
+			std::vector<mpfr_class> inopPowers(nEdges), opPowers(nEdges);
+			for(int counter = 0; counter < nEdges; counter++)
+			{
+				inopPowers[counter] = boost::multiprecision::pow(inopProbability, counter);
+				opPowers[counter] = boost::multiprecision::pow(opProbability, counter);
+			}
+			for(int opCounter = 0; opCounter < nEdges; opCounter++)
+			{
+				for(int inopCounter = 0; inopCounter < nEdges; inopCounter++)
+				{
+					powers[opCounter + nEdges*inopCounter] = opPowers[opCounter] * inopPowers[inopCounter];
+				}
+			}
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				if(j->getMinCut() > 0)
@@ -334,8 +349,10 @@ namespace networkReliability
 									for(int reducedEdgeCounter = 0; reducedEdgeCounter != nReducedEdges; reducedEdgeCounter++)
 									{
 										currentPart *= boost::math::binomial_coefficient<float>(maximalReducedEdgeCounts[reducedEdgeCounter], reducedEdgeCounts[reducedEdgeCounter]);
-										currentPart *= boost::multiprecision::pow(opProbability, reducedEdgeCounts[reducedEdgeCounter]);
-										currentPart *= boost::multiprecision::pow(inopProbability, maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter]);
+										int opCounter = reducedEdgeCounts[reducedEdgeCounter], inopCounter = maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter];
+										currentPart *= powers[opCounter + nEdges*inopCounter];
+										/*currentPart *= boost::multiprecision::pow(opProbability, reducedEdgeCounts[reducedEdgeCounter]);
+										currentPart *= boost::multiprecision::pow(inopProbability, maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter]);*/
 									}
 									currentEstimate += currentPart;
 									currentIndex = nReducedEdges-1;
@@ -371,7 +388,7 @@ namespace networkReliability
 			estimate = (boost::accumulators::sum(probabilities[finalSplittingStep]) / n);
 			if (variableMap.count("outputConditionalDistribution") > 0)
 			{
-				empiricalDistribution outputDistributions(false, context.getNEdges());
+				empiricalDistribution outputDistributions(false, nEdges);
 				for(std::vector<NetworkReliabilitySubObs>::iterator i = observations.begin(); i != observations.end(); i++)
 				{
 					outputDistributions.add(i->getState());
