@@ -1,4 +1,5 @@
 #include <boost/program_options.hpp>
+#include <boost/math/special_functions/binomial.hpp>
 #include "Arguments.h"
 #include "NetworkReliabilityObs.h"
 #include "NetworkReliabilitySubObs.h"
@@ -17,6 +18,8 @@
 #include <boost/random/uniform_real_distribution.hpp>
 #include "aliasMethod.h"
 #include "empiricalDistribution.h"
+#include "depth_first_search_restricted.hpp"
+#include "connected_components_restricted.hpp"
 namespace networkReliability
 {
 	std::string toString(mpfr_class number)
@@ -42,6 +45,7 @@ namespace networkReliability
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
 			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
 			("nPMC", boost::program_options::value<std::size_t>()->default_value(0ULL)->implicit_value(0ULL), "(int) Number of PMC samples to use")
+			("useCompleteEnumeration", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Use complete enumeration in the last step")
 			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
 			("useSpatialDistances", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Use spatial rather than combinatoric distances")
 			("help", "Display this message");
@@ -69,6 +73,7 @@ namespace networkReliability
 			std::cout << "Unable to read input opProbability" << std::endl;
 			return 0;
 		}
+		mpfr_class inopProbability = 1 - opProbability;
 
 		Context context = Context::emptyContext();
 		if(!readContext(variableMap, context, opProbability))
@@ -77,8 +82,20 @@ namespace networkReliability
 			return 0;
 		}
 		context.setMinCut(true);
+		const std::vector<int>& interestVertices = context.getInterestVertices();
 
 		std::size_t nPMC = variableMap["nPMC"].as<std::size_t>();
+		bool useCompleteEnumeration = variableMap["useCompleteEnumeration"].as<bool>();
+		if(useCompleteEnumeration && nPMC > 0) 
+		{
+			std::cout << "Only one of nPMC and useCompleteEnumeration can be specified" << std::endl;
+			return 0;
+		}
+		if(useCompleteEnumeration && interestVertices.size() > 2)
+		{
+			std::cout << "Complete enumeration only available for 2-terminal network reliability" << std::endl;
+			return 0;
+		}
 
 		int initialRadius;
 		std::string message;
@@ -108,7 +125,6 @@ namespace networkReliability
 		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > > probabilities(initialRadius + 1, zeroInitialisedAccumulator);
 		//mean conditioningProbability
 		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > > conditioningProbabilities(initialRadius + 1, zeroInitialisedAccumulator);
-		const std::vector<int>& interestVertices = context.getInterestVertices();
 
 		//working data for algorithms
 		std::vector<int> components;
@@ -122,7 +138,7 @@ namespace networkReliability
 
 		//If the usePMC flag is set, don't use splitting on the last step. Instead use PMC. 
 		int finalSplittingStep;
-		if (nPMC > 0) finalSplittingStep = initialRadius - 1;
+		if (nPMC > 0 || useCompleteEnumeration) finalSplittingStep = initialRadius - 1;
 		else finalSplittingStep = initialRadius;
 
 		//additional working data for getRadius1ReducedGraph
@@ -242,6 +258,111 @@ namespace networkReliability
 				}
 				conditionalPMC(turnipInput);
 				estimate += j->getGeneratedObservationConditioningProb() * turnipInput.estimateFirstMoment;
+			}
+			estimate /= n;
+		}
+		else if(useCompleteEnumeration)
+		{
+			estimate = 0;
+			std::vector<EdgeState> edgeStates;
+			std::vector<int> reducedEdgeCounts, maximalReducedEdgeCounts;
+			std::vector<int> components2;
+			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+			{
+				if(j->getMinCut() > 0)
+				{
+					mpfr_class currentEstimate = 0;
+					Context::internalGraph reducedGraph;
+					//get out the reduced graph
+					j->getRadius1ReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
+					std::size_t nReducedEdges = boost::num_edges(reducedGraph);
+					std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
+
+					edgeStates.resize(nReducedEdges);
+					reducedEdgeCounts.resize(nReducedEdges);
+					maximalReducedEdgeCounts.resize(nReducedEdges);
+
+					components2.resize(nReducedVertices);
+					int reducedVertex1 = components[interestVertices[0]];
+					int reducedVertex2 = components[interestVertices[1]];
+					EdgeState* edgeStatePtr = &(edgeStates[0]);
+					//Exhaustive enumeration is only really going to be feasible if the number of edges in the reduced graph is small. 
+					if(nReducedEdges < 20)
+					{
+						std::size_t nUnreducedEdges = 0;
+						//Initially specify that every reduced edge that is UP, is UP because all the component edges are up
+						Context::internalGraph::edge_iterator current, end;
+						boost::tie(current, end) = boost::edges(reducedGraph);
+						for (; current != end; current++)
+						{
+							int edgeIndex = boost::get(boost::edge_index, reducedGraph, *current);
+							if(current->m_source != current->m_target)
+							{
+								maximalReducedEdgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices];
+							}
+							else
+							{
+								maximalReducedEdgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices];
+							}
+							nUnreducedEdges += maximalReducedEdgeCounts[edgeIndex];
+						}
+						unsigned long maximumState = 1UL << nReducedEdges;
+						for(unsigned long stateCounter = 0; stateCounter < maximumState; stateCounter++)
+						{
+							memset(&(reducedEdgeCounts[0]), 0, sizeof(int)*nReducedEdges);
+							//expand out the bitmask
+							for(int edgeCounter = 0; edgeCounter < nReducedEdges; edgeCounter++)
+							{
+								if(stateCounter & (1LL << edgeCounter))
+								{
+									edgeStates[edgeCounter] = UNFIXED_OP;
+									reducedEdgeCounts[edgeCounter] = maximalReducedEdgeCounts[edgeCounter];
+								}
+								else edgeStates[edgeCounter] = UNFIXED_INOP;
+							}
+							std::fill(colorMap.begin(), colorMap.end(), Color::white()); 
+							boost::connected_components_restricted(reducedGraph, &(components2[0]), &(colorMap[0]), stack, &(edgeStates[0]));
+							bool currentGraphConnected = components2[reducedVertex1] == components2[reducedVertex2];
+							//if it's disconnected, we want to find the non-reduced edge configurations that give us that reduced edge configuration
+							if(!currentGraphConnected)
+							{
+								int currentIndex = nReducedEdges-1;
+								mpfr_class currentPart = 1;
+								while(currentIndex != -1)
+								{
+									currentPart = 1;
+									for(int reducedEdgeCounter = 0; reducedEdgeCounter != nReducedEdges; reducedEdgeCounter++)
+									{
+										currentPart *= boost::math::binomial_coefficient<float>(maximalReducedEdgeCounts[reducedEdgeCounter], reducedEdgeCounts[reducedEdgeCounter]);
+										currentPart *= boost::multiprecision::pow(opProbability, reducedEdgeCounts[reducedEdgeCounter]);
+										currentPart *= boost::multiprecision::pow(inopProbability, maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter]);
+									}
+									currentEstimate += currentPart;
+									currentIndex = nReducedEdges-1;
+									do
+									{
+										if(stateCounter & (1ULL << currentIndex))
+										{
+											reducedEdgeCounts[currentIndex]--;
+											if(!reducedEdgeCounts[currentIndex]) reducedEdgeCounts[currentIndex] = maximalReducedEdgeCounts[currentIndex];
+											else break;
+										}
+										currentIndex--;
+									}
+									while(currentIndex != -1);
+								}
+							}
+						}
+						const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, nUnreducedEdges, nUnreducedEdges);
+						mpfr_class conditional = (1 - dist.getCumulativeProbabilities()[j->getMinCut()-1]);
+						estimate += j->getGeneratedObservationConditioningProb() * currentEstimate / conditional;
+					}
+					else
+					{
+						throw std::runtime_error("Too many edges for complete enumeration");
+					}
+				}
+				else estimate += j->getGeneratedObservationConditioningProb();
 			}
 			estimate /= n;
 		}

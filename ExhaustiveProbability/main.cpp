@@ -58,6 +58,7 @@ namespace networkReliability
 		std::string line;
 		while(std::getline(std::cin, line))
 		{
+			boost::algorithm::trim(line);
 			lines.push_back(line);
 		}
 		std::size_t nLines = lines.size();
