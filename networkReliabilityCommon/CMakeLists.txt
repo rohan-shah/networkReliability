@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles Arguments.cpp ArgumentsMPFR.cpp Context.cpp NetworkReliabilityObs.cpp NetworkReliabilitySubObs.cpp Turnip.cpp ZoomGraphicsView.cpp computeConditionalProb.cpp conditionalPMC.cpp createFunctionBinary.cpp formulaDriver.cpp graphAlgorithms.cpp empiricalDistribution.cpp)
-set(HeaderFiles Arguments.h ArgumentsMPFR.h Context.h EdgeState.h NetworkReliabilityObs.h NetworkReliabilitySubObs.h Turnip.h ZoomGraphicsView.h computeConditionalProb.h conditionalPMC.h createFunctionBinary.h formulaDriver.h graphAlgorithms.h includeMPFR.h astCode.hpp empiricalDistribution.h)
+set(CppFiles Arguments.cpp ArgumentsMPFR.cpp Context.cpp NetworkReliabilityObs.cpp NetworkReliabilitySubObs.cpp Turnip.cpp ZoomGraphicsView.cpp computeConditionalProb.cpp conditionalPMC.cpp graphAlgorithms.cpp empiricalDistribution.cpp)
+set(HeaderFiles Arguments.h ArgumentsMPFR.h Context.h EdgeState.h NetworkReliabilityObs.h NetworkReliabilitySubObs.h Turnip.h ZoomGraphicsView.h computeConditionalProb.h conditionalPMC.h graphAlgorithms.h includeMPFR.h astCode.hpp empiricalDistribution.h)
 
 if(WIN32)
-	list(REMOVE_ITEM CppFiles createFunctionBinary.cpp formulaDriver.cpp)
-	list(REMOVE_ITEM HeaderFiles formulaDriver.h createFunctionBinary.h)
+	list(APPEND HeaderFiles windowsConsoleOutput.h)
+	list(APPEND CppFiles windowsConsoleOutput.cpp)
 else()
+	list(APPEND CppFiles createFunctionBinary.cpp formulaDriver.cpp)
+	list(APPEND HeaderFiles formulaDriver.h createFunctionBinary.h)
+
 	BISON_TARGET(formulaParser formulaParser.yy ${CMAKE_CURRENT_BINARY_DIR}/formulaParser.cpp COMPILE_FLAGS " -L c++ ")
 	FLEX_TARGET(formulaScanner formulaScanner.ll ${CMAKE_CURRENT_BINARY_DIR}/formulaScanner.cc)
 	ADD_FLEX_BISON_DEPENDENCY(formulaScanner formulaParser)

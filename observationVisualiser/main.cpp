@@ -1,11 +1,17 @@
 #include <boost/program_options.hpp>
 #include <boost/random.hpp>
-#include <Windows.h>
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include "Context.h"
 #include "ObservationVisualiser.h"
 #include <QApplication>
+#include <fstream>
+#if defined(WIN32)
+	#include <Windows.h>
+	#if defined(_MSC_VER)
+		#include "windowsConsoleOutput.h"
+	#endif
+#endif
 namespace networkReliability
 {
 	void registerQTPluginDir()
@@ -43,6 +49,9 @@ namespace networkReliability
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
 			("help", "Display this message");
 
+#if defined(WIN32) && defined(_MSC_VER)
+		redirectConsoleOutput();
+#endif
 		boost::program_options::variables_map variableMap;
 		try
 		{

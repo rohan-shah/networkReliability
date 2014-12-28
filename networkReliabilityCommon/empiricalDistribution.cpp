@@ -66,6 +66,7 @@ namespace networkReliability
 		nStoredBits = other.nStoredBits;
 		storedBits = other.storedBits;
 		sampleSize = other.sampleSize;
+		return *this;
 	}
 	empiricalDistribution::empiricalDistribution(empiricalDistribution&& other)
 	{

@@ -3,8 +3,13 @@
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include <QApplication>
-#include <windows.h>
 #include "splittingVisualiser.h"
+#if defined(WIN32)
+	#include <Windows.h>
+	#if defined(_MSC_VER)
+		#include "windowsConsoleOutput.h"
+	#endif
+#endif
 namespace networkReliability
 {
 	void registerQTPluginDir()
@@ -42,6 +47,9 @@ namespace networkReliability
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
 			("help", "Display this message");
 
+#if defined(WIN32) && defined(_MSC_VER)
+		redirectConsoleOutput();
+#endif
 		boost::program_options::variables_map variableMap;
 		try
 		{
