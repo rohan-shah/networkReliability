@@ -22,6 +22,7 @@ namespace networkReliability
 		int getConditioningCount() const;
 		const conditioning_type& getConditioningProb() const;
 		void getRadius1ReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
+		void getRadius1ReducedGraphNoSelf(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
 		NetworkReliabilitySubObs::conditioning_type getGeneratedObservationConditioningProb() const;
 		NetworkReliabilitySubObs copyWithConditioningProb(const conditioning_type& conditioningProb) const;
 	private:

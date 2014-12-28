@@ -296,9 +296,11 @@ namespace networkReliability
 					mpfr_class currentEstimate = 0;
 					Context::internalGraph reducedGraph;
 					//get out the reduced graph
-					j->getRadius1ReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
+					j->getRadius1ReducedGraphNoSelf(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
 					std::size_t nReducedEdges = boost::num_edges(reducedGraph);
 					std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
+					std::size_t nUnreducedSelfEdges = 0;
+					for(int i = 0; i < nReducedVertices; i++) nUnreducedSelfEdges += edgeCounts[i + i * nReducedVertices];
 
 					edgeStates.resize(nReducedEdges);
 					reducedEdgeCounts.resize(nReducedEdges);
@@ -312,27 +314,19 @@ namespace networkReliability
 					if(nReducedEdges < 20)
 					{
 						std::size_t nUnreducedEdges = 0;
-						//Initially specify that every reduced edge that is UP, is UP because all the component edges are up
 						Context::internalGraph::edge_iterator current, end;
 						boost::tie(current, end) = boost::edges(reducedGraph);
 						for (; current != end; current++)
 						{
 							int edgeIndex = boost::get(boost::edge_index, reducedGraph, *current);
-							if(current->m_source != current->m_target)
-							{
-								maximalReducedEdgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices];
-							}
-							else
-							{
-								maximalReducedEdgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices];
-							}
+							maximalReducedEdgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices];
 							nUnreducedEdges += maximalReducedEdgeCounts[edgeIndex];
 						}
 						unsigned long maximumState = 1UL << nReducedEdges;
 						for(unsigned long stateCounter = 0; stateCounter < maximumState; stateCounter++)
 						{
 							memset(&(reducedEdgeCounts[0]), 0, sizeof(int)*nReducedEdges);
-							//expand out the bitmask
+							//expand out the bitmask. Initially specify that every reduced edge that is UP, is UP because all the component edges are up
 							for(int edgeCounter = 0; edgeCounter < nReducedEdges; edgeCounter++)
 							{
 								if(stateCounter & (1LL << edgeCounter))
@@ -378,13 +372,13 @@ namespace networkReliability
 								}
 							}
 						}
-						const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, nUnreducedEdges, nUnreducedEdges);
+						const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, nUnreducedEdges + nUnreducedSelfEdges, nUnreducedEdges + nUnreducedSelfEdges);
 						mpfr_class conditional = (1 - dist.getCumulativeProbabilities()[j->getMinCut()-1]);
 						estimate += j->getGeneratedObservationConditioningProb() * currentEstimate / conditional;
 					}
 					else
 					{
-						throw std::runtime_error("Too many edges for complete enumeration");
+						throw std::runtime_error("Too many edges for complete enumeration: " + boost::lexical_cast<std::string>(nReducedEdges) + " > 20 edges");
 					}
 				}
 				else estimate += j->getGeneratedObservationConditioningProb();

@@ -87,6 +87,46 @@ namespace networkReliability
 			minimumInoperative = std::max(0, conditioningCount - fixedInop);
 		}
 	}
+	void NetworkReliabilitySubObs::getRadius1ReducedGraphNoSelf(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
+	{
+		int nComponents = countComponents(context, state.get(), components, stack, colorMap);
+		edgeCounts.clear();
+		edgeCounts.resize(nComponents * nComponents);
+
+		//determine the rates between all the different super-vertices
+		Context::internalGraph::edge_iterator current, end;
+		const Context::internalGraph& graph = context.getGraph();
+		boost::tie(current, end) = boost::edges(graph);
+		for (; current != end; current++)
+		{
+			int edgeIndex = boost::get(boost::edge_index, graph, *current);
+			//is it an edge between super-nodes?
+			if (state[edgeIndex] & UNFIXED_MASK)
+			{
+				edgeCounts[components[current->m_source] + components[current->m_target] * nComponents]++;
+			}
+		}
+		outputGraph = Context::internalGraph(nComponents);
+		int edgeCounter = 0;
+		for (int i = 0; i < nComponents; i++)
+		{
+			for (int j = i + 1; j < nComponents; j++)
+			{
+				if (edgeCounts[i + j * nComponents] + edgeCounts[j + i * nComponents] > 0)
+				{
+					boost::add_edge(i, j, edgeCounter++, outputGraph);
+				}
+			}
+		}
+		if (context.useMinCut())
+		{
+			minimumInoperative = minCut;
+		}
+		else
+		{
+			minimumInoperative = std::max(0, conditioningCount - fixedInop);
+		}
+	}
 	const NetworkReliabilitySubObs::conditioning_type& NetworkReliabilitySubObs::getConditioningProb() const
 	{
 		return conditioningProb;
