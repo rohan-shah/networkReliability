@@ -4,6 +4,7 @@
 #include <fstream>
 #include "formulaDriver.h"
 #include "empiricalDistribution.h"
+#include <boost/archive/binary_iarchive.hpp>
 namespace networkReliability
 {
 	int main(int argc, char **argv)
@@ -11,7 +12,6 @@ namespace networkReliability
 		boost::program_options::options_description options("Usage");
 		options.add_options()
 			("distributionFile", boost::program_options::value<std::string>(), "(path) The path to an empirical distributions file. ")
-			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational. ")
 			("function", boost::program_options::value<std::string>(), "(string) The function to evaluate.")
 			("functionFile", boost::program_options::value<std::string>(), "(string) File containing the function to evaluate");
 
@@ -27,12 +27,6 @@ namespace networkReliability
 			return -1;
 		}
 
-		mpfr_class opProbability;
-		if(!readProbabilityString(variableMap, opProbability))
-		{
-			std::cout << "Unable to read input `opProbability'" << std::endl;
-			return 0;
-		}
 		if(variableMap.count("distributionFile") != 1)
 		{
 			std::cout << "Please enter a single value for input `distributionFile'" << std::endl;
@@ -41,7 +35,10 @@ namespace networkReliability
 		try
 		{
 			std::string distributionFile = variableMap["distributionFile"].as<std::string>();
-			empiricalDistribution loadedDistribution = empiricalDistribution::load(distributionFile);
+			std::ifstream stream(distributionFile.c_str(), std::ios_base::binary);
+			boost::archive::binary_iarchive archive(stream);
+			empiricalDistribution loadedDistribution(archive);
+
 			const std::size_t nEdges = loadedDistribution.getNEdges();
 			const std::size_t sampleSize = loadedDistribution.getNSamples();
 

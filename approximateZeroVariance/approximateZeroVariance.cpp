@@ -6,6 +6,8 @@
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/uniform_01.hpp>
 #include "empiricalDistribution.h"
+#include <boost/archive/binary_oarchive.hpp>
+#include <fstream>
 namespace networkReliability
 {
 	int main(int argc, char** argv)
@@ -208,7 +210,9 @@ namespace networkReliability
 		{
 			try
 			{
-				dist.save(variableMap["outputConditionalDistribution"].as<std::string>());
+				std::ofstream stream(variableMap["outputConditionalDistribution"].as<std::string>().c_str(), std::ios_base::binary);
+				boost::archive::binary_oarchive archive(stream);
+				archive << dist;
 			}
 			catch(std::runtime_error& err)
 			{

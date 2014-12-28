@@ -20,6 +20,7 @@
 #include "empiricalDistribution.h"
 #include "depth_first_search_restricted.hpp"
 #include "connected_components_restricted.hpp"
+#include <boost/archive/binary_oarchive.hpp>
 namespace networkReliability
 {
 	std::string toString(mpfr_class number)
@@ -402,7 +403,9 @@ namespace networkReliability
 				}
 				try
 				{
-					outputDistributions.save(variableMap["outputConditionalDistribution"].as<std::string>());
+					std::ofstream outputStream(variableMap["outputConditionalDistribution"].as<std::string>().c_str(), std::ios_base::binary);
+					boost::archive::binary_oarchive archive(outputStream);
+					archive << outputDistributions;
 				}
 				catch(std::runtime_error& err)
 				{

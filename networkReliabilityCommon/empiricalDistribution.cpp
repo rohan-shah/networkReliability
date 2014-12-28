@@ -76,74 +76,6 @@ namespace networkReliability
 		storedBits = other.storedBits;
 		sampleSize = other.sampleSize;
 	}
-	empiricalDistribution empiricalDistribution::load(std::string file)
-	{
-		std::ifstream stream(file.c_str(), std::ios_base::binary);
-		if(!stream)
-		{
-			throw std::runtime_error("Unable to load specified file");
-		}
-		empiricalDistribution loaded;
-		std::string weightString;
-		std::getline(stream, weightString, '\0');
-		if(weightString == "weighted")
-		{
-			loaded._isWeighted = true;
-		}
-		else if(weightString == "unweighted")
-		{
-			loaded._isWeighted = false;
-		}
-		else
-		{
-			throw std::runtime_error("Distributions file must start with either the string 'weighted' or 'unweighted'");
-		}
-		stream.read((char*)&loaded.nEdges, sizeof(std::size_t));
-		stream.read((char*)&loaded.sampleSize, sizeof(std::size_t));
-		std::size_t bitsRequired = loaded.nEdges * loaded.sampleSize;
-		std::size_t wholeIntsRequired = bitsRequired / (sizeof(int)*8);
-		if(wholeIntsRequired * sizeof(int) * 8 == bitsRequired)
-		{
-			loaded.data.resize(wholeIntsRequired);
-		}
-		else 
-		{
-			loaded.data.resize(wholeIntsRequired+1);
-		}
-		if(loaded._isWeighted) 
-		{
-			loaded.weights.resize(loaded.sampleSize);
-			stream.read((char*)&(loaded.weights[0]), sizeof(double)*loaded.sampleSize);
-			std::string endWeights;
-			std::getline(stream, endWeights, '\0');
-			if(endWeights != "end_weights")
-			{
-				throw std::runtime_error("Weights sections must end with the string 'end_weights'");
-			}
-		}
-		stream.read((char*)&(loaded.data[0]), sizeof(int)*wholeIntsRequired);
-		int remainingBitsToRead = bitsRequired - (wholeIntsRequired * sizeof(int)*8);
-		if(remainingBitsToRead > 0)
-		{
-			stream.read((char*)&loaded.storedBits, sizeof(int));
-			loaded.nStoredBits = remainingBitsToRead;
-			loaded.storedBits <<= (8*sizeof(int) - remainingBitsToRead);
-		}
-		std::string endDistributions;
-		stream >> endDistributions;
-		if(endDistributions != "end_distributions")
-		{
-			throw std::runtime_error("Distributions file must end with the string 'end_distributions'");
-		}
-		int position = stream.tellg();
-		stream.seekg(0, stream.end);
-		int length = stream.tellg();
-		if(position != length)
-		{
-			throw std::runtime_error("Distributions file was too long");
-		}
-		return loaded;
-	}
 	void empiricalDistribution::expand(int count, std::vector<int>& output)
 	{
 		if(output.size() != nEdges) throw std::runtime_error("Wrong number of elements in vector passed to empiricalDistribution::expand");
@@ -178,42 +110,6 @@ namespace networkReliability
 	}
 	empiricalDistribution::empiricalDistribution()
 	{}
-	bool empiricalDistribution::save(std::string file)
-	{
-		std::ofstream stream(file.c_str(), std::ios_base::binary);
-		if(!stream)
-		{
-			return false;
-		}
-		if(_isWeighted)
-		{
-			std::string weighted = "weighted";
-			stream << weighted << '\0';
-		}
-		else
-		{
-			std::string unweighted = "unweighted";
-			stream << unweighted << '\0';
-		}
-		stream.write((char*)&nEdges, sizeof(std::size_t));
-		stream.write((char*)&sampleSize, sizeof(std::size_t));
-		if(_isWeighted)
-		{
-			stream.write((char*)&(weights[0]), sizeof(double)*weights.size());
-			std::string endWeights = "end_weights";
-			stream << endWeights << '\0';
-		}
-		stream.write((char*)&(data[0]), sizeof(int)*data.size());
-		if(nStoredBits > 0)
-		{
-			stream.write((char*)&storedBits, sizeof(int));
-		}
-		std::string endFile = "end_distributions";
-		stream << endFile;
-		stream.flush();
-		stream.close();
-		return true;
-	}
 	std::size_t empiricalDistribution::getNSamples() const
 	{
 		return sampleSize;
