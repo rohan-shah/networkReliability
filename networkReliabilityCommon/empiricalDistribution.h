@@ -35,6 +35,7 @@ namespace networkReliability
 		std::size_t getNEdges() const;
 		bool isWeighted() const;
 		double getWeight(std::size_t index) const;
+	private:
 		template<class Archive> void save(Archive & ar, const unsigned int version) const
 		{
 			std::string typeString = "empiricalDistribution";
@@ -92,7 +93,7 @@ namespace networkReliability
 			if(_isWeighted) 
 			{
 				ar >> weights;
-				if(weights.size() != samplSize)
+				if(weights.size() != sampleSize)
 				{
 					throw std::runtime_error("Wrong number of weights loaded");
 				}
@@ -124,7 +125,6 @@ namespace networkReliability
 			}
 		}
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
-	private:
 		void internalAdd(const EdgeState* state);
 		empiricalDistribution();
 		std::size_t nEdges;

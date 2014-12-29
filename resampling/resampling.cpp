@@ -21,6 +21,7 @@
 #include "depth_first_search_restricted.hpp"
 #include "connected_components_restricted.hpp"
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
 namespace networkReliability
 {
 	std::string toString(mpfr_class number)
@@ -378,6 +379,11 @@ namespace networkReliability
 					}
 					else
 					{
+						std::ofstream outputStream("./tooManyEdges.dat", std::ios_base::binary);
+						boost::archive::text_oarchive archive(outputStream);
+						writeNetworkReliabilitySubObs(archive, *j);
+						outputStream.flush();
+						outputStream.close();
 						throw std::runtime_error("Too many edges for complete enumeration: " + boost::lexical_cast<std::string>(nReducedEdges) + " > 20 edges");
 					}
 				}

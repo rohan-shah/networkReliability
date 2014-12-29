@@ -271,4 +271,8 @@ namespace networkReliability
 		copy.fixedInop = fixedInop;
 		return copy;
 	}
+	Context const& NetworkReliabilitySubObs::getContext() const
+	{
+		return context;
+	}
 }
