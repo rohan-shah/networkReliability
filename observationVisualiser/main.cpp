@@ -3,10 +3,10 @@
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include "Context.h"
-#include "ObservationVisualiser.h"
+#include "observationVisualiser.h"
 #include <QApplication>
 #include <fstream>
-#if defined(WIN32)
+#if defined(_WIN32)
 	#include <Windows.h>
 	#if defined(_MSC_VER)
 		#include "windowsConsoleOutput.h"
@@ -14,6 +14,7 @@
 #endif
 namespace networkReliability
 {
+#if defined(_WIN32)
 	void registerQTPluginDir()
 	{
 		static bool pluginDir = false;
@@ -33,11 +34,9 @@ namespace networkReliability
 			pluginDir = true;
 		}
 	}
-	int main()
+#endif
+	int main(int argc, char** argv)
 	{
-		LPWSTR* argv;
-		int argc;
-		argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 		boost::program_options::options_description options("Usage");
 		options.add_options()
 			("gridGraph", boost::program_options::value<int>(), "(int) The dimension of the square grid graph to use.")
@@ -49,7 +48,7 @@ namespace networkReliability
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
 			("help", "Display this message");
 
-#if defined(WIN32) && defined(_MSC_VER)
+#if defined(_WIN32) && defined(_MSC_VER)
 		redirectConsoleOutput();
 #endif
 		boost::program_options::variables_map variableMap;
@@ -62,10 +61,8 @@ namespace networkReliability
 			std::cerr << "Error parsing command line arguments: " << ee.what() << std::endl << std::endl;
 			std::cerr << options << std::endl;
 			std::cerr << "Only one of gridGraph, graphFile and completeGraph can be specified" << std::endl;
-			LocalFree(argv);
 			return -1;
 		}
-		LocalFree(argv);
 		if(variableMap.count("help") > 0)
 		{
 			std::cout << options << std::endl;
@@ -87,9 +84,9 @@ namespace networkReliability
 		{
 			return 0;
 		}
-
+#if defined(_WIN32)
 		registerQTPluginDir();
-		argc = 0;
+#endif
 		
 		float pointSize = 0.1f;
 		if(variableMap.count("pointSize") >= 1)
@@ -97,14 +94,14 @@ namespace networkReliability
 			pointSize = variableMap["pointSize"].as<float>();
 		}
 		
-		QApplication app(argc, (char**)NULL);
-		ObservationVisualiser viewer(context, randomSource, pointSize);
+		QApplication app(argc, argv);
+		observationVisualiser viewer(context, randomSource, pointSize);
 		viewer.show();
 		app.exec();
 		return 0;
 	}
 }
-int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+int main(int argc, char** argv)
 {
-	return networkReliability::main();
+	return networkReliability::main(argc, argv);
 }

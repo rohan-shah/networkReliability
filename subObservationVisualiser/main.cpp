@@ -6,7 +6,7 @@
 #include "subObservationVisualiser.h"
 #include <fstream>
 #include <boost/archive/text_iarchive.hpp>
-#if defined(WIN32)
+#if defined(_WIN32)
 	#include <Windows.h>
 	#if defined(_MSC_VER)
 		#include "windowsConsoleOutput.h"
@@ -14,6 +14,7 @@
 #endif
 namespace networkReliability
 {
+#if defined(_WIN32)
 	void registerQTPluginDir()
 	{
 		static bool pluginDir = false;
@@ -33,18 +34,16 @@ namespace networkReliability
 			pluginDir = true;
 		}
 	}
-	int main()
+#endif
+	int main(int argc, char** argv)
 	{
-		LPWSTR* argv;
-		int argc;
-		argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 		boost::program_options::options_description options("Usage");
 		options.add_options()
 			("pointSize", boost::program_options::value<float>(), "(float) The size of graph vertices. Defaults to 0.1")
 			("fromFile", boost::program_options::value<std::string>(), "(path) The file to take the first observation from")
 			("help", "Display this message");
 
-#if defined(WIN32) && defined(_MSC_VER)
+#if defined(_WIN32) && defined(_MSC_VER)
 		redirectConsoleOutput();
 #endif
 		boost::program_options::variables_map variableMap;
@@ -56,18 +55,16 @@ namespace networkReliability
 		{
 			std::cerr << "Error parsing command line arguments: " << ee.what() << std::endl << std::endl;
 			std::cerr << options << std::endl;
-			LocalFree(argv);
 			return -1;
 		}
-		LocalFree(argv);
 		if(variableMap.count("help") > 0)
 		{
 			std::cout << options << std::endl;
 			return 0;
 		}
-
+#if defined(_WIN32)
 		registerQTPluginDir();
-		argc = 0;
+#endif
 		
 		float pointSize = 0.1f;
 		if(variableMap.count("pointSize") >= 1)
@@ -75,7 +72,7 @@ namespace networkReliability
 			pointSize = variableMap["pointSize"].as<float>();
 		}
 
-		QApplication app(argc, (char**)NULL);
+		QApplication app(argc, argv);
 		if(!variableMap.count("fromFile"))
 		{
 			std::cout << "Input `fromFile' is required" << std::endl;
@@ -105,7 +102,7 @@ namespace networkReliability
 		return 0;
 	}
 }
-int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+int main(int argc, char** argv)
 {
-	return networkReliability::main();
+	return networkReliability::main(argc, argv);
 }

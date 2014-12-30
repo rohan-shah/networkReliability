@@ -8,24 +8,25 @@
 #include "ZoomGraphicsView.h"
 namespace networkReliability
 {
-	namespace observationVisualiser
+	namespace observationVisualiserImpl
 	{
-		template <typename Proj> struct less_by_t 
+		struct orderByFirst
 		{
-			Proj p;
-			template <typename T>
-			bool operator ()(T const& a, T const& b) const {
-				return p(a) < p(b);
-			};
+		public:
+			bool operator()(::networkReliability::Context::vertexPosition const& first, ::networkReliability::Context::vertexPosition const& second) const
+			{
+				return first.first < second.first;
+			}
 		};
-		template <typename Proj> less_by_t<Proj> less_by(Proj p) 
+		struct orderBySecond
 		{
-			less_by_t<Proj> ret;
-			ret.p = p;
-			return ret;
+			bool operator()(::networkReliability::Context::vertexPosition const& first, ::networkReliability::Context::vertexPosition const& second) const
+			{
+				return first.second < second.second;
+			}
 		};
 	}
-	ObservationVisualiser::ObservationVisualiser(Context const& context, boost::mt19937& randomSource, float pointSize)
+	observationVisualiser::observationVisualiser(Context const& context, boost::mt19937& randomSource, float pointSize)
 		:randomSource(randomSource), pointSize(pointSize), context(context), obs(context, randomSource)
 	{
 		graphicsScene = new QGraphicsScene();
@@ -45,20 +46,18 @@ namespace networkReliability
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
 
-		auto xLambda = [](Context::vertexPosition const& x){ return x.first;};
-		auto yLambda = [](Context::vertexPosition const& x){ return x.second;};
-		auto xPredicate = observationVisualiser::less_by(xLambda);
-		auto yPredicate = observationVisualiser::less_by(yLambda);
-		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), xPredicate)->first - pointSize;
-		maxX = std::max_element(vertexPositions.begin(), vertexPositions.end(), xPredicate)->first + pointSize;
-		minY = std::min_element(vertexPositions.begin(), vertexPositions.end(), yPredicate)->second - pointSize;
-		maxY = std::max_element(vertexPositions.begin(), vertexPositions.end(), yPredicate)->second + pointSize;
+		observationVisualiserImpl::orderByFirst xOrder;
+		observationVisualiserImpl::orderBySecond yOrder;
+		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), xOrder)->first - pointSize;
+		maxX = std::max_element(vertexPositions.begin(), vertexPositions.end(), xOrder)->first + pointSize;
+		minY = std::min_element(vertexPositions.begin(), vertexPositions.end(), yOrder)->second - pointSize;
+		maxY = std::max_element(vertexPositions.begin(), vertexPositions.end(), yOrder)->second + pointSize;
 
 		setCentralWidget(graphicsView);
 
 		updateGraphics();
 	}
-	void ObservationVisualiser::updateGraphics()
+	void observationVisualiser::updateGraphics()
 	{
 		QList<QGraphicsItem*> allItems = graphicsScene->items();
 		for(QList<QGraphicsItem*>::iterator i = allItems.begin(); i != allItems.end(); i++) delete *i;
@@ -88,7 +87,7 @@ namespace networkReliability
 
 		graphicsView->fitInView(minX, minY, maxX - minX, maxY - minY, Qt::KeepAspectRatio);
 	}
-	void ObservationVisualiser::addBackgroundRectangle()
+	void observationVisualiser::addBackgroundRectangle()
 	{
 		QPen pen(Qt::NoPen);
 		QColor grey("grey");
@@ -100,7 +99,7 @@ namespace networkReliability
 		QGraphicsRectItem* rect = graphicsScene->addRect(minX, minY, maxX - minX, maxY - minY, pen, brush);
 		rect->setZValue(-1);
 	}
-	void ObservationVisualiser::addPoints()
+	void observationVisualiser::addPoints()
 	{
 		std::size_t nVertices = boost::num_vertices(context.getGraph());
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
@@ -129,7 +128,7 @@ namespace networkReliability
 			}
 		}
 	}
-	void ObservationVisualiser::addLines()
+	void observationVisualiser::addLines()
 	{
 		const EdgeState* state = obs.getState();
 		const Context::internalGraph& graph = context.getGraph();
@@ -150,7 +149,7 @@ namespace networkReliability
 			start++;
 		}
 	}
-	bool ObservationVisualiser::eventFilter(QObject*, QEvent *event)
+	bool observationVisualiser::eventFilter(QObject*, QEvent *event)
 	{
 		if(event->type() == QEvent::KeyPress)
 		{
@@ -163,7 +162,7 @@ namespace networkReliability
 		}
 		return false;
 	}
-	ObservationVisualiser::~ObservationVisualiser()
+	observationVisualiser::~observationVisualiser()
 	{
 		delete statusLabel;
 		delete statusBar;

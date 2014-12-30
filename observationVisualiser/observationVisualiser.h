@@ -10,12 +10,12 @@
 #include <boost/shared_ptr.hpp>
 namespace networkReliability
 {
-	class ObservationVisualiser : public QMainWindow
+	class observationVisualiser : public QMainWindow
 	{
 		Q_OBJECT
 	public:
-		ObservationVisualiser(Context const& context, boost::mt19937& randomSource, float pointSize);
-		~ObservationVisualiser();
+		observationVisualiser(Context const& context, boost::mt19937& randomSource, float pointSize);
+		~observationVisualiser();
 		bool eventFilter(QObject* object, QEvent *event);
 	private:
 		//the different graphics bits that have to get added

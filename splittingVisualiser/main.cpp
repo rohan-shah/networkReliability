@@ -4,7 +4,7 @@
 #include "ArgumentsMPFR.h"
 #include <QApplication>
 #include "splittingVisualiser.h"
-#if defined(WIN32)
+#if defined(_WIN32)
 	#include <Windows.h>
 	#if defined(_MSC_VER)
 		#include "windowsConsoleOutput.h"
@@ -12,6 +12,7 @@
 #endif
 namespace networkReliability
 {
+#if defined(_WIN32)
 	void registerQTPluginDir()
 	{
 		static bool pluginDir = false;
@@ -31,11 +32,9 @@ namespace networkReliability
 			pluginDir = true;
 		}
 	}
-	int main()
+#endif
+	int main(int argc, char** argv)
 	{
-		LPWSTR* argv;
-		int argc;
-		argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 		boost::program_options::options_description options("Usage");
 		options.add_options()
 			("gridGraph", boost::program_options::value<int>(), "(int) The dimension of the square grid graph to use. Incompatible with graphFile. ")
@@ -47,7 +46,7 @@ namespace networkReliability
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
 			("help", "Display this message");
 
-#if defined(WIN32) && defined(_MSC_VER)
+#if defined(_WIN32) && defined(_MSC_VER)
 		redirectConsoleOutput();
 #endif
 		boost::program_options::variables_map variableMap;
@@ -59,10 +58,8 @@ namespace networkReliability
 		{
 			std::cerr << "Error parsing command line arguments: " << ee.what() << std::endl << std::endl;
 			std::cerr << options << std::endl;
-			LocalFree(argv);
 			return -1;
 		}
-		LocalFree(argv);
 		if(variableMap.count("help") > 0)
 		{
 			std::cout << options << std::endl;
@@ -94,9 +91,9 @@ namespace networkReliability
 			std::cout << message << std::endl;
 			return 0;
 		}
-
+#if defined(_WIN32)
 		registerQTPluginDir();
-		argc = 0;
+#endif
 		
 		float pointSize = 0.1f;
 		if(variableMap.count("pointSize") >= 1)
@@ -104,14 +101,14 @@ namespace networkReliability
 			pointSize = variableMap["pointSize"].as<float>();
 		}
 		
-		QApplication app(argc, (char**)NULL);
+		QApplication app(argc, argv);
 		splittingVisualiser viewer(context, seed, pointSize, initialRadius);
 		viewer.show();
 		app.exec();
 		return 0;
 	}
 }
-int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+int main(int argc, char** argv)
 {
-	return networkReliability::main();
+	return networkReliability::main(argc, argv);
 }
