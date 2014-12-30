@@ -7,6 +7,7 @@
 #include "includeMPFR.h"
 #include "graphAlgorithms.h"
 #include <boost/serialization/access.hpp>
+#include <boost/serialization/string.hpp>
 namespace networkReliability
 {
 	class NetworkReliabilityObs;
@@ -48,14 +49,16 @@ namespace networkReliability
 		{
 			throw std::runtime_error("File did not start with correct type specifier");
 		}
-		context = new Context();
-		ar >> *context;
+		boost::shared_ptr<Context> nonConst(new Context());
+		ar >> *nonConst;
 
-		subObs = new NetworkReliabilitySubObs(*context);
+		subObs.reset(new NetworkReliabilitySubObs(*context));
 		NetworkReliabilitySubObs& subObsRef = *subObs;
-		subObsRef.state = new EdgeState[context->getNEdges()];
+		subObsRef.state.reset(new EdgeState[context->getNEdges()]);
 		ar >> boost::serialization::make_array(subObsRef.state.get(), context->getNEdges());
 		ar >> subObsRef.radius >> subObsRef.minCut >> subObsRef.couldBeDeactivated >> subObsRef.conditioningCount >> subObsRef.fixedInop >> subObsRef.conditioningProb;
+
+		context = nonConst;
 	}
 	template<class Archive> void writeNetworkReliabilitySubObs(Archive& ar, NetworkReliabilitySubObs& subObs)
 	{

@@ -109,7 +109,7 @@ namespace networkReliability
 			{
 				throw std::runtime_error("Loaded data vector had wrong size");
 			}
-			int remainingBitsToRead = bitsRequired - (wholeIntsRequired * sizeof(int)*8);
+			int remainingBitsToRead = (int)(bitsRequired - (wholeIntsRequired * sizeof(int)*8));
 			if(remainingBitsToRead > 0)
 			{
 				ar >> storedBits;

@@ -61,11 +61,12 @@ namespace networkReliability
 		{
 			std::string typeString = "context";
 			ar << typeString;
-			ar & graph;
+			//save all shared_ptrs as references instead. 
+			ar & *graph;
 			///I would have to write extra serialization code to get this line to compile
 			//ar & directedGraph;
-			ar & interestVertices;
-			ar & vertexPositions;
+			ar & *interestVertices;
+			ar & *vertexPositions;
 			ar & nEdges;
 			ar << boost::serialization::make_array(edgeDistances.get(), nEdges*nEdges);
 			ar << operationalProbability << inoperationalProbabilityD << minCutEdges;
@@ -78,12 +79,28 @@ namespace networkReliability
 			{
 				throw std::runtime_error("File did not start with correct type specifier");
 			}
-			ar & graph;
+			//load all shared_ptrs as references
+			//have to load as non-const
+			{
+				boost::shared_ptr<internalGraph> nonConstGraph(new internalGraph());
+				ar & *nonConstGraph;
+				graph = nonConstGraph;
+			}
 			//I would have to write extra serialization code to get this line to compile, so just call constructDerictedGraph instead
 			//ar & directedGraph;
 			constructDirectedGraph();
-			ar & interestVertices;
-			ar & vertexPositions;
+			//have to load as non-const
+			{
+				boost::shared_ptr<std::vector<int> > nonConstInterestVertices(new std::vector<int>());
+				ar & *nonConstInterestVertices;
+				interestVertices = nonConstInterestVertices;
+			}
+			//have to load as non-const
+			{
+				boost::shared_ptr<std::vector<vertexPosition> > nonConstVertexPositions(new std::vector<vertexPosition>());
+				ar & *nonConstVertexPositions;
+				vertexPositions = nonConstVertexPositions;
+			}
 			ar & nEdges;
 			if(boost::num_edges(*graph) != nEdges)
 			{
@@ -93,7 +110,7 @@ namespace networkReliability
 			{
 				throw std::runtime_error("Involid number of edges for directedGraph");
 			}
-			edgeDistances = new int[nEdges*nEdges];
+			edgeDistances.reset(new double[nEdges*nEdges]);
 			ar >> boost::serialization::make_array(edgeDistances.get(), nEdges*nEdges);
 			ar >> operationalProbability >> inoperationalProbabilityD >> minCutEdges;
 		}

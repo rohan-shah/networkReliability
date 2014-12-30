@@ -80,8 +80,8 @@ namespace networkReliability
 	void empiricalDistribution::expand(int count, std::vector<int>& output)
 	{
 		if(output.size() != nEdges) throw std::runtime_error("Wrong number of elements in vector passed to empiricalDistribution::expand");
-		int initialBit = count*nEdges;
-		int initialInt = initialBit / (sizeof(int)*8);
+		int initialBit = (int)(count*nEdges);
+		int initialInt = (int)(initialBit / (sizeof(int)*8));
 		int storedBits = data[initialInt];
 		int extraBitsRead = initialBit - (initialInt* sizeof(int)*8);
 		int nStoredBits = sizeof(int)*8;
@@ -99,7 +99,7 @@ namespace networkReliability
 				storedBits = data[currentInt];
 				nStoredBits = sizeof(int)*8;
 			}
-			if((storedBits & (1 << (sizeof(int)*8)-1)) != 0)
+			if((storedBits & (1 << (sizeof(int)*8-1))) != 0)
 			{
 				output[edgeCounter] = 1;
 			}

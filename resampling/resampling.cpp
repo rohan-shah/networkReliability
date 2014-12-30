@@ -199,7 +199,7 @@ namespace networkReliability
 				estimate = 0;
 				goto returnEstimate;
 			}
-			int previousSize = observations.size();
+			std::size_t previousSize = observations.size();
 			//resampling step
 			observations.clear();
 			resamplingProbabilities.clear();
@@ -343,7 +343,7 @@ namespace networkReliability
 							//if it's disconnected, we want to find the non-reduced edge configurations that give us that reduced edge configuration
 							if(!currentGraphConnected)
 							{
-								int currentIndex = nReducedEdges-1;
+								std::size_t currentIndex = nReducedEdges-1;
 								mpfr_class currentPart = 1;
 								while(currentIndex != -1)
 								{
@@ -379,7 +379,7 @@ namespace networkReliability
 					}
 					else
 					{
-						std::ofstream outputStream("./tooManyEdges.dat", std::ios_base::binary);
+						std::ofstream outputStream("./tooManyEdges.dat", std::ios_base::out);
 						boost::archive::text_oarchive archive(outputStream);
 						writeNetworkReliabilitySubObs(archive, *j);
 						outputStream.flush();
