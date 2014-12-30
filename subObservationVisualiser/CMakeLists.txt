@@ -1,0 +1,10 @@
+if(Qt5_FOUND AND WIN32)
+	qt5_wrap_cpp(subObservationVisualiser_MOC_SOURCES subObservationVisualiser.h)
+	add_executable(subObservationVisualiser subObservationVisualiser.cpp subObservationVisualiser.h main.cpp ${subObservationVisualiser_MOC_SOURCES})
+	set_target_properties(subObservationVisualiser PROPERTIES LINK_FLAGS "/SUBSYSTEM:windows" RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/ PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/)
+	target_link_libraries(subObservationVisualiser PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)
+	target_link_libraries(subObservationVisualiser PUBLIC networkReliabilityCommon mpfr)
+	target_include_directories(subObservationVisualiser PUBLIC ${Boost_INCLUDE_DIRS})
+	target_compile_definitions(subObservationVisualiser PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+endif()
+
