@@ -76,6 +76,7 @@ namespace networkReliability
 		mpfr_class probability;
 		if(!readProbabilityString(variableMap, probability))
 		{
+			std::cout << "Please enter a single value for input `opProbability'" << std::endl;
 			return 0;
 		}
 

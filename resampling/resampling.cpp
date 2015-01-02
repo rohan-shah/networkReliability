@@ -153,8 +153,6 @@ namespace networkReliability
 		//additional working data for getRadius1ReducedGraph
 		std::vector<int> edgeCounts;
 		std::vector<int> reducedGraphInterestVertices(interestVertices.size());
-		ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
-		turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
 
 		//If we specify the useMinCut option then we need to do resampling. This vector holds the probabilities
 		std::vector<double> resamplingProbabilities;
@@ -219,6 +217,8 @@ namespace networkReliability
 		}
 		if (nPMC > 0)
 		{
+			ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
+			turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				Context::internalGraph reducedGraph;
@@ -272,124 +272,80 @@ namespace networkReliability
 		}
 		else if(useCompleteEnumeration)
 		{
+			int tooManyEdgesCount = 0;
 			estimate = 0;
 			std::vector<EdgeState> edgeStates;
-			std::vector<int> reducedEdgeCounts, maximalReducedEdgeCounts;
+			NetworkReliabilitySubObs::getRadius1ReducedGraphNoSelfWithWeightsInput reducedGraphInput(interestVertices);
+			//This is used to check the connected components of the reduced graph (not used in the call to getRadius1ReducedGraphNoSelfWithWeights
 			std::vector<int> components2;
-			std::vector<mpfr_class> powers(nEdges*nEdges);
-			std::vector<mpfr_class> inopPowers(nEdges), opPowers(nEdges);
-			for(int counter = 0; counter < nEdges; counter++)
-			{
-				inopPowers[counter] = boost::multiprecision::pow(inopProbability, counter);
-				opPowers[counter] = boost::multiprecision::pow(opProbability, counter);
-			}
-			for(int opCounter = 0; opCounter < nEdges; opCounter++)
-			{
-				for(int inopCounter = 0; inopCounter < nEdges; inopCounter++)
-				{
-					powers[opCounter + nEdges*inopCounter] = opPowers[opCounter] * inopPowers[inopCounter];
-				}
-			}
+			//Similarly, this is used for the connected components of the reduced graph. 
+			boost::detail::depth_first_visit_restricted_impl_helper<NetworkReliabilitySubObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				if(j->getMinCut() > 0)
 				{
 					mpfr_class currentEstimate = 0;
-					Context::internalGraph reducedGraph;
 					//get out the reduced graph
-					j->getRadius1ReducedGraphNoSelf(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
-					std::size_t nReducedEdges = boost::num_edges(reducedGraph);
-					std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
-					std::size_t nUnreducedSelfEdges = 0;
-					for(int i = 0; i < nReducedVertices; i++) nUnreducedSelfEdges += edgeCounts[i + i * nReducedVertices];
-
+					j->getRadius1ReducedGraphNoSelfWithWeights(reducedGraphInput);
+					std::size_t nReducedEdges = boost::num_edges(reducedGraphInput.outputGraph);
+					std::size_t nReducedVertices = boost::num_vertices(reducedGraphInput.outputGraph);
+					
 					edgeStates.resize(nReducedEdges);
-					reducedEdgeCounts.resize(nReducedEdges);
-					maximalReducedEdgeCounts.resize(nReducedEdges);
-
 					components2.resize(nReducedVertices);
-					int reducedVertex1 = components[interestVertices[0]];
-					int reducedVertex2 = components[interestVertices[1]];
+					colorMap.resize(nReducedVertices);
+					int reducedVertex1 = reducedGraphInput.reducedInterestVertices[0];
+					int reducedVertex2 = reducedGraphInput.reducedInterestVertices[1];
 					EdgeState* edgeStatePtr = &(edgeStates[0]);
 					//Exhaustive enumeration is only really going to be feasible if the number of edges in the reduced graph is small. 
 					if(nReducedEdges < 20)
 					{
-						std::size_t nUnreducedEdges = 0;
-						Context::internalGraph::edge_iterator current, end;
-						boost::tie(current, end) = boost::edges(reducedGraph);
-						for (; current != end; current++)
-						{
-							int edgeIndex = boost::get(boost::edge_index, reducedGraph, *current);
-							maximalReducedEdgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices];
-							nUnreducedEdges += maximalReducedEdgeCounts[edgeIndex];
-						}
 						unsigned long maximumState = 1UL << nReducedEdges;
 						for(unsigned long stateCounter = 0; stateCounter < maximumState; stateCounter++)
 						{
-							memset(&(reducedEdgeCounts[0]), 0, sizeof(int)*nReducedEdges);
 							//expand out the bitmask. Initially specify that every reduced edge that is UP, is UP because all the component edges are up
 							for(int edgeCounter = 0; edgeCounter < nReducedEdges; edgeCounter++)
 							{
 								if(stateCounter & (1LL << edgeCounter))
 								{
 									edgeStates[edgeCounter] = UNFIXED_OP;
-									reducedEdgeCounts[edgeCounter] = maximalReducedEdgeCounts[edgeCounter];
 								}
 								else edgeStates[edgeCounter] = UNFIXED_INOP;
 							}
 							std::fill(colorMap.begin(), colorMap.end(), Color::white()); 
-							boost::connected_components_restricted(reducedGraph, &(components2[0]), &(colorMap[0]), stack, &(edgeStates[0]));
+							boost::connected_components_restricted(reducedGraphInput.outputGraph, &(components2[0]), &(colorMap[0]), reducedGraphStack, &(edgeStates[0]));
 							bool currentGraphConnected = components2[reducedVertex1] == components2[reducedVertex2];
 							//if it's disconnected, we want to find the non-reduced edge configurations that give us that reduced edge configuration
 							if(!currentGraphConnected)
 							{
-								std::size_t currentIndex = nReducedEdges-1;
 								mpfr_class currentPart = 1;
-								while(currentIndex != -1)
+								NetworkReliabilitySubObs::reducedGraphWithProbabilities::edge_iterator current, end;
+								boost::tie(current, end) = boost::edges(reducedGraphInput.outputGraph);
+								for(int reducedEdgeCounter = 0; reducedEdgeCounter != nReducedEdges; reducedEdgeCounter++, current++)
 								{
-									currentPart = 1;
-									unsigned long binomialPart = 1;
-									for(int reducedEdgeCounter = 0; reducedEdgeCounter != nReducedEdges; reducedEdgeCounter++)
-									{
-										binomialPart *= factorial(maximalReducedEdgeCounts[reducedEdgeCounter])/(factorial(reducedEdgeCounts[reducedEdgeCounter])*factorial(maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter]));
-										int opCounter = reducedEdgeCounts[reducedEdgeCounter], inopCounter = maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter];
-										currentPart *= powers[opCounter + nEdges*inopCounter];
-										/*currentPart *= boost::multiprecision::pow(opProbability, reducedEdgeCounts[reducedEdgeCounter]);
-										currentPart *= boost::multiprecision::pow(inopProbability, maximalReducedEdgeCounts[reducedEdgeCounter] - reducedEdgeCounts[reducedEdgeCounter]);*/
-									}
-									currentEstimate += currentPart * binomialPart;
-									currentIndex = nReducedEdges-1;
-									do
-									{
-										if(stateCounter & (1ULL << currentIndex))
-										{
-											reducedEdgeCounts[currentIndex]--;
-											if(!reducedEdgeCounts[currentIndex]) reducedEdgeCounts[currentIndex] = maximalReducedEdgeCounts[currentIndex];
-											else break;
-										}
-										currentIndex--;
-									}
-									while(currentIndex != -1);
+									if(edgeStates[reducedEdgeCounter] & UNFIXED_OP) currentPart *= boost::get(boost::edge_op_probability, reducedGraphInput.outputGraph, *current);
+									else currentPart *= boost::get(boost::edge_inop_probability, reducedGraphInput.outputGraph, *current);
 								}
+								currentEstimate += currentPart;
 							}
 						}
-						const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, nUnreducedEdges + nUnreducedSelfEdges, nUnreducedEdges + nUnreducedSelfEdges);
+						const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, reducedGraphInput.nUnreducedEdges, reducedGraphInput.nUnreducedEdges);
 						mpfr_class conditional = (1 - dist.getCumulativeProbabilities()[j->getMinCut()-1]);
 						estimate += j->getGeneratedObservationConditioningProb() * currentEstimate / conditional;
 					}
 					else
 					{
-						std::ofstream outputStream("./tooManyEdges.dat", std::ios_base::out);
-						boost::archive::text_oarchive archive(outputStream);
-						writeNetworkReliabilitySubObs(archive, *j);
-						outputStream.flush();
-						outputStream.close();
-						throw std::runtime_error("Too many edges for complete enumeration: " + boost::lexical_cast<std::string>(nReducedEdges) + " > 20 edges");
+						tooManyEdgesCount++;
+						NetworkReliabilityObs obs = j->getObservation(randomSource);
+						if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
+						{
+							estimate += j->getGeneratedObservationConditioningProb();
+						}
 					}
 				}
 				else estimate += j->getGeneratedObservationConditioningProb();
 			}
 			estimate /= n;
+			std::cout << tooManyEdgesCount << " graphs had too many edges for complete enumeration" << std::endl;
 		}
 		else
 		{

@@ -8,6 +8,19 @@
 #include "graphAlgorithms.h"
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/string.hpp>
+namespace boost
+{
+#define BOOST_INSTALL_PROPERTY(KIND, NAME) \
+  template <> struct property_kind<KIND##_##NAME##_t> { \
+    typedef KIND##_property_tag type; \
+  }
+
+#define BOOST_DEF_PROPERTY(KIND, NAME) \
+  enum KIND##_##NAME##_t { KIND##_##NAME }; \
+  BOOST_INSTALL_PROPERTY(KIND, NAME)
+	BOOST_DEF_PROPERTY(edge, inop_probability);
+	BOOST_DEF_PROPERTY(edge, op_probability);
+}
 namespace networkReliability
 {
 	class NetworkReliabilityObs;
@@ -26,7 +39,24 @@ namespace networkReliability
 		int getConditioningCount() const;
 		const conditioning_type& getConditioningProb() const;
 		void getRadius1ReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
-		void getRadius1ReducedGraphNoSelf(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
+		void getRadius1ReducedGraphNoSelf(Context::internalGraph& outputGraph, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
+		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, int>, boost::property<boost::edge_index_t, int, boost::property<boost::edge_inop_probability_t, mpfr_class, boost::property<boost::edge_op_probability_t, mpfr_class> > > > reducedGraphWithProbabilities;
+		struct getRadius1ReducedGraphNoSelfWithWeightsInput
+		{
+		public:
+			getRadius1ReducedGraphNoSelfWithWeightsInput(const std::vector<int>& interestVertices)
+				:interestVertices(interestVertices)
+			{}
+			reducedGraphWithProbabilities outputGraph;
+			std::vector<int> edgeCounts;
+			std::size_t nUnreducedEdges;
+			std::vector<int> components;
+			boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+			std::vector<boost::default_color_type> colorMap;
+			const std::vector<int>& interestVertices;
+			std::vector<int> reducedInterestVertices;
+		};
+		void getRadius1ReducedGraphNoSelfWithWeights(getRadius1ReducedGraphNoSelfWithWeightsInput& input) const;
 		NetworkReliabilitySubObs::conditioning_type getGeneratedObservationConditioningProb() const;
 		NetworkReliabilitySubObs copyWithConditioningProb(const conditioning_type& conditioningProb) const;
 		Context const& getContext() const;
@@ -49,16 +79,15 @@ namespace networkReliability
 		{
 			throw std::runtime_error("File did not start with correct type specifier");
 		}
-		boost::shared_ptr<Context> nonConst(new Context());
-		ar >> *nonConst;
+		boost::shared_ptr<Context> nonConstContext(new Context());
+		ar >> *nonConstContext;
+		context = nonConstContext;
 
 		subObs.reset(new NetworkReliabilitySubObs(*context));
 		NetworkReliabilitySubObs& subObsRef = *subObs;
 		subObsRef.state.reset(new EdgeState[context->getNEdges()]);
 		ar >> boost::serialization::make_array(subObsRef.state.get(), context->getNEdges());
 		ar >> subObsRef.radius >> subObsRef.minCut >> subObsRef.couldBeDeactivated >> subObsRef.conditioningCount >> subObsRef.fixedInop >> subObsRef.conditioningProb;
-
-		context = nonConst;
 	}
 	template<class Archive> void writeNetworkReliabilitySubObs(Archive& ar, NetworkReliabilitySubObs& subObs)
 	{

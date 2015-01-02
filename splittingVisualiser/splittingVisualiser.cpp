@@ -128,9 +128,11 @@ namespace networkReliability
 
 		QPen dashedPen(QColor("black"));
 		dashedPen.setDashPattern(dashPattern);
+		dashedPen.setWidthF(pointSize/10);
 
 		QPen dashedRedPen(QColor("red"));
 		dashedRedPen.setDashPattern(dashPattern);
+		dashedRedPen.setWidthF(pointSize/10);
 
 		Context::internalGraph::edge_iterator start, end;
 		boost::tie(start, end) = boost::edges(graph);
