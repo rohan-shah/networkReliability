@@ -251,14 +251,6 @@ namespace networkReliability
 				}
 			}
 		}
-		if (context.useMinCut())
-		{
-			minimumInoperative = minCut;
-		}
-		else
-		{
-			minimumInoperative = std::max(0, conditioningCount - fixedInop);
-		}
 	}
 	const NetworkReliabilitySubObs::conditioning_type& NetworkReliabilitySubObs::getConditioningProb() const
 	{
@@ -407,5 +399,9 @@ namespace networkReliability
 	Context const& NetworkReliabilitySubObs::getContext() const
 	{
 		return context;
+	}
+	int NetworkReliabilitySubObs::getRadius() const
+	{
+		return radius;
 	}
 }

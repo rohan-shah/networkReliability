@@ -22,23 +22,9 @@
 #include "connected_components_restricted.hpp"
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/math/distributions.hpp>
 namespace networkReliability
 {
-	std::string toString(mpfr_class number)
-	{
-		mp_exp_t exponent;
-		char* resultCStr = mpfr_get_str(NULL, &exponent, 10, 10, number.backend().data(), MPFR_RNDN);
-		std::string resultStr  = resultCStr;
-		free(resultCStr);
-		return resultStr.substr(0, 1) + "." + resultStr.substr(1, resultStr.size() - 1) + "e" + boost::lexical_cast<std::string>(exponent - 1);
-	}
-	inline int factorial(int input)
-	{
-		int output = 1;
-		for(int count = 2; count <= input; count++) output *= count;
-		return output;
-	}
-	std::string toString(double number);
 	int main(int argc, char **argv)
 	{
 		typedef NetworkReliabilityObs::conditioning_type calculation_type;
@@ -128,6 +114,7 @@ namespace networkReliability
 
 		std::vector<NetworkReliabilitySubObs> observations;
 		std::vector<NetworkReliabilitySubObs> nextStepObservations;
+		std::vector<int> resamplingIndices;
 
 		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > zeroInitialisedAccumulator(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
 		//mean of getting to the next level, once we've conditioned on having enough edges.
@@ -135,10 +122,11 @@ namespace networkReliability
 		//mean conditioningProbability
 		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > > conditioningProbabilities(initialRadius + 1, zeroInitialisedAccumulator);
 
-		//working data for algorithms
+		//working data for graph algorithms
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+
 		//Working data for alias method
 		std::vector<std::ptrdiff_t> aliasMethodTemporary1, aliasMethodTemporary2;
 		std::vector<std::pair<double, std::ptrdiff_t> > aliasMethodTemporary3;
@@ -149,10 +137,6 @@ namespace networkReliability
 		int finalSplittingStep;
 		if (nPMC > 0 || useCompleteEnumeration) finalSplittingStep = initialRadius - 1;
 		else finalSplittingStep = initialRadius;
-
-		//additional working data for getRadius1ReducedGraph
-		std::vector<int> edgeCounts;
-		std::vector<int> reducedGraphInterestVertices(interestVertices.size());
 
 		//If we specify the useMinCut option then we need to do resampling. This vector holds the probabilities
 		std::vector<double> resamplingProbabilities;
@@ -181,6 +165,7 @@ namespace networkReliability
 		for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
 		{
 			nextStepObservations.clear();
+			resamplingIndices.clear();
 			for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				NetworkReliabilityObs newObs = j->getObservation(randomSource);
@@ -212,11 +197,17 @@ namespace networkReliability
 			aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
 			for (int k = 0; k < previousSize; k++)
 			{
-				observations.push_back(nextStepObservations[alias(randomSource)].copyWithConditioningProb(averageWeight));
+				int index = alias(randomSource);
+				observations.push_back(nextStepObservations[index].copyWithConditioningProb(averageWeight));
+				resamplingIndices.push_back(index);
 			}
 		}
 		if (nPMC > 0)
 		{
+			//Working data for call to getRadius1ReducedGraph
+			std::vector<int> edgeCounts;
+			std::vector<int> reducedGraphInterestVertices(interestVertices.size());
+			
 			ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
 			turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
@@ -280,9 +271,29 @@ namespace networkReliability
 			std::vector<int> components2;
 			//Similarly, this is used for the connected components of the reduced graph. 
 			boost::detail::depth_first_visit_restricted_impl_helper<NetworkReliabilitySubObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
-			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+			//If we resample the same value multiple times above, only do the complete enumeration once. This isn't possible if initialRadius == 1
+			std::vector<mpfr_class> completeEnumerationValues(resamplingIndices.size(), -2);
+
+			int counter = 0;
+			int cachedValues = 0;
+			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++, counter++)
 			{
-				if(j->getMinCut() > 0)
+				if(resamplingIndices.size() > 0 && completeEnumerationValues[resamplingIndices[counter]] > -1)
+				{
+					mpfr_class currentEstimate = completeEnumerationValues[resamplingIndices[counter]];
+					std::size_t nUnfixedEdges = 0;
+					const EdgeState* state = j->getState();
+					for(int i = 0; i < nEdges; i++)
+					{
+						if(state[i] & UNFIXED_MASK) nUnfixedEdges++;
+					}
+					boost::math::binomial_distribution<mpfr_class> targetDistribution(nUnfixedEdges, inopProbability);
+					mpfr_class conditional = boost::math::cdf(boost::math::complement(targetDistribution, j->getMinCut()-1));
+					estimate += j->getGeneratedObservationConditioningProb() * currentEstimate / conditional;
+					cachedValues++;
+					continue;
+				}
+				else if(j->getMinCut() > 0)
 				{
 					mpfr_class currentEstimate = 0;
 					//get out the reduced graph
@@ -328,12 +339,20 @@ namespace networkReliability
 								currentEstimate += currentPart;
 							}
 						}
-						const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, reducedGraphInput.nUnreducedEdges, reducedGraphInput.nUnreducedEdges);
-						mpfr_class conditional = (1 - dist.getCumulativeProbabilities()[j->getMinCut()-1]);
+						boost::math::binomial_distribution<mpfr_class> targetDistribution(reducedGraphInput.nUnreducedEdges, inopProbability);
+						mpfr_class conditional = boost::math::cdf(boost::math::complement(targetDistribution, j->getMinCut()-1));
 						estimate += j->getGeneratedObservationConditioningProb() * currentEstimate / conditional;
+						if(resamplingIndices.size() > 1) completeEnumerationValues[resamplingIndices[counter]] = currentEstimate;
 					}
 					else
 					{
+						/*if(tooManyEdgesCount == 0)
+						{
+							std::ofstream outputStream("./tooManyEdges.dat");
+							boost::archive::text_oarchive outputArchive(outputStream);
+							writeNetworkReliabilitySubObs(outputArchive, *j);
+							std::cout << "nEdges = " << nReducedEdges << std::endl << "nVertices " << nReducedVertices << std::endl;
+						}*/
 						tooManyEdgesCount++;
 						NetworkReliabilityObs obs = j->getObservation(randomSource);
 						if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
@@ -346,6 +365,7 @@ namespace networkReliability
 			}
 			estimate /= n;
 			std::cout << tooManyEdgesCount << " graphs had too many edges for complete enumeration" << std::endl;
+			std::cout << "Used cached values " << cachedValues << " times" << std::endl;
 		}
 		else
 		{
@@ -371,7 +391,7 @@ namespace networkReliability
 			}
 		}
 returnEstimate:
-		std::cout << "Estimate is " << toString(estimate) << std::endl;
+		std::cout << "Estimate is " << estimate.convert_to<double>() << std::endl;
 		return 0;
 	}
 }

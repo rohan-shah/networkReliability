@@ -60,6 +60,7 @@ namespace networkReliability
 		NetworkReliabilitySubObs::conditioning_type getGeneratedObservationConditioningProb() const;
 		NetworkReliabilitySubObs copyWithConditioningProb(const conditioning_type& conditioningProb) const;
 		Context const& getContext() const;
+		int getRadius() const;
 	private:
 		NetworkReliabilitySubObs(Context const& context);
 		Context const& context;
