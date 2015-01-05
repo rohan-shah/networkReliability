@@ -23,13 +23,28 @@ namespace networkReliability
 		void fromStart();
 		void addPoints();
 		void addLines();
+
+		void addReducedPoints();
+		void addReducedLines();
 		float pointSize;
 
 		boost::shared_ptr<NetworkReliabilitySubObs> subObs;
 		QGraphicsScene* graphicsScene;
 		QGraphicsView* graphicsView;
-
+		QStatusBar* statusBar;
+		QLabel* statusLabel;
+		QLabel* reducedLabel;
 		float minX, maxX, minY, maxY;
+		//If the radius of the sub observation is 1, this holds the connected components of the sub observation. 
+		std::vector<int> radius1Components;
+		//...and this holds the currently highlighted component
+		int highlightedRadius1Component;
+		//...and this hold whether or not we're looking at the reduced version or note. 
+		bool reduced;
+		//...and the reduced graph 
+		NetworkReliabilitySubObs::getRadius1ReducedGraphNoSelfWithWeightsInput reducedGraphData;
+		//...and the number of components in the unreduced graph
+		int nUnreducedComponents;
 	};
 }
 #endif

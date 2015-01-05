@@ -5,6 +5,7 @@
 #include <QGraphicsRectItem>
 #include "graphAlgorithms.h"
 #include <boost/lexical_cast.hpp>
+#include <QGraphicsSceneMouseEvent>
 namespace networkReliability
 {
 	bool sortByFirst(Context::vertexPosition const& first, Context::vertexPosition const& second)
@@ -16,8 +17,17 @@ namespace networkReliability
 		return first.second < second.second;
 	}
 	subObservationVisualiser::subObservationVisualiser(boost::shared_ptr<NetworkReliabilitySubObs> subObs, float pointSize)
-		:pointSize(pointSize), subObs(subObs)
+		:pointSize(pointSize), subObs(subObs), highlightedRadius1Component(-1), reducedGraphData(subObs->getContext().getInterestVertices())
 	{
+		Context const& context = subObs->getContext();
+		if(subObs->getRadius() == 1)
+		{
+			boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+			std::vector<boost::default_color_type> colorMap;
+			nUnreducedComponents = countComponents(context, subObs->getState(), radius1Components, stack, colorMap);
+			subObs->getRadius1ReducedGraphNoSelfWithWeights(reducedGraphData);
+		}
+		
 		graphicsScene = new QGraphicsScene();
 		graphicsScene->installEventFilter(this);
 		graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -27,10 +37,16 @@ namespace networkReliability
 		graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->viewport()->installEventFilter(this);
 
-		Context const& context = subObs->getContext();
+		statusBar = new QStatusBar();
+		this->statusLabel = new QLabel;
+		statusLabel->setText("");
+		statusBar->addPermanentWidget(statusLabel);
+		reducedLabel = new QLabel;
+		reducedLabel->setText("");
+		statusBar->addPermanentWidget(reducedLabel);
+		setStatusBar(statusBar);
+
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
-
-
 		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first - pointSize;
 		maxX = std::max_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first + pointSize;
 		minY = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortBySecond)->second - pointSize;
@@ -45,17 +61,35 @@ namespace networkReliability
 	}
 	void subObservationVisualiser::updateGraphics()
 	{
+		if(reduced)
+		{
+			reducedLabel->setText("Reduced");
+		}
+		else
+		{
+			reducedLabel->setText("Unreduced");
+		}
 		QList<QGraphicsItem*> allItems = graphicsScene->items();
 		for(QList<QGraphicsItem*>::iterator i = allItems.begin(); i != allItems.end(); i++) delete *i;
 
+
 		addBackgroundRectangle();
-		addPoints();
-		addLines();
+		if(!reduced)
+		{
+			addPoints();
+			addLines();
+		}
+		else
+		{
+			addReducedPoints();
+			addReducedLines();
+		}
 	}
 	void subObservationVisualiser::addPoints()
 	{
 		Context const& context = subObs->getContext();
 		std::size_t nVertices = boost::num_vertices(context.getGraph());
+		int radius = subObs->getRadius();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 		const std::vector<int>& interestVertices = context.getInterestVertices();
 
@@ -66,12 +100,20 @@ namespace networkReliability
 		QPen redPen(QColor("red"));
 		redPen.setStyle(Qt::NoPen);
 		QBrush redBrush(QColor("red"));
+		
+		QPen greenPen(QColor("green"));
+		greenPen.setStyle(Qt::NoPen);
+		QBrush greenBrush(QColor("green"));
 
 		for(int vertexCounter = 0; vertexCounter < nVertices; vertexCounter++)
 		{
 			Context::vertexPosition currentPosition = vertexPositions[vertexCounter];
 			float x = currentPosition.first;
 			float y = currentPosition.second;
+			if(radius == 1 && highlightedRadius1Component != -1 && radius1Components[vertexCounter] == highlightedRadius1Component)
+			{
+				graphicsScene->addEllipse(x - pointSize, y - pointSize, 2*pointSize, 2*pointSize, greenPen, greenBrush);
+			}
 			if(interestVertices.end() == std::find(interestVertices.begin(), interestVertices.end(), vertexCounter))
 			{
 				graphicsScene->addEllipse(x - pointSize/2, y - pointSize/2, pointSize, pointSize, blackPen, blackBrush);
@@ -146,8 +188,124 @@ namespace networkReliability
 		QGraphicsRectItem* rect = graphicsScene->addRect(minX, minY, maxX - minX, maxY - minY, pen, brush);
 		rect->setZValue(-1);
 	}
-	bool subObservationVisualiser::eventFilter(QObject*, QEvent *event)
+	bool subObservationVisualiser::eventFilter(QObject* object, QEvent *event)
 	{
+		if(event->type() == QEvent::GraphicsSceneMouseMove && object == graphicsScene)
+		{
+			QGraphicsSceneMouseEvent* mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+			QPointF position = mouseEvent->scenePos();
+			std::stringstream ss;
+			ss << "(" << position.x() << ", " << position.y() << ")";
+			statusLabel->setText(QString::fromStdString(ss.str()));
+			Context const& context = subObs->getContext();
+			const Context::internalGraph& graph = context.getGraph();
+			std::size_t nVertices = boost::num_vertices(graph);
+			const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+
+			if(subObs->getRadius() == 1)
+			{
+				if(!reduced)
+				{
+					std::vector<double> distances(vertexPositions.size());
+					for(int i = 0; i < nVertices; i++)
+					{
+						distances[i] = (position.x() - vertexPositions[i].first) * (position.x() - vertexPositions[i].first) + (position.y() - vertexPositions[i].second) * (position.y() - vertexPositions[i].second);
+					}
+					int closestVertex = std::distance(distances.begin(), std::min_element(distances.begin(), distances.end()));
+					if(highlightedRadius1Component != radius1Components[closestVertex])
+					{
+						highlightedRadius1Component = radius1Components[closestVertex];
+						updateGraphics();
+					}
+				}
+				else
+				{
+					
+				}
+			}
+		}
+		else if(event->type() == QEvent::Leave && object == graphicsScene)
+		{
+			highlightedRadius1Component = -1;
+			updateGraphics();
+		}
+		else if(event->type() == QEvent::KeyPress)
+		{
+			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+			if(keyEvent->key() == Qt::Key_R)
+			{
+				reduced = !reduced;
+				if(!reduced) highlightedRadius1Component = -1;
+				updateGraphics();
+			}
+			return true;
+		}
 		return false;
+	}
+	void subObservationVisualiser::addReducedPoints()
+	{
+		Context const& context = subObs->getContext();
+		const Context::internalGraph& unreducedGraph = context.getGraph();
+		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+		std:size_t nUnreducedVertices = boost::num_vertices(unreducedGraph);
+		std::size_t nReducedVertices = boost::num_vertices(reducedGraphData.outputGraph);
+
+		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
+		NetworkReliabilitySubObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
+		boost::tie(currentReducedVertex, endReducedVertex) = boost::vertices(reducedGraphData.outputGraph);
+		for(;currentReducedVertex != endReducedVertex; currentReducedVertex++)
+		{
+			stillPresentInReduced[boost::get(boost::vertex_name, reducedGraphData.outputGraph, *currentReducedVertex)] = true;
+		}
+		
+		QPen blackPen(QColor("black"));
+		blackPen.setStyle(Qt::NoPen);
+		QBrush blackBrush(QColor("black"));
+
+		Context::internalGraph::vertex_iterator currentUnreducedVertex, endUnreducedVertex;
+		boost::tie(currentUnreducedVertex, endUnreducedVertex) = boost::vertices(unreducedGraph);
+		for(;currentUnreducedVertex != endUnreducedVertex; currentUnreducedVertex++)
+		{
+			if(stillPresentInReduced[radius1Components[*currentUnreducedVertex]])
+			{
+				Context::vertexPosition currentPosition = vertexPositions[*currentUnreducedVertex];
+				float x = currentPosition.first;
+				float y = currentPosition.second;
+
+				graphicsScene->addEllipse(x - pointSize/2, y - pointSize/2, pointSize, pointSize, blackPen, blackBrush);
+			}
+		}
+	}
+	void subObservationVisualiser::addReducedLines()
+	{
+		Context const& context = subObs->getContext();
+		const Context::internalGraph& unreducedGraph = context.getGraph();
+		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+		std:size_t nUnreducedVertices = boost::num_vertices(unreducedGraph);
+		std::size_t nReducedVertices = boost::num_vertices(reducedGraphData.outputGraph);
+
+		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
+		NetworkReliabilitySubObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
+		boost::tie(currentReducedVertex, endReducedVertex) = boost::vertices(reducedGraphData.outputGraph);
+		for(;currentReducedVertex != endReducedVertex; currentReducedVertex++)
+		{
+			stillPresentInReduced[boost::get(boost::vertex_name, reducedGraphData.outputGraph, *currentReducedVertex)] = true;
+		}
+		
+		QPen blackPen(QColor("black"));
+
+		Context::internalGraph::edge_iterator currentEdge, lastEdge;
+		boost::tie(currentEdge, lastEdge) = boost::edges(unreducedGraph);
+		const EdgeState* state = subObs->getState();
+		for(; currentEdge != lastEdge; currentEdge++)
+		{
+			int sourceVertex = boost::source(*currentEdge, unreducedGraph);
+			int targetVertex = boost::target(*currentEdge, unreducedGraph);
+			if(stillPresentInReduced[radius1Components[sourceVertex]] && radius1Components[sourceVertex] == radius1Components[targetVertex] && (state[boost::get(boost::edge_index, unreducedGraph, *currentEdge)] & OP_MASK))
+			{
+				Context::vertexPosition sourcePosition = vertexPositions[sourceVertex], targetPosition = vertexPositions[targetVertex];
+				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, blackPen);
+			}
+		}
 	}
 }
