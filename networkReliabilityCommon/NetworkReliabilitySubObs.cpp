@@ -5,6 +5,7 @@
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/math/distributions/binomial.hpp>
 #include "graphAlgorithms.h"
+#include "seriesParallelReduction.hpp"
 namespace networkReliability
 {
 	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, int radius, int conditioningCount, conditioning_type conditioningProb)
@@ -108,7 +109,9 @@ namespace networkReliability
 				input.nUnreducedEdges++;
 			}
 		}
+		//Construct graph where every connected chunk of vertices is now a single vertex
 		input.outputGraph = reducedGraphWithProbabilities(nComponents);
+		//Put in operational / inoperational probabilities for every edge
 		int edgeCounter = 0;
 		const mpfr_class& opProbability = context.getOperationalProbability();
 		mpfr_class inopProbability = 1 - opProbability;
@@ -124,79 +127,19 @@ namespace networkReliability
 					mpfr_class thisEdgeOpProbability = 1 - thisEdgeInopProbability;
 					boost::put(boost::edge_op_probability, input.outputGraph, addedEdge.first, thisEdgeOpProbability);
 					boost::put(boost::edge_inop_probability, input.outputGraph, addedEdge.first, thisEdgeInopProbability);
-					
 				}
 			}
 		}
-		input.edgeCounts.clear();
-		bool shouldContinue = true;
-		while(shouldContinue)
+		//Work out which vertices are the interest vertices in the reduced graph
+		input.reducedInterestVertices.clear();
+		for(std::vector<int>::const_iterator i = input.interestVertices.begin(); i != input.interestVertices.end(); i++)
 		{
-			shouldContinue = false;
-			reducedGraphWithProbabilities::vertex_iterator currentVertex, end;
-			boost::tie(currentVertex, end) = boost::vertices(input.outputGraph);
-			for(; currentVertex != end; currentVertex++)
-			{
-				int originalReducedVertex = boost::get(boost::vertex_name, input.outputGraph, *currentVertex);
-				bool isInterestVertex = false;
-				for(std::vector<int>::const_iterator i = input.interestVertices.begin(); i != input.interestVertices.end(); i++)
-				{
-					isInterestVertex |= (originalReducedVertex == input.components[*i]);
-				}
-				if(isInterestVertex) continue;
-				if(boost::degree(*currentVertex, input.outputGraph) == 1)
-				{
-					boost::clear_vertex(*currentVertex, input.outputGraph);
-					boost::remove_vertex(*currentVertex, input.outputGraph);
-					shouldContinue = true;
-					break;
-				}
-				if(boost::degree(*currentVertex, input.outputGraph) == 2)
-				{
-					reducedGraphWithProbabilities::out_edge_iterator firstDeletedEdge, secondDeletedEdge, endOutEdges;
-					boost::tie(firstDeletedEdge, endOutEdges) = boost::out_edges(*currentVertex, input.outputGraph);
-					secondDeletedEdge = firstDeletedEdge + 1;
-					reducedGraphWithProbabilities::vertex_descriptor firstVertex = boost::target(*firstDeletedEdge, input.outputGraph), secondVertex = boost::target(*secondDeletedEdge, input.outputGraph);
-					if(firstVertex == secondVertex) continue;
-				
-					mpfr_class firstOp = boost::get(boost::edge_op_probability, input.outputGraph, *firstDeletedEdge);
-					mpfr_class firstInop = boost::get(boost::edge_inop_probability, input.outputGraph, *firstDeletedEdge);
-					mpfr_class secondOp = boost::get(boost::edge_op_probability, input.outputGraph, *secondDeletedEdge);
-					mpfr_class secondInop = boost::get(boost::edge_inop_probability, input.outputGraph, *secondDeletedEdge);
-					
-					mpfr_class newOp = firstOp*secondOp;
-					mpfr_class newInop = 1 - newOp;
-					
-					bool edgeAlreadyExists = false;
-					reducedGraphWithProbabilities::out_edge_iterator currentExistingEdge;
-					boost::tie(currentExistingEdge, endOutEdges) = boost::out_edges(firstVertex, input.outputGraph);
-					for(;currentExistingEdge != endOutEdges; currentExistingEdge++)
-					{
-						if(boost::target(*currentExistingEdge, input.outputGraph) == secondVertex)
-						{
-							newInop *= boost::get(boost::edge_inop_probability, input.outputGraph, *currentExistingEdge);
-							newOp = 1 - newInop;
-							boost::put(boost::edge_op_probability, input.outputGraph, *currentExistingEdge, newOp);
-							boost::put(boost::edge_inop_probability, input.outputGraph, *currentExistingEdge, newInop);
-			
-							edgeAlreadyExists = true;
-							break;
-						}
-					}
-					if(!edgeAlreadyExists)
-					{
-						reducedGraphWithProbabilities::edge_descriptor newEdge = boost::add_edge(firstVertex, secondVertex, input.outputGraph).first;
-						boost::put(boost::edge_op_probability, input.outputGraph, newEdge, newOp);
-						boost::put(boost::edge_inop_probability, input.outputGraph, newEdge, newInop);
-					}
-
-					boost::clear_vertex(*currentVertex, input.outputGraph);
-					boost::remove_vertex(*currentVertex, input.outputGraph);
-					shouldContinue = true;
-					break;
-				}
-			}
+			input.reducedInterestVertices.push_back(input.components[*i]);
 		}
+		//Do series / parallel reduction
+		seriesParallelReduction(input.outputGraph, input.reducedInterestVertices);
+		//The reduced graph now has a different number of vertices to what it started with, but the names of the reduced vertices still correspond to connected components of the original graph. So we work backwards and get out the interest vertices in the reduced graph
+		input.edgeCounts.clear();
 		input.reducedInterestVertices.clear();
 		input.reducedInterestVertices.resize(input.interestVertices.size());
 		reducedGraphWithProbabilities::vertex_iterator current, end;
@@ -218,38 +161,6 @@ namespace networkReliability
 		for(;currentEdge != endEdge; currentEdge++, counter++)
 		{
 			boost::put(boost::edge_index, input.outputGraph, *currentEdge, counter);
-		}
-	}
-	void NetworkReliabilitySubObs::getRadius1ReducedGraphNoSelf(Context::internalGraph& outputGraph, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
-	{
-		int nComponents = countComponents(context, state.get(), components, stack, colorMap);
-		edgeCounts.clear();
-		edgeCounts.resize(nComponents * nComponents);
-
-		//determine the rates between all the different super-vertices
-		Context::internalGraph::edge_iterator current, end;
-		const Context::internalGraph& graph = context.getGraph();
-		boost::tie(current, end) = boost::edges(graph);
-		for (; current != end; current++)
-		{
-			int edgeIndex = boost::get(boost::edge_index, graph, *current);
-			//is it an edge between super-nodes?
-			if (state[edgeIndex] & UNFIXED_MASK)
-			{
-				edgeCounts[components[current->m_source] + components[current->m_target] * nComponents]++;
-			}
-		}
-		outputGraph = Context::internalGraph(nComponents);
-		int edgeCounter = 0;
-		for (int i = 0; i < nComponents; i++)
-		{
-			for (int j = i + 1; j < nComponents; j++)
-			{
-				if (edgeCounts[i + j * nComponents] + edgeCounts[j + i * nComponents] > 0)
-				{
-					boost::add_edge(i, j, edgeCounter++, outputGraph);
-				}
-			}
 		}
 	}
 	const NetworkReliabilitySubObs::conditioning_type& NetworkReliabilitySubObs::getConditioningProb() const
