@@ -17,7 +17,7 @@ namespace networkReliability
 		return first.second < second.second;
 	}
 	subObservationVisualiser::subObservationVisualiser(boost::shared_ptr<NetworkReliabilitySubObs> subObs, float pointSize)
-		:pointSize(pointSize), subObs(subObs), highlightedRadius1Component(-1), reducedGraphData(subObs->getContext().getInterestVertices())
+		:pointSize(pointSize), subObs(subObs), highlightedRadius1Component(-1), reducedGraphData(subObs->getContext().getInterestVertices()), reduced(false)
 	{
 		Context const& context = subObs->getContext();
 		if(subObs->getRadius() == 1)
@@ -237,8 +237,8 @@ namespace networkReliability
 				reduced = !reduced;
 				if(!reduced) highlightedRadius1Component = -1;
 				updateGraphics();
+				return true;
 			}
-			return true;
 		}
 		return false;
 	}
