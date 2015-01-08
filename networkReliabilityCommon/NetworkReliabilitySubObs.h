@@ -38,6 +38,7 @@ namespace networkReliability
 		NetworkReliabilitySubObs& operator=(NetworkReliabilitySubObs&& other);
 		int getConditioningCount() const;
 		const conditioning_type& getConditioningProb() const;
+		const conditioning_type& getGeneratedObservationConditioningProb() const;
 		void getRadius1ReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, int>, boost::property<boost::edge_index_t, int, boost::property<boost::edge_inop_probability_t, mpfr_class, boost::property<boost::edge_op_probability_t, mpfr_class> > > > reducedGraphWithProbabilities;
 		struct getRadius1ReducedGraphNoSelfWithWeightsInput
@@ -56,8 +57,7 @@ namespace networkReliability
 			std::vector<int> reducedInterestVertices;
 		};
 		void getRadius1ReducedGraphNoSelfWithWeights(getRadius1ReducedGraphNoSelfWithWeightsInput& input) const;
-		NetworkReliabilitySubObs::conditioning_type getGeneratedObservationConditioningProb() const;
-		NetworkReliabilitySubObs copyWithConditioningProb(const conditioning_type& conditioningProb) const;
+		NetworkReliabilitySubObs copyWithGeneratedObservationConditioningProb(const conditioning_type& conditioningProb) const;
 		Context const& getContext() const;
 		int getRadius() const;
 	private:
@@ -69,7 +69,8 @@ namespace networkReliability
 		std::vector<int> couldBeDeactivated;
 		int conditioningCount;
 		int fixedInop;
-		conditioning_type conditioningProb;
+		conditioning_type conditioningProb, generatedObservationConditioningProb;
+		int generatedObservationConditioningCount;
 	};
 	template<class Archive> void readNetworkReliabilitySubObs(Archive& ar, boost::shared_ptr<const Context>& context, boost::shared_ptr<NetworkReliabilitySubObs>& subObs)
 	{

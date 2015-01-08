@@ -39,6 +39,35 @@ namespace networkReliability
 		}
 		const Context::internalDirectedGraph& directedGraph = context.getDirectedGraph();
 		minCut = context.getMinCut(capacityVector);
+		if(minCut >= HIGH_CAPACITY)
+		{}
+		else if (context.useMinCut())
+		{
+			conditioning_type newConditioningProb;
+			generatedObservationConditioningCount = std::max(fixedInop + minCut, conditioningCount);
+			if(fixedInop + minCut > conditioningCount && minCut > 0)
+			{
+				if(conditioningCount > fixedInop)
+				{
+					const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getInopDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
+					const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
+					newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
+				}
+				else
+				{
+					boost::math::binomial_distribution<mpfr_class> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
+					newConditioningProb = boost::math::cdf(boost::math::complement(relevantBinomial, minCut - 1));
+				}
+			}
+			else newConditioningProb = 1;
+			generatedObservationConditioningProb = newConditioningProb*conditioningProb;
+		}
+		else
+		{
+			generatedObservationConditioningProb = conditioningProb;
+			generatedObservationConditioningCount = conditioningCount;
+		}
+
 	}
 	int NetworkReliabilitySubObs::getMinCut() const
 	{
@@ -163,6 +192,10 @@ namespace networkReliability
 			boost::put(boost::edge_index, input.outputGraph, *currentEdge, counter);
 		}
 	}
+	const NetworkReliabilitySubObs::conditioning_type& NetworkReliabilitySubObs::getGeneratedObservationConditioningProb() const
+	{
+		return generatedObservationConditioningProb;
+	}
 	const NetworkReliabilitySubObs::conditioning_type& NetworkReliabilitySubObs::getConditioningProb() const
 	{
 		return conditioningProb;
@@ -177,6 +210,8 @@ namespace networkReliability
 		conditioningCount = other.conditioningCount;
 		fixedInop = other.fixedInop;
 		conditioningProb = other.conditioningProb;
+		generatedObservationConditioningCount = other.generatedObservationConditioningCount;
+		generatedObservationConditioningProb = other.generatedObservationConditioningProb;
 	}
 	NetworkReliabilitySubObs& NetworkReliabilitySubObs::operator=(NetworkReliabilitySubObs&& other)
 	{
@@ -187,6 +222,8 @@ namespace networkReliability
 		conditioningCount = other.conditioningCount;
 		fixedInop = other.fixedInop;
 		conditioningProb = other.conditioningProb;
+		generatedObservationConditioningCount = other.generatedObservationConditioningCount;
+		generatedObservationConditioningProb = other.generatedObservationConditioningProb;
 		return *this;
 	}
 	NetworkReliabilityObs NetworkReliabilitySubObs::getObservation(boost::mt19937& randomSource) const
@@ -224,65 +261,7 @@ namespace networkReliability
 			std::swap(indices[generated], *indices.rbegin());
 			indices.pop_back();
 		}
-		if (context.useMinCut())
-		{
-			conditioning_type newConditioningProb;
-			int newConditioningCount = std::max(fixedInop + minCut, conditioningCount);
-			if(fixedInop + minCut > conditioningCount && minCut > 0)
-			{
-				boost::math::binomial_distribution<> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
-				if(conditioningCount > fixedInop)
-				{
-					const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getInopDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
-					const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
-					newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
-
-					/*double tmp1 = (1 - boost::math::cdf(relevantBinomial, minCut - 1)) / (1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));
-					double tmp2 = 1 - cdf[minCut - conditioningCount + fixedInop - 1].get_d();
-					assert(abs(tmp1 - tmp2) < 1e-6);
-					newConditioningProb = conditioning_type(1 - boost::math::cdf(relevantBinomial, minCut - 1)) / conditioning_type(1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));*/
-				}
-				else
-				{
-					newConditioningProb = (1 - boost::math::cdf(relevantBinomial, minCut - 1));
-				}
-			}
-			else newConditioningProb = 1;
-			return NetworkReliabilityObs(context, newState, newConditioningCount, newConditioningProb*conditioningProb);
-		}
-		else
-		{
-			return NetworkReliabilityObs(context, newState, conditioningCount, conditioningProb);
-		}
-	}
-	NetworkReliabilitySubObs::conditioning_type NetworkReliabilitySubObs::getGeneratedObservationConditioningProb() const
-	{
-		if (context.useMinCut())
-		{
-			conditioning_type newConditioningProb;
-			int newConditioningCount = std::max(fixedInop + minCut, conditioningCount);
-			if (fixedInop + minCut > conditioningCount && minCut > 0)
-			{
-				boost::math::binomial_distribution<> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
-				if (conditioningCount > fixedInop)
-				{
-					const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getInopDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
-					const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
-					newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
-					/*double tmp1 = (1 - boost::math::cdf(relevantBinomial, minCut - 1)) / (1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));
-					double tmp2 = 1 - cdf[minCut - conditioningCount + fixedInop - 1].get_d();
-					assert(abs(tmp1 - tmp2) < 1e-6);
-					newConditioningProb = conditioning_type(1 - boost::math::cdf(relevantBinomial, minCut - 1)) / conditioning_type(1 - boost::math::cdf(relevantBinomial, conditioningCount - fixedInop - 1));*/
-				}
-				else
-				{
-					newConditioningProb = (1 - boost::math::cdf(relevantBinomial, minCut - 1));
-				}
-			}
-			else newConditioningProb = 1;
-			return newConditioningProb * conditioningProb;
-		}
-		return conditioningProb;
+		return NetworkReliabilityObs(context, newState, generatedObservationConditioningCount, generatedObservationConditioningProb);
 	}
 	const EdgeState* NetworkReliabilitySubObs::getState() const
 	{
@@ -295,15 +274,17 @@ namespace networkReliability
 	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context)
 		:context(context)
 	{}
-	NetworkReliabilitySubObs NetworkReliabilitySubObs::copyWithConditioningProb(const conditioning_type& conditioningProb) const
+	NetworkReliabilitySubObs NetworkReliabilitySubObs::copyWithGeneratedObservationConditioningProb(const conditioning_type& newGeneratedObservationConditioningProb) const
 	{
 		NetworkReliabilitySubObs copy(context);
 		copy.conditioningProb = conditioningProb;
+		copy.generatedObservationConditioningProb = newGeneratedObservationConditioningProb;
 		copy.state = state;
 		copy.radius = radius;
 		copy.minCut = minCut;
 		copy.couldBeDeactivated.insert(copy.couldBeDeactivated.begin(), couldBeDeactivated.begin(), couldBeDeactivated.end());
 		copy.conditioningCount = conditioningCount;
+		copy.generatedObservationConditioningCount = generatedObservationConditioningCount;
 		copy.fixedInop = fixedInop;
 		return copy;
 	}

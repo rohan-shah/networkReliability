@@ -147,7 +147,7 @@ namespace networkReliability
 			conditioningProbabilities[0](currentObs.getConditioningProb());
 			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(initialRadius);
 
-			if (isSingleComponent(context, subObs.getState(), components, stack, colorMap))
+			if (subObs.getMinCut() >= HIGH_CAPACITY)
 			{
 				probabilities[0](0);
 			}
@@ -171,7 +171,7 @@ namespace networkReliability
 				NetworkReliabilityObs newObs = j->getObservation(randomSource);
 				conditioningProbabilities[splittingLevel+1](newObs.getConditioningProb());
 				NetworkReliabilitySubObs sub = newObs.getSubObservation(initialRadius - splittingLevel - 1);
-				if(!isSingleComponent(context, sub.getState(), components, stack, colorMap))
+				if(sub.getMinCut() < HIGH_CAPACITY)
 				{
 					probabilities[splittingLevel+1](newObs.getConditioningProb());
 					nextStepObservations.push_back(std::move(sub));
@@ -189,8 +189,8 @@ namespace networkReliability
 			mpfr_class sum = 0;
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
 			{
-				sum += j->getConditioningProb();
-				resamplingProbabilities.push_back(j->getConditioningProb().convert_to<double>());
+				sum += j->getGeneratedObservationConditioningProb();
+				resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
 			}
 			if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
 			mpfr_class averageWeight = sum / previousSize;
@@ -198,7 +198,7 @@ namespace networkReliability
 			for (int k = 0; k < previousSize; k++)
 			{
 				int index = alias(randomSource);
-				observations.push_back(nextStepObservations[index].copyWithConditioningProb(averageWeight));
+				observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
 				resamplingIndices.push_back(index);
 			}
 		}
@@ -346,13 +346,12 @@ namespace networkReliability
 					}
 					else
 					{
-						/*if(tooManyEdgesCount == 0)
+						if(tooManyEdgesCount == 0)
 						{
 							std::ofstream outputStream("./tooManyEdges.dat");
 							boost::archive::text_oarchive outputArchive(outputStream);
 							writeNetworkReliabilitySubObs(outputArchive, *j);
-							std::cout << "nEdges = " << nReducedEdges << std::endl << "nVertices " << nReducedVertices << std::endl;
-						}*/
+						}
 						tooManyEdgesCount++;
 						NetworkReliabilityObs obs = j->getObservation(randomSource);
 						if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
