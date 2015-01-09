@@ -6,6 +6,8 @@
 #include <QGraphicsView>
 #include <QLabel>
 #include <QStatusBar>
+#include <QFrame>
+#include <QHBoxLayout>
 #include "NetworkReliabilityObs.h"
 namespace networkReliability
 {
@@ -32,8 +34,10 @@ namespace networkReliability
 		QGraphicsScene* graphicsScene;
 		QGraphicsView* graphicsView;
 		QStatusBar* statusBar;
-		QLabel* statusLabel;
+		QLabel* positionLabel;
 		QLabel* reducedLabel;
+		QFrame* statusFrame;
+		QHBoxLayout* statusLayout;
 		float minX, maxX, minY, maxY;
 		//If the radius of the sub observation is 1, this holds the connected components of the sub observation. 
 		std::vector<int> radius1Components;

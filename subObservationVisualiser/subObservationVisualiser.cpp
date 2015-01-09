@@ -38,12 +38,19 @@ namespace networkReliability
 		graphicsView->viewport()->installEventFilter(this);
 
 		statusBar = new QStatusBar();
-		this->statusLabel = new QLabel;
-		statusLabel->setText("");
-		statusBar->addPermanentWidget(statusLabel);
-		reducedLabel = new QLabel;
+		statusFrame = new QFrame;
+		statusBar->addPermanentWidget(statusFrame, 1);
+
+		this->positionLabel = new QLabel;
+		positionLabel->setText("");
+		this->reducedLabel = new QLabel;
 		reducedLabel->setText("");
-		statusBar->addPermanentWidget(reducedLabel);
+
+		statusLayout = new QHBoxLayout;
+		statusLayout->addWidget(positionLabel, 1, Qt::AlignLeft);
+		statusLayout->addWidget(reducedLabel, 0, Qt::AlignRight);
+		statusFrame->setLayout(statusLayout);
+
 		setStatusBar(statusBar);
 
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
@@ -196,7 +203,7 @@ namespace networkReliability
 			QPointF position = mouseEvent->scenePos();
 			std::stringstream ss;
 			ss << "(" << position.x() << ", " << position.y() << ")";
-			statusLabel->setText(QString::fromStdString(ss.str()));
+			positionLabel->setText(QString::fromStdString(ss.str()));
 			Context const& context = subObs->getContext();
 			const Context::internalGraph& graph = context.getGraph();
 			std::size_t nVertices = boost::num_vertices(graph);
