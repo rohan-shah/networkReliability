@@ -2,6 +2,7 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <fstream>
 #include <boost/algorithm/string.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 namespace networkReliability
 {
 	bool readN(boost::program_options::variables_map& variableMap, std::size_t& out)
@@ -19,20 +20,57 @@ namespace networkReliability
 		}
 		return true;
 	}
-	bool readInitialRadius(boost::program_options::variables_map& variableMap, int& out, std::string& message)
+	bool readThresholds(boost::program_options::variables_map& variableMap, std::vector<double>& out, std::string& message)
 	{
-		if(variableMap.count("initialRadius") != 1)
+		if(variableMap.count("initialRadius") + variableMap.count("useSpatialDistances" ) != 1)
 		{
-			message = "Please enter a single value for input `initialRadius'";
+			message = "Please enter exactly one of `initialRadius' and `useSpatialDistances'";
 			return false;
 		}
-		out = variableMap["initialRadius"].as<int>();
-		if(out < 0)
+		else if(variableMap.count("initialRadius") == 1)
 		{
-			message = "Input `initialRadius' must be a non-negative integer";
-			return false;
+			int initialRadius = variableMap["initialRadius"].as<int>();
+			if(initialRadius < 0)
+			{
+				message = "Input `initialRadius' must be a non-negative integer";
+				return false;
+			}
+			out.clear();
+			for(int i = initialRadius; i > -1; i--) out.push_back(i);
+			return true;
 		}
-		return true;
+		else
+		{
+			std::vector<double> thresholds = variableMap["useSpatialDistances"].as<std::vector<double> >();
+			if(thresholds.size() != 2)
+			{
+				message = "Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take. ";
+				return false;
+			}
+			double maximumDistance = thresholds[0], nSteps = thresholds[1];
+			if(maximumDistance != maximumDistance || nSteps != nSteps || boost::math::isinf(nSteps) || boost::math::isinf(maximumDistance))
+			{
+				message = "Inputs for useSpatialDistances cannot be NA or infinity";
+				return false;
+			}
+			if(abs(nSteps - round(nSteps + 0.5)) > 1e-6)
+			{
+				message = "Number of steps to take for input `useSpatialDistances' must be an integer";
+				return false;
+			}
+			if(nSteps < 0.5)
+			{
+				message = "Number of steps to take for input `useSpatialDistances' must be positive";
+				return false;
+			}
+			int nStepsInt = round(nSteps + 0.5);
+			out.clear();
+			for(int currentStep = nStepsInt; currentStep > 0; currentStep--)
+			{
+				out.push_back(maximumDistance * (double)((currentStep-1) / (nStepsInt-1)));
+			}
+			return true;
+		}
 	}
 
 	bool readProbability(boost::program_options::variables_map& variableMap, double& out)

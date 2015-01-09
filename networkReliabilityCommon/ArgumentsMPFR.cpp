@@ -40,11 +40,7 @@ namespace networkReliability
 				std::cout << "Input `interestVertices' must contain at least two vertex indices" << std::endl;
 				return false;
 			}
-			bool useSpatialDistances = false;
-			if(variableMap.count("useSpatialDistances") > 0)
-			{
-				useSpatialDistances = variableMap["useSpatialDistances"].as<bool>();
-			}
+			bool useSpatialDistances = variableMap.count("useSpatialDistances") > 0;
 			bool successful;
 			std::string message;
 			out = Context::fromFile(variableMap["graphFile"].as<std::string>(), successful, interestVertices, message, probability, useSpatialDistances);

@@ -18,12 +18,12 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		splittingVisualiser(Context const& context, int seed, float pointSize, int initialRadius);
+		splittingVisualiser(Context const& context, int seed, float pointSize, const std::vector<double>& thresholds);
 		~splittingVisualiser();
 		bool eventFilter(QObject* object, QEvent *event);
 	private:
 		void addBackgroundRectangle();
-		void updateGraphics(int connectionRadius, int highlightRadius);
+		void updateGraphics(double connectionRadius, double highlightRadius);
 		void fromStart();
 		void nextStep();
 		void addPoints();
@@ -32,8 +32,8 @@ namespace networkReliability
 		boost::mt19937 randomSource;
 		float pointSize;
 		int seed;
-		int initialRadius;
-		int currentRadius;
+		std::vector<double> thresholds;
+		int currentThresholdIndex;
 
 		NetworkReliabilityObs obs;
 		QGraphicsScene* graphicsScene;

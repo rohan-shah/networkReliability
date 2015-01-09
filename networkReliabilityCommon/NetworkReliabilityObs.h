@@ -16,7 +16,7 @@ namespace networkReliability
 		NetworkReliabilityObs(NetworkReliabilityObs&& other);
 		const EdgeState* getState() const;
 		NetworkReliabilityObs& operator=(const NetworkReliabilityObs& other);
-		NetworkReliabilitySubObs getSubObservation(int radius) const;
+		NetworkReliabilitySubObs getSubObservation(double radius) const;
 		//construct an object that has some number of edges inoperative - The minimum number needed to disconnect the graph, in fact
 		static NetworkReliabilityObs constructConditional(Context const& context, boost::mt19937& randomSource);
 		int getConditioningCount() const;

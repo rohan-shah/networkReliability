@@ -44,6 +44,7 @@ namespace networkReliability
 			("parts", "Output estimates for transition probabilities")
 			("usePMC", "(Flag) Use PMC for the last step")
 			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the edge distribution of the conditional distribution")
+			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take.")
 			("help", "Display this message");
 
 		boost::program_options::variables_map variableMap;
@@ -81,8 +82,8 @@ namespace networkReliability
 		bool usePMC = variableMap.count("usePMC") > 0;
 
 		std::string message;
-		int initialRadius;
-		if(!readInitialRadius(variableMap, initialRadius, message))
+		std::vector<double> thresholds;
+		if(!readThresholds(variableMap, thresholds, message))
 		{
 			std::cout << message << std::endl;
 			return 0;
@@ -96,9 +97,9 @@ namespace networkReliability
 		std::vector<float> splittingFactors = variableMap["splittingFactor"].as<std::vector<float> >();
 		if(splittingFactors.size() == 1)
 		{
-			splittingFactors.insert(splittingFactors.end(), initialRadius - 1, splittingFactors[0]);
+			splittingFactors.insert(splittingFactors.end(), thresholds.size() - 2, splittingFactors[0]);
 		}
-		if(splittingFactors.size() != initialRadius)
+		if(splittingFactors.size() != thresholds.size() - 1)
 		{
 			std::cout << "Wrong number of values entered for input splittingFactor" << std::endl;
 			return 0;
@@ -132,9 +133,9 @@ namespace networkReliability
 
 		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > zeroInitialisedAccumulator(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
 		//mean of getting to the next level, once we've conditioned on having enough edges.
-		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > > probabilities(initialRadius + 1, zeroInitialisedAccumulator);
+		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > > probabilities(thresholds.size(), zeroInitialisedAccumulator);
 		//mean conditioningProbability
-		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > > conditioningProbabilities(initialRadius + 1, zeroInitialisedAccumulator);
+		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > > conditioningProbabilities(thresholds.size(), zeroInitialisedAccumulator);
 		const std::vector<int>& interestVertices = context.getInterestVertices();
 
 		//working data for algorithms
@@ -146,9 +147,9 @@ namespace networkReliability
 
 		calculation_type firstMomentSum = 0, secondMomentSum = 0;
 		//If the usePMC flag is set, don't use splitting on the last step. Instead use PMC. 
-		int finalSplittingStep;
-		if (usePMC) finalSplittingStep = initialRadius - 1;
-		else finalSplittingStep = initialRadius;
+		int finalSplittingThresholdIndex;
+		if (usePMC) finalSplittingThresholdIndex = thresholds.size()-2;
+		else finalSplittingThresholdIndex = thresholds.size()-1;
 
 		//additional working data for getRadius1ReducedGraph
 		std::vector<int> edgeCounts;
@@ -160,7 +161,7 @@ namespace networkReliability
 		{
 			NetworkReliabilityObs currentObs = NetworkReliabilityObs::constructConditional(context, randomSource);
 			conditioningProbabilities[0](currentObs.getConditioningProb());
-			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(initialRadius);
+			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(thresholds[0]);
 
 			if (isSingleComponent(context, subObs.getState(), components, stack, colorMap))
 			{
@@ -172,8 +173,9 @@ namespace networkReliability
 				observations.push_back(std::move(subObs));
 			}
 		}
-		for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
+		for(int splittingLevel = 0; splittingLevel < finalSplittingThresholdIndex; splittingLevel++)
 		{
+			bool isZeroThreshold = thresholds[splittingLevel+1] == 0;
 			nextStepObservations.clear();
 			boost::random::bernoulli_distribution<float> bernoulli(splittingFactors[splittingLevel] - floor(splittingFactors[splittingLevel]));
 			for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
@@ -183,11 +185,11 @@ namespace networkReliability
 				{
 					NetworkReliabilityObs newObs = j->getObservation(randomSource);
 					conditioningProbabilities[splittingLevel+1](newObs.getConditioningProb());
-					NetworkReliabilitySubObs sub = newObs.getSubObservation(initialRadius - splittingLevel - 1);
+					NetworkReliabilitySubObs sub = newObs.getSubObservation(thresholds[splittingLevel+1]);
 					if(!isSingleComponent(context, sub.getState(), components, stack, colorMap))
 					{
 						probabilities[splittingLevel+1](newObs.getConditioningProb());
-						if (splittingLevel == initialRadius - 1)
+						if (isZeroThreshold)
 						{
 							firstMomentSum += newObs.getConditioningProb();
 							secondMomentSum += newObs.getConditioningProb()*newObs.getConditioningProb();
@@ -286,7 +288,7 @@ namespace networkReliability
 			std::cout << "Step 0, conditioning on event " << toString(factor) << std::endl;
 			factor = boost::accumulators::sum(probabilities[0]) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(probabilities[0])));
 			std::cout << "Step 0, event " << toString(factor) << std::endl;
-			if (initialRadius > 0)
+			if(thresholds.size()> 1)
 			{
 				/*
 				  The extra factor of
@@ -302,7 +304,7 @@ namespace networkReliability
 				factor = boost::accumulators::sum(probabilities[1]) / (boost::accumulators::sum(conditioningProbabilities[1]));
 				std::cout << "Step 1, event " << toString(factor) << std::endl;
 
-				for (int i = 2; i < finalSplittingStep + 1; i++)
+				for (int i = 2; i < finalSplittingThresholdIndex + 1; i++)
 				{
 					factor = (calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(probabilities[i - 1]))) / calculation_type(boost::lexical_cast<std::string>(boost::accumulators::count(conditioningProbabilities[i])))) * (boost::accumulators::sum(conditioningProbabilities[i]) / boost::accumulators::sum(probabilities[i - 1]));
 					std::cout << "Step " << i << ", conditioning on event " << toString(factor) << std::endl;
@@ -313,7 +315,7 @@ namespace networkReliability
 			}
 		}
 		//Estimate as the product of the various parts
-		calculation_type estimate = boost::accumulators::sum(probabilities[initialRadius]) / calculation_type(boost::lexical_cast<std::string>(totalSamples));
+		calculation_type estimate = boost::accumulators::sum(*probabilities.rbegin()) / calculation_type(boost::lexical_cast<std::string>(totalSamples));
 		//...but this is the one we're actually using
 		estimate = firstMomentSum / totalSamples;
 		//This is the variance of the distribution we're taking the empirical expectation of. Hence

@@ -41,7 +41,7 @@ namespace networkReliability
 			("nPMC", boost::program_options::value<std::size_t>()->default_value(0ULL)->implicit_value(0ULL), "(int) Number of PMC samples to use")
 			("useCompleteEnumeration", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Use complete enumeration in the last step")
 			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
-			("useSpatialDistances", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Use spatial rather than combinatoric distances")
+			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take.")
 			("help", "Display this message");
 
 		boost::program_options::variables_map variableMap;
@@ -92,9 +92,9 @@ namespace networkReliability
 			return 0;
 		}
 
-		int initialRadius;
+		std::vector<double> thresholds;
 		std::string message;
-		if(!readInitialRadius(variableMap, initialRadius, message))
+		if(!readThresholds(variableMap, thresholds, message))
 		{
 			std::cout << message << std::endl;
 			return 0;
@@ -118,9 +118,7 @@ namespace networkReliability
 
 		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > zeroInitialisedAccumulator(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
 		//mean of getting to the next level, once we've conditioned on having enough edges.
-		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > > probabilities(initialRadius + 1, zeroInitialisedAccumulator);
-		//mean conditioningProbability
-		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > > conditioningProbabilities(initialRadius + 1, zeroInitialisedAccumulator);
+		std::vector<boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > > probabilities(thresholds.size(), zeroInitialisedAccumulator);
 
 		//working data for graph algorithms
 		std::vector<int> components;
@@ -135,8 +133,8 @@ namespace networkReliability
 
 		//If the usePMC flag is set, don't use splitting on the last step. Instead use PMC. 
 		int finalSplittingStep;
-		if (nPMC > 0 || useCompleteEnumeration) finalSplittingStep = initialRadius - 1;
-		else finalSplittingStep = initialRadius;
+		if (nPMC > 0 || useCompleteEnumeration) finalSplittingStep = thresholds.size()-2;
+		else finalSplittingStep = thresholds.size()-1;
 
 		//If we specify the useMinCut option then we need to do resampling. This vector holds the probabilities
 		std::vector<double> resamplingProbabilities;
@@ -144,8 +142,7 @@ namespace networkReliability
 		for (int i = 0; i < n; i++)
 		{
 			NetworkReliabilityObs currentObs = NetworkReliabilityObs::constructConditional(context, randomSource);
-			conditioningProbabilities[0](currentObs.getConditioningProb());
-			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(initialRadius);
+			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(thresholds[0]);
 
 			if (subObs.getMinCut() >= HIGH_CAPACITY)
 			{
@@ -169,8 +166,7 @@ namespace networkReliability
 			for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				NetworkReliabilityObs newObs = j->getObservation(randomSource);
-				conditioningProbabilities[splittingLevel+1](newObs.getConditioningProb());
-				NetworkReliabilitySubObs sub = newObs.getSubObservation(initialRadius - splittingLevel - 1);
+				NetworkReliabilitySubObs sub = newObs.getSubObservation(thresholds[splittingLevel + 1]);
 				if(sub.getMinCut() < HIGH_CAPACITY)
 				{
 					probabilities[splittingLevel+1](newObs.getConditioningProb());
@@ -271,7 +267,7 @@ namespace networkReliability
 			std::vector<int> components2;
 			//Similarly, this is used for the connected components of the reduced graph. 
 			boost::detail::depth_first_visit_restricted_impl_helper<NetworkReliabilitySubObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
-			//If we resample the same value multiple times above, only do the complete enumeration once. This isn't possible if initialRadius == 1
+			//If we resample the same value multiple times above, only do the complete enumeration once. This isn't possible if we have only two thresholds (one non-zero, one zero) because there's no resampling done
 			std::vector<mpfr_class> completeEnumerationValues(resamplingIndices.size(), -2);
 
 			int counter = 0;

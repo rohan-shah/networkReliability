@@ -66,7 +66,7 @@ namespace networkReliability
 		conditioningProb = other.conditioningProb;
 		return *this;
 	}
-	NetworkReliabilitySubObs NetworkReliabilityObs::getSubObservation(int radius) const
+	NetworkReliabilitySubObs NetworkReliabilityObs::getSubObservation(double radius) const
 	{
 		const Context::internalGraph& graph = context.getGraph();
 		std::size_t nEdges = boost::num_edges(graph);

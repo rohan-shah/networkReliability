@@ -15,9 +15,12 @@ namespace networkReliability
 	{
 		return first.second < second.second;
 	}
-	splittingVisualiser::splittingVisualiser(Context const& context, int seed, float pointSize, int initialRadius)
-		:context(context), pointSize(pointSize), initialRadius(initialRadius), obs(context, randomSource), currentRadius(initialRadius), seed(seed), nextAction(RESIMULATE)
+	splittingVisualiser::splittingVisualiser(Context const& context, int seed, float pointSize, const std::vector<double>& thresholds)
+		:context(context), pointSize(pointSize), obs(context, randomSource), currentRadius(initialRadius), seed(seed), nextAction(RESIMULATE), thresholds(thresholds)
 	{
+		currentThresholdIndex = 0;
+		if(*thresholds.rbegin() != 0) throw std::runtime_error("Last threshold must be 0");
+
 		randomSource.seed(seed);
 		if(initialRadius < 0)
 		{
@@ -58,20 +61,20 @@ namespace networkReliability
 		std::vector<int> components(nEdges);
 		std::vector<boost::default_color_type> colorMap;
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
-		currentRadius = initialRadius;
+		currentThresholdIndex = 0;
 		while(true)
 		{
 			obs = NetworkReliabilityObs::constructConditional(context, randomSource);
-			NetworkReliabilitySubObs subObs = obs.getSubObservation(initialRadius);
+			NetworkReliabilitySubObs subObs = obs.getSubObservation(thresholds[currentThresholdIndex]);
 			if(!isSingleComponent(context, subObs.getState(), components, stack, colorMap)) break;
 		}
-		updateGraphics(currentRadius, -1);
+		updateGraphics(thresholds[currentThresholdIndex], -1);
 		nextAction = RESIMULATE;
 	}
 	splittingVisualiser::~splittingVisualiser()
 	{
 	}
-	void splittingVisualiser::updateGraphics(int connectionRadius, int highlightRadius)
+	void splittingVisualiser::updateGraphics(double connectionRadius, double highlightRadius)
 	{
 		QList<QGraphicsItem*> allItems = graphicsScene->items();
 		for(QList<QGraphicsItem*>::iterator i = allItems.begin(); i != allItems.end(); i++) delete *i;
@@ -187,9 +190,9 @@ namespace networkReliability
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
 		if (nextAction == RESIMULATE)
 		{
-			if (currentRadius > 0)
+			if (thresholds[currentThresholdIndex] > 0)
 			{
-				NetworkReliabilitySubObs subObs = obs.getSubObservation(currentRadius);
+				NetworkReliabilitySubObs subObs = obs.getSubObservation(thresholds[currentThresholdIndex]);
 				if (subObs.getMinCut() >= HIGH_CAPACITY)
 				{
 					throw std::runtime_error("Mincut was infeasibly large");
@@ -197,9 +200,9 @@ namespace networkReliability
 				while (true)
 				{
 					obs = subObs.getObservation(randomSource);
-					NetworkReliabilitySubObs newSubObs = obs.getSubObservation(currentRadius-1);
+					NetworkReliabilitySubObs newSubObs = obs.getSubObservation(thresholds[currentThresholdIndex+1]);
 					if (isSingleComponent(context, newSubObs.getState(), components, stack, colorMap)) continue;
-					updateGraphics(currentRadius-1, currentRadius);
+					updateGraphics(thresholds[currentThresholdIndex+1], thresholds[currentThresholdIndex]);
 					if (newSubObs.getMinCut() >= HIGH_CAPACITY)
 					{
 						throw std::runtime_error("Mincut was infeasibly large");
@@ -211,9 +214,9 @@ namespace networkReliability
 		}
 		else
 		{
-			currentRadius--;
-			obs = obs.getSubObservation(currentRadius).getObservation(randomSource);
-			updateGraphics(currentRadius, currentRadius);
+			currentThresholdIndex++;
+			obs = obs.getSubObservation(thresholds[currentThresholdIndex]).getObservation(randomSource);
+			updateGraphics(thresholds[currentThresholdIndex], thresholds[currentThresholdIndex]);
 			nextAction = RESIMULATE;
 		}
 	}

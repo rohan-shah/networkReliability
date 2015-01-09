@@ -44,6 +44,7 @@ namespace networkReliability
 			("pointSize", boost::program_options::value<float>(), "(float) The size of graph vertices. Defaults to 0.1")
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
+			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take.")
 			("help", "Display this message");
 
 #if defined(_WIN32) && defined(_MSC_VER)
@@ -85,8 +86,8 @@ namespace networkReliability
 		}
 
 		std::string message;
-		int initialRadius;
-		if(!readInitialRadius(variableMap, initialRadius, message))
+		std::vector<double> thresholds;
+		if(!readThresholds(variableMap, thresholds, message))
 		{
 			std::cout << message << std::endl;
 			return 0;
@@ -102,7 +103,7 @@ namespace networkReliability
 		}
 		
 		QApplication app(argc, argv);
-		splittingVisualiser viewer(context, seed, pointSize, initialRadius);
+		splittingVisualiser viewer(context, seed, pointSize, thresholds);
 		viewer.show();
 		app.exec();
 		return 0;
