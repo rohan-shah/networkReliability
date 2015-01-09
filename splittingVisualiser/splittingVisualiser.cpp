@@ -16,16 +16,12 @@ namespace networkReliability
 		return first.second < second.second;
 	}
 	splittingVisualiser::splittingVisualiser(Context const& context, int seed, float pointSize, const std::vector<double>& thresholds)
-		:context(context), pointSize(pointSize), obs(context, randomSource), currentRadius(initialRadius), seed(seed), nextAction(RESIMULATE), thresholds(thresholds)
+		:context(context), pointSize(pointSize), obs(context, randomSource), currentThresholdIndex(0), seed(seed), nextAction(RESIMULATE), thresholds(thresholds)
 	{
 		currentThresholdIndex = 0;
 		if(*thresholds.rbegin() != 0) throw std::runtime_error("Last threshold must be 0");
 
 		randomSource.seed(seed);
-		if(initialRadius < 0)
-		{
-			throw std::runtime_error("Internal error");
-		}
 		graphicsScene = new QGraphicsScene();
 		graphicsScene->installEventFilter(this);
 		graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
