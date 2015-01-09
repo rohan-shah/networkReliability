@@ -4,6 +4,7 @@
 #include "ZoomGraphicsView.h"
 #include <QGraphicsRectItem>
 #include "graphAlgorithms.h"
+#include <QGraphicsSceneMouseEvent>
 #include <boost/lexical_cast.hpp>
 namespace networkReliability
 {
@@ -32,13 +33,21 @@ namespace networkReliability
 		graphicsView->viewport()->installEventFilter(this);
 		
 		statusBar = new QStatusBar();
+		statusFrame = new QFrame;
+		statusBar->addPermanentWidget(statusFrame, 1);
+
 		this->statusLabel = new QLabel;
 		statusLabel->setText("");
-		statusBar->addPermanentWidget(statusLabel);
+		this->positionLabel = new QLabel;
+		positionLabel->setText("");
+
+		statusLayout = new QHBoxLayout;
+		statusLayout->addWidget(positionLabel, 1, Qt::AlignLeft);
+		statusLayout->addWidget(statusLabel, 0, Qt::AlignRight);
+		statusFrame->setLayout(statusLayout);
 		setStatusBar(statusBar);
+
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
-
-
 		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first - pointSize;
 		maxX = std::max_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first + pointSize;
 		minY = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortBySecond)->second - pointSize;
@@ -216,7 +225,7 @@ namespace networkReliability
 			nextAction = RESIMULATE;
 		}
 	}
-	bool splittingVisualiser::eventFilter(QObject*, QEvent *event)
+	bool splittingVisualiser::eventFilter(QObject* object, QEvent *event)
 	{
 		if(event->type() == QEvent::KeyPress)
 		{
@@ -229,6 +238,14 @@ namespace networkReliability
 			{
 				fromStart();
 			}
+		}
+		else if(event->type() == QEvent::GraphicsSceneMouseMove && object == graphicsScene)
+		{
+			QGraphicsSceneMouseEvent* mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+			QPointF position = mouseEvent->scenePos();
+			std::stringstream ss;
+			ss << "(" << position.x() << ", " << position.y() << ")";
+			positionLabel->setText(QString::fromStdString(ss.str()));
 		}
 		return false;
 	}

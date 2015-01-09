@@ -5,6 +5,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLabel>
+#include <QHBoxLayout>
 #include <QStatusBar>
 #include "NetworkReliabilityObs.h"
 namespace networkReliability
@@ -40,6 +41,9 @@ namespace networkReliability
 		QGraphicsView* graphicsView;
 		QStatusBar* statusBar;
 		QLabel* statusLabel;
+		QLabel* positionLabel;
+		QFrame* statusFrame;
+		QHBoxLayout* statusLayout;
 
 		nextState nextAction;
 		float minX, maxX, minY, maxY;
