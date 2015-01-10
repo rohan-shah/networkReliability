@@ -2,6 +2,7 @@
 #define NETWORK_RELIABILITY_SUB_OBS_HEADER_GUARD
 #include <boost/random/mersenne_twister.hpp>
 #include "Context.h"
+#include "serializeGMP.hpp"
 #include "EdgeState.h"
 #include <boost/shared_array.hpp>
 #include "includeMPFR.h"

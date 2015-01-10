@@ -50,8 +50,7 @@ namespace networkReliability
 				if(conditioningCount > fixedInop)
 				{
 					const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getInopDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
-					const conditioning_type* cdf = relevantDistribution.getCumulativeProbabilities();
-					newConditioningProb = 1 - cdf[minCut - conditioningCount + fixedInop - 1];
+					newConditioningProb = 1 - relevantDistribution.getCumulativeProbability(minCut - conditioningCount + fixedInop - 1);
 				}
 				else
 				{

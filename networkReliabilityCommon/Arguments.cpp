@@ -53,7 +53,7 @@ namespace networkReliability
 				message = "Inputs for useSpatialDistances cannot be NA or infinity";
 				return false;
 			}
-			if(abs(nSteps - round(nSteps + 0.5)) > 1e-6)
+			if(abs(nSteps - floor(nSteps + 0.5)) > 1e-6)
 			{
 				message = "Number of steps to take for input `useSpatialDistances' must be an integer";
 				return false;
@@ -67,7 +67,7 @@ namespace networkReliability
 			out.clear();
 			for(int currentStep = nStepsInt; currentStep > 0; currentStep--)
 			{
-				out.push_back(maximumDistance * (double)((currentStep-1) / (nStepsInt-1)));
+				out.push_back(maximumDistance * ((double)(currentStep-1) / (double)(nStepsInt-1)));
 			}
 			return true;
 		}

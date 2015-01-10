@@ -45,7 +45,7 @@ namespace networkReliability
 			indices.pop_back();
 		}
 		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& originalDist = context.getOpDistribution(0, nEdges, nEdges);
-		mpfr_class conditioningProb = originalDist.getCumulativeProbabilities()[nEdges - minCutEdges];
+		mpfr_class conditioningProb = originalDist.getCumulativeProbability(nEdges - minCutEdges);
 		return NetworkReliabilityObs(context, state, (int)minCutEdges, conditioningProb);
 	}
 	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::shared_array<EdgeState> state, int conditioningCount, conditioning_type conditioningProb)
