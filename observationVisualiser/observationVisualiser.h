@@ -6,6 +6,8 @@
 #include <QGraphicsScene>
 #include <QStatusBar>
 #include <QLabel>
+#include <QFrame>
+#include <QHBoxLayout>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/shared_ptr.hpp>
 namespace networkReliability
@@ -30,6 +32,9 @@ namespace networkReliability
 		QGraphicsScene* graphicsScene;
 		QGraphicsView* graphicsView;
 		QStatusBar* statusBar;
+		QFrame* statusFrame;
+		QHBoxLayout* statusLayout;
+		QLabel* positionLabel;
 		QLabel* statusLabel;
 		float minX, maxX, minY, maxY;
 		float pointSize;

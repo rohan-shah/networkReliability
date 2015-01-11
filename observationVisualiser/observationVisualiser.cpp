@@ -6,6 +6,7 @@
 #include <boost/lexical_cast.hpp>
 #include "graphAlgorithms.h"
 #include "ZoomGraphicsView.h"
+#include <QGraphicsSceneMouseEvent>
 namespace networkReliability
 {
 	namespace observationVisualiserImpl
@@ -39,13 +40,21 @@ namespace networkReliability
 		graphicsView->viewport()->installEventFilter(this);
 		
 		statusBar = new QStatusBar();
+		statusFrame = new QFrame;
+		statusBar->addPermanentWidget(statusFrame, 1);
+
 		this->statusLabel = new QLabel;
+		this->positionLabel = new QLabel;
 		statusLabel->setText("");
-		statusBar->addPermanentWidget(statusLabel);
+		positionLabel->setText("");
+
+		statusLayout = new QHBoxLayout;
+		statusLayout->addWidget(positionLabel, 1, Qt::AlignLeft);
+		statusLayout->addWidget(statusLabel, 0, Qt::AlignRight);
+		statusFrame->setLayout(statusLayout);
 		setStatusBar(statusBar);
+
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
-
-
 		observationVisualiserImpl::orderByFirst xOrder;
 		observationVisualiserImpl::orderBySecond yOrder;
 		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), xOrder)->first - pointSize;
@@ -54,7 +63,6 @@ namespace networkReliability
 		maxY = std::max_element(vertexPositions.begin(), vertexPositions.end(), yOrder)->second + pointSize;
 
 		setCentralWidget(graphicsView);
-
 		updateGraphics();
 	}
 	void observationVisualiser::updateGraphics()
@@ -149,9 +157,17 @@ namespace networkReliability
 			start++;
 		}
 	}
-	bool observationVisualiser::eventFilter(QObject*, QEvent *event)
+	bool observationVisualiser::eventFilter(QObject* object, QEvent *event)
 	{
-		if(event->type() == QEvent::KeyPress)
+		if(event->type() == QEvent::GraphicsSceneMouseMove && object == graphicsScene)
+		{
+			QGraphicsSceneMouseEvent* mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
+			QPointF position = mouseEvent->scenePos();
+			std::stringstream ss;
+			ss << "(" << position.x() << ", " << position.y() << ")";
+			positionLabel->setText(QString::fromStdString(ss.str()));
+		}
+		else if(event->type() == QEvent::KeyPress)
 		{
 			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 			if(keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return)
@@ -159,12 +175,17 @@ namespace networkReliability
 				obs = NetworkReliabilityObs(context, randomSource);
 				updateGraphics();
 			}
+			return true;
 		}
 		return false;
 	}
 	observationVisualiser::~observationVisualiser()
 	{
 		delete statusLabel;
+		delete positionLabel;
+		delete statusLayout;
+
+		delete statusFrame;
 		delete statusBar;
 
 		delete graphicsView;
