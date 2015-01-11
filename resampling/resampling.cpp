@@ -114,7 +114,6 @@ namespace networkReliability
 
 		std::vector<NetworkReliabilitySubObs> observations;
 		std::vector<NetworkReliabilitySubObs> nextStepObservations;
-		std::vector<int> resamplingIndices;
 
 		boost::accumulators::accumulator_set<calculation_type, boost::accumulators::stats<boost::accumulators::tag::sum> > zeroInitialisedAccumulator(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
 		//mean of getting to the next level, once we've conditioned on having enough edges.
@@ -162,7 +161,6 @@ namespace networkReliability
 		for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
 		{
 			nextStepObservations.clear();
-			resamplingIndices.clear();
 			for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				NetworkReliabilityObs newObs = j->getObservation(randomSource);
@@ -179,23 +177,25 @@ namespace networkReliability
 				goto returnEstimate;
 			}
 			std::size_t previousSize = observations.size();
-			//resampling step
-			observations.clear();
-			resamplingProbabilities.clear();
-			mpfr_class sum = 0;
-			for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
+			//resampling step. Don't do this if we're using PMC / complete enumeration, and we're on the last step. 
+			if((nPMC == 0 && useCompleteEnumeration) || splittingLevel < finalSplittingStep-1)
 			{
-				sum += j->getGeneratedObservationConditioningProb();
-				resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
-			}
-			if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
-			mpfr_class averageWeight = sum / previousSize;
-			aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
-			for (int k = 0; k < previousSize; k++)
-			{
-				int index = alias(randomSource);
-				observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
-				resamplingIndices.push_back(index);
+				observations.clear();
+				resamplingProbabilities.clear();
+				mpfr_class sum = 0;
+				for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
+				{
+					sum += j->getGeneratedObservationConditioningProb();
+					resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
+				}
+				if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
+				mpfr_class averageWeight = sum / previousSize;
+				aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
+				for (int k = 0; k < previousSize; k++)
+				{
+					int index = alias(randomSource);
+					observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
+				}
 			}
 		}
 		if (nPMC > 0)
@@ -267,29 +267,12 @@ namespace networkReliability
 			std::vector<int> components2;
 			//Similarly, this is used for the connected components of the reduced graph. 
 			boost::detail::depth_first_visit_restricted_impl_helper<NetworkReliabilitySubObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
-			//If we resample the same value multiple times above, only do the complete enumeration once. This isn't possible if we have only two thresholds (one non-zero, one zero) because there's no resampling done
-			std::vector<mpfr_class> completeEnumerationValues(resamplingIndices.size(), -2);
 
 			int counter = 0;
 			int cachedValues = 0;
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++, counter++)
 			{
-				if(resamplingIndices.size() > 0 && completeEnumerationValues[resamplingIndices[counter]] > -1)
-				{
-					mpfr_class currentEstimate = completeEnumerationValues[resamplingIndices[counter]];
-					std::size_t nUnfixedEdges = 0;
-					const EdgeState* state = j->getState();
-					for(int i = 0; i < nEdges; i++)
-					{
-						if(state[i] & UNFIXED_MASK) nUnfixedEdges++;
-					}
-					boost::math::binomial_distribution<mpfr_class> targetDistribution(nUnfixedEdges, inopProbability);
-					mpfr_class conditional = boost::math::cdf(boost::math::complement(targetDistribution, j->getMinCut()-1));
-					estimate += j->getGeneratedObservationConditioningProb() * currentEstimate / conditional;
-					cachedValues++;
-					continue;
-				}
-				else if(j->getMinCut() > 0)
+				if(j->getMinCut() > 0)
 				{
 					mpfr_class currentEstimate = 0;
 					//get out the reduced graph
@@ -338,7 +321,6 @@ namespace networkReliability
 						boost::math::binomial_distribution<mpfr_class> targetDistribution(reducedGraphInput.nUnreducedEdges, inopProbability);
 						mpfr_class conditional = boost::math::cdf(boost::math::complement(targetDistribution, j->getMinCut()-1));
 						estimate += j->getGeneratedObservationConditioningProb() * currentEstimate / conditional;
-						if(resamplingIndices.size() > 1) completeEnumerationValues[resamplingIndices[counter]] = currentEstimate;
 					}
 					else
 					{
