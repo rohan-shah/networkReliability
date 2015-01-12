@@ -109,7 +109,7 @@ namespace networkReliability
 					const EdgeState* subObsState = subObs.getState();
 					for(int k = 0; k < nEdges; k++)
 					{
-						if(subObsState[k] & (FIXED_INOP | NEW_FIXED_INOP)) subObsFixedInop++;
+						if(subObsState[k] & FIXED_INOP) subObsFixedInop++;
 					}
 
 					if(nDeactivated < nextMinEdges)

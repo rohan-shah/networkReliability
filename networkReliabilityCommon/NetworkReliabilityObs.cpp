@@ -85,7 +85,7 @@ namespace networkReliability
 			//is this vertex marked as on, for one reason or another? If so continue from here
 			if((oldEdgeStatesPtr[sourceEdge] & INOP_MASK) > 0 && newEdgeStatesPtr[sourceEdge] == FIXED_OP)
 			{
-				newEdgeStatesPtr[sourceEdge] = NEW_FIXED_INOP;
+				newEdgeStatesPtr[sourceEdge] = FIXED_INOP;
 
 				//Do we find another vertex in our search that is marked on, and is far enough away from the source?
 				//If so retain it, it will be our new starting point. 
@@ -101,8 +101,7 @@ namespace networkReliability
 					EdgeState previousState = oldEdgeStatesPtr[sourceEdge];
 					if(edgeDistances[copiedSourceEdge + nEdges * sourceEdge] <= radius)
 					{
-						if(previousState == NEW_FIXED_INOP) newEdgeStatesPtr[sourceEdge] = FIXED_INOP;
-						else if(previousState & FIXED_MASK) newEdgeStatesPtr[sourceEdge] = previousState;
+						if(previousState & FIXED_MASK) newEdgeStatesPtr[sourceEdge] = previousState;
 						else newEdgeStatesPtr[sourceEdge] = UNFIXED_INOP;
 					}
 					else if(!found && (previousState & INOP_MASK) > 0 && newEdgeStatesPtr[sourceEdge] == FIXED_OP)
