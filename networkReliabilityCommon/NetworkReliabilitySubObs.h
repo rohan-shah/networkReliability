@@ -35,7 +35,7 @@ namespace networkReliability
 		NetworkReliabilitySubObs(Context const& context, boost::archive::binary_iarchive& ar);
 		typedef mpfr_class conditioning_type;
 		NetworkReliabilitySubObs(NetworkReliabilitySubObs&& other);
-		NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, int radius, int conditioningCount, conditioning_type conditiniongProb);
+		NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, double radius, int conditioningCount, conditioning_type conditiniongProb);
 		NetworkReliabilityObs getObservation(boost::mt19937& randomSource) const;
 		const EdgeState* getState() const;
 		int getMinCut() const;
@@ -64,7 +64,7 @@ namespace networkReliability
 		void getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const;
 		NetworkReliabilitySubObs copyWithGeneratedObservationConditioningProb(const conditioning_type& conditioningProb) const;
 		Context const& getContext() const;
-		int getRadius() const;
+		double getRadius() const;
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const
 		{
@@ -97,7 +97,7 @@ namespace networkReliability
 		NetworkReliabilitySubObs(Context const& context);
 		Context const& context;
 		boost::shared_array<EdgeState> state;
-		int radius;
+		double radius;
 		int minCut;
 		std::vector<int> couldBeDeactivated;
 		int conditioningCount;

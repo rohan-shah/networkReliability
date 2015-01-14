@@ -18,7 +18,7 @@ namespace networkReliability
 	{
 		ar >> *this;
 	}
-	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, int radius, int conditioningCount, conditioning_type conditioningProb)
+	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, double radius, int conditioningCount, conditioning_type conditioningProb)
 		:context(context), state(state), radius(radius), conditioningCount(conditioningCount), fixedInop(0), conditioningProb(conditioningProb)
 	{
 		std::vector<int>& capacityVector = context.getCapacityVector();
@@ -301,7 +301,7 @@ namespace networkReliability
 	{
 		return context;
 	}
-	int NetworkReliabilitySubObs::getRadius() const
+	double NetworkReliabilitySubObs::getRadius() const
 	{
 		return radius;
 	}
