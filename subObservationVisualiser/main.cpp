@@ -84,22 +84,27 @@ namespace networkReliability
 			std::cout << "Unable to open specified file" << std::endl;
 			return 0;
 		}
-		boost::archive::text_iarchive archive(inputStream, boost::archive::no_codecvt);
-		boost::shared_ptr<const Context> context;
-		boost::shared_ptr<NetworkReliabilitySubObs> subObs;
+		//First try a single subObservation. 
 		try
 		{
-			readNetworkReliabilitySubObs(archive, context, subObs);
+			boost::archive::text_iarchive archive(inputStream, boost::archive::no_codecvt);
+			NetworkReliabilitySubObsWithContext subObsWithContext(archive);
+			subObservationVisualiser viewer(subObsWithContext, pointSize);
+			viewer.show();
+			app.exec();
+			return 0;
 		}
 		catch(std::runtime_error& err)
 		{
-			std::cout << "Error loading SubObs from file: " << err.what() << std::endl;
-			return 0;
 		}
-		subObservationVisualiser viewer(subObs, pointSize);
-		viewer.show();
-		app.exec();
-		return 0;
+		//If that doesn't work, try a subObservationCollection
+		try
+		{
+		}
+		catch(std::runtime_error& err)
+		{}
+		std::cout << "Unable to load object from file" << std::endl;
+		return -1;
 	}
 }
 int main(int argc, char** argv)

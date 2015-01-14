@@ -151,7 +151,7 @@ namespace networkReliability
 		if (usePMC) finalSplittingThresholdIndex = thresholds.size()-2;
 		else finalSplittingThresholdIndex = thresholds.size()-1;
 
-		//additional working data for getRadius1ReducedGraph
+		//additional working data for getReducedGraph
 		std::vector<int> edgeCounts;
 		std::vector<int> reducedGraphInterestVertices(interestVertices.size());
 		ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
@@ -206,7 +206,7 @@ namespace networkReliability
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				Context::internalGraph reducedGraph;
-				j->getRadius1ReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
+				j->getReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
 				turnipInput.n = (int)*splittingFactors.rbegin() + bernoulli(randomSource);
 				turnipInput.graph = &reducedGraph;
 				const std::size_t nReducedVertices = boost::num_vertices(reducedGraph);

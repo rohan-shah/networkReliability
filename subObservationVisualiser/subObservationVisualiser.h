@@ -16,12 +16,13 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		subObservationVisualiser(boost::shared_ptr<NetworkReliabilitySubObs> subObs, float pointSize);
+		subObservationVisualiser(NetworkReliabilitySubObsWithContext& subObsWithContextVector, float pointSize);
 		~subObservationVisualiser();
 		bool eventFilter(QObject* object, QEvent *event);
 	private:
 		void addBackgroundRectangle();
 		void updateGraphics();
+		void updateObservation();
 		void fromStart();
 		void addPoints();
 		void addLines();
@@ -30,7 +31,8 @@ namespace networkReliability
 		void addReducedLines();
 		float pointSize;
 
-		boost::shared_ptr<NetworkReliabilitySubObs> subObs;
+		//Are we using a single sub-observation, or a vector of inputs?
+		bool useSingleSubObs;
 		QGraphicsScene* graphicsScene;
 		QGraphicsView* graphicsView;
 		QStatusBar* statusBar;
@@ -39,16 +41,21 @@ namespace networkReliability
 		QFrame* statusFrame;
 		QHBoxLayout* statusLayout;
 		float minX, maxX, minY, maxY;
+		//If we have a vector of input objects, which one are we currently looking at?
+		int currentIndex;
+		//and what is the current object? This is set for both single input / multiple inputs
+		const NetworkReliabilitySubObs* subObs;
 		//If the radius of the sub observation is 1, this holds the connected components of the sub observation. 
-		std::vector<int> radius1Components;
+		std::vector<int> reducedComponents;
 		//...and this holds the currently highlighted component
-		int highlightedRadius1Component;
+		int highlightedReducedComponent;
 		//...and this hold whether or not we're looking at the reduced version or note. 
 		bool reduced;
 		//...and the reduced graph 
-		NetworkReliabilitySubObs::getRadius1ReducedGraphNoSelfWithWeightsInput reducedGraphData;
+		NetworkReliabilitySubObs::getReducedGraphNoSelfWithWeightsInput reducedGraphData;
 		//...and the number of components in the unreduced graph
 		int nUnreducedComponents;
+		const Context& context;
 	};
 }
 #endif

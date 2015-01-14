@@ -16,18 +16,17 @@ namespace networkReliability
 	{
 		return first.second < second.second;
 	}
-	subObservationVisualiser::subObservationVisualiser(boost::shared_ptr<NetworkReliabilitySubObs> subObs, float pointSize)
-		:pointSize(pointSize), subObs(subObs), highlightedRadius1Component(-1), reducedGraphData(subObs->getContext().getInterestVertices()), reduced(false)
+	void subObservationVisualiser::updateObservation()
 	{
-		Context const& context = subObs->getContext();
-		if(subObs->getRadius() == 1)
-		{
-			boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
-			std::vector<boost::default_color_type> colorMap;
-			nUnreducedComponents = countComponents(context, subObs->getState(), radius1Components, stack, colorMap);
-			subObs->getRadius1ReducedGraphNoSelfWithWeights(reducedGraphData);
-		}
-		
+		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		std::vector<boost::default_color_type> colorMap;
+		nUnreducedComponents = countComponents(context, subObs->getState(), reducedComponents, stack, colorMap);
+		subObs->getReducedGraphNoSelfWithWeights(reducedGraphData);
+		updateGraphics();
+	}
+	subObservationVisualiser::subObservationVisualiser(NetworkReliabilitySubObsWithContext& subObsWithContext, float pointSize)
+		:pointSize(pointSize), subObs(&(subObsWithContext.getSubObs())), highlightedReducedComponent(-1), reducedGraphData(subObsWithContext.getSubObs().getContext().getInterestVertices()), reduced(false), currentIndex(0), useSingleSubObs(true), context(subObsWithContext.getSubObs().getContext())
+	{
 		graphicsScene = new QGraphicsScene();
 		graphicsScene->installEventFilter(this);
 		graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -61,7 +60,7 @@ namespace networkReliability
 
 		setCentralWidget(graphicsView);
 
-		updateGraphics();
+		updateObservation();
 	}
 	subObservationVisualiser::~subObservationVisualiser()
 	{
@@ -94,7 +93,6 @@ namespace networkReliability
 	}
 	void subObservationVisualiser::addPoints()
 	{
-		Context const& context = subObs->getContext();
 		std::size_t nVertices = boost::num_vertices(context.getGraph());
 		int radius = subObs->getRadius();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
@@ -117,7 +115,7 @@ namespace networkReliability
 			Context::vertexPosition currentPosition = vertexPositions[vertexCounter];
 			float x = currentPosition.first;
 			float y = currentPosition.second;
-			if(radius == 1 && highlightedRadius1Component != -1 && radius1Components[vertexCounter] == highlightedRadius1Component)
+			if(highlightedReducedComponent != -1 && reducedComponents[vertexCounter] == highlightedReducedComponent)
 			{
 				graphicsScene->addEllipse(x - pointSize, y - pointSize, 2*pointSize, 2*pointSize, greenPen, greenBrush);
 			}
@@ -209,31 +207,28 @@ namespace networkReliability
 			std::size_t nVertices = boost::num_vertices(graph);
 			const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
-			if(subObs->getRadius() == 1)
+			if(!reduced)
 			{
-				if(!reduced)
+				std::vector<double> distances(vertexPositions.size());
+				for(int i = 0; i < nVertices; i++)
 				{
-					std::vector<double> distances(vertexPositions.size());
-					for(int i = 0; i < nVertices; i++)
-					{
-						distances[i] = (position.x() - vertexPositions[i].first) * (position.x() - vertexPositions[i].first) + (position.y() - vertexPositions[i].second) * (position.y() - vertexPositions[i].second);
-					}
-					int closestVertex = std::distance(distances.begin(), std::min_element(distances.begin(), distances.end()));
-					if(highlightedRadius1Component != radius1Components[closestVertex])
-					{
-						highlightedRadius1Component = radius1Components[closestVertex];
-						updateGraphics();
-					}
+					distances[i] = (position.x() - vertexPositions[i].first) * (position.x() - vertexPositions[i].first) + (position.y() - vertexPositions[i].second) * (position.y() - vertexPositions[i].second);
 				}
-				else
+				int closestVertex = std::distance(distances.begin(), std::min_element(distances.begin(), distances.end()));
+				if(highlightedReducedComponent != reducedComponents[closestVertex])
 				{
-					
+					highlightedReducedComponent = reducedComponents[closestVertex];
+					updateGraphics();
 				}
+			}
+			else
+			{
+				
 			}
 		}
 		else if(event->type() == QEvent::Leave && object == graphicsScene)
 		{
-			highlightedRadius1Component = -1;
+			highlightedReducedComponent = -1;
 			updateGraphics();
 		}
 		else if(event->type() == QEvent::KeyPress)
@@ -242,7 +237,7 @@ namespace networkReliability
 			if(keyEvent->key() == Qt::Key_R)
 			{
 				reduced = !reduced;
-				if(!reduced) highlightedRadius1Component = -1;
+				if(!reduced) highlightedReducedComponent = -1;
 				updateGraphics();
 				return true;
 			}
@@ -273,7 +268,7 @@ namespace networkReliability
 		boost::tie(currentUnreducedVertex, endUnreducedVertex) = boost::vertices(unreducedGraph);
 		for(;currentUnreducedVertex != endUnreducedVertex; currentUnreducedVertex++)
 		{
-			if(stillPresentInReduced[radius1Components[*currentUnreducedVertex]])
+			if(stillPresentInReduced[reducedComponents[*currentUnreducedVertex]])
 			{
 				Context::vertexPosition currentPosition = vertexPositions[*currentUnreducedVertex];
 				float x = currentPosition.first;
@@ -308,7 +303,7 @@ namespace networkReliability
 		{
 			int sourceVertex = boost::source(*currentEdge, unreducedGraph);
 			int targetVertex = boost::target(*currentEdge, unreducedGraph);
-			if(stillPresentInReduced[radius1Components[sourceVertex]] && radius1Components[sourceVertex] == radius1Components[targetVertex] && (state[boost::get(boost::edge_index, unreducedGraph, *currentEdge)] & OP_MASK))
+			if(stillPresentInReduced[reducedComponents[sourceVertex]] && reducedComponents[sourceVertex] == reducedComponents[targetVertex] && (state[boost::get(boost::edge_index, unreducedGraph, *currentEdge)] & OP_MASK))
 			{
 				Context::vertexPosition sourcePosition = vertexPositions[sourceVertex], targetPosition = vertexPositions[targetVertex];
 				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, blackPen);

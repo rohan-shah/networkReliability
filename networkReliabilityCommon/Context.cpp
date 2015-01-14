@@ -120,6 +120,14 @@ namespace networkReliability
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
 		std::swap(_useMinCut, other._useMinCut);
 	}
+	Context::Context(boost::archive::binary_iarchive& ar)
+	{
+		ar >> *this;
+	}
+	Context::Context(boost::archive::text_iarchive& ar)
+	{
+		ar >> *this;
+	}
 	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances)
 		:vertexPositions(vertexPositions), interestVertices(interestVertices), operationalProbability(operationalProbability), _useMinCut(false)
 	{

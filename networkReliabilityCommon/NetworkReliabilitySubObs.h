@@ -9,6 +9,8 @@
 #include "graphAlgorithms.h"
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/string.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/serialization.hpp>
 namespace boost
 {
 #define BOOST_INSTALL_PROPERTY(KIND, NAME) \
@@ -28,8 +30,9 @@ namespace networkReliability
 	class NetworkReliabilitySubObs : public boost::noncopyable
 	{
 	public:
-		template<class Archive> friend void readNetworkReliabilitySubObs(Archive& ar, boost::shared_ptr<const Context>& context, boost::shared_ptr<NetworkReliabilitySubObs>& subObs);
-		template<class Archive> friend void writeNetworkReliabilitySubObs(Archive& ar, NetworkReliabilitySubObs& subObs);
+		friend class boost::serialization::access;
+		NetworkReliabilitySubObs(Context const& context, boost::archive::text_iarchive& ar);
+		NetworkReliabilitySubObs(Context const& context, boost::archive::binary_iarchive& ar);
 		typedef mpfr_class conditioning_type;
 		NetworkReliabilitySubObs(NetworkReliabilitySubObs&& other);
 		NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, int radius, int conditioningCount, conditioning_type conditiniongProb);
@@ -38,14 +41,15 @@ namespace networkReliability
 		int getMinCut() const;
 		NetworkReliabilitySubObs& operator=(NetworkReliabilitySubObs&& other);
 		int getConditioningCount() const;
+
 		const conditioning_type& getConditioningProb() const;
 		const conditioning_type& getGeneratedObservationConditioningProb() const;
-		void getRadius1ReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
+		void getReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, int>, boost::property<boost::edge_index_t, int, boost::property<boost::edge_inop_probability_t, mpfr_class, boost::property<boost::edge_op_probability_t, mpfr_class> > > > reducedGraphWithProbabilities;
-		struct getRadius1ReducedGraphNoSelfWithWeightsInput
+		struct getReducedGraphNoSelfWithWeightsInput
 		{
 		public:
-			getRadius1ReducedGraphNoSelfWithWeightsInput(const std::vector<int>& interestVertices)
+			getReducedGraphNoSelfWithWeightsInput(const std::vector<int>& interestVertices)
 				:interestVertices(interestVertices)
 			{}
 			reducedGraphWithProbabilities outputGraph;
@@ -57,10 +61,38 @@ namespace networkReliability
 			const std::vector<int>& interestVertices;
 			std::vector<int> reducedInterestVertices;
 		};
-		void getRadius1ReducedGraphNoSelfWithWeights(getRadius1ReducedGraphNoSelfWithWeightsInput& input) const;
+		void getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const;
 		NetworkReliabilitySubObs copyWithGeneratedObservationConditioningProb(const conditioning_type& conditioningProb) const;
 		Context const& getContext() const;
 		int getRadius() const;
+		BOOST_SERIALIZATION_SPLIT_MEMBER()
+		template<class Archive> void save(Archive& ar, const unsigned int version) const
+		{
+			std::string typeString = "networkReliabilitySubObs";
+			ar << typeString;
+			ar << boost::serialization::make_array(state.get(), context.getNEdges());
+			ar << radius << minCut << couldBeDeactivated << conditioningCount << fixedInop << conditioningProb;
+			typeString = "networkReliabilitySubObs_end";
+			ar << typeString;
+		}
+		template<class Archive> void load(Archive& ar, const unsigned int version)
+		{
+			std::string typeString;
+			ar >> typeString;
+			if(typeString != "networkReliabilitySubObs")
+			{
+				throw std::runtime_error("Incorrect type specifier");
+			}
+
+			state.reset(new EdgeState[context.getNEdges()]);
+			ar >> boost::serialization::make_array(state.get(), context.getNEdges());
+			ar >> radius >> minCut >> couldBeDeactivated >> conditioningCount >> fixedInop >> conditioningProb;
+			ar >> typeString;
+			if(typeString != "networkReliabilitySubObs_end")
+			{
+				throw std::runtime_error("Incorrect type specifier");
+			}
+		}
 	private:
 		NetworkReliabilitySubObs(Context const& context);
 		Context const& context;
@@ -73,31 +105,50 @@ namespace networkReliability
 		conditioning_type conditioningProb, generatedObservationConditioningProb;
 		int generatedObservationConditioningCount;
 	};
-	template<class Archive> void readNetworkReliabilitySubObs(Archive& ar, boost::shared_ptr<const Context>& context, boost::shared_ptr<NetworkReliabilitySubObs>& subObs)
+	struct NetworkReliabilitySubObsWithContext
 	{
-		std::string typeString;
-		ar >> typeString;
-		if(typeString != "networkReliabilitySubObs")
+	public:
+		NetworkReliabilitySubObsWithContext(boost::archive::text_iarchive& ar)
 		{
-			throw std::runtime_error("File did not start with correct type specifier");
+			ar >> *this;
 		}
-		boost::shared_ptr<Context> nonConstContext(new Context());
-		ar >> *nonConstContext;
-		context = nonConstContext;
-
-		subObs.reset(new NetworkReliabilitySubObs(*context));
-		NetworkReliabilitySubObs& subObsRef = *subObs;
-		subObsRef.state.reset(new EdgeState[context->getNEdges()]);
-		ar >> boost::serialization::make_array(subObsRef.state.get(), context->getNEdges());
-		ar >> subObsRef.radius >> subObsRef.minCut >> subObsRef.couldBeDeactivated >> subObsRef.conditioningCount >> subObsRef.fixedInop >> subObsRef.conditioningProb;
-	}
-	template<class Archive> void writeNetworkReliabilitySubObs(Archive& ar, NetworkReliabilitySubObs& subObs)
-	{
-		std::string typeString = "networkReliabilitySubObs";
-		ar << typeString;
-		ar << subObs.getContext();
-		ar << boost::serialization::make_array(subObs.state.get(), subObs.getContext().getNEdges());
-		ar << subObs.radius << subObs.minCut << subObs.couldBeDeactivated << subObs.conditioningCount << subObs.fixedInop << subObs.conditioningProb;
-	}
+		NetworkReliabilitySubObsWithContext(boost::archive::binary_iarchive& ar)
+		{
+			ar >> *this;
+		}
+		NetworkReliabilitySubObsWithContext(NetworkReliabilitySubObs& subObs);
+		friend class boost::serialization::access;
+		const NetworkReliabilitySubObs& getSubObs();
+	private:
+		BOOST_SERIALIZATION_SPLIT_MEMBER()
+		template<class Archive> void save(Archive& ar, const unsigned int version) const
+		{
+			std::string typeString = "networkReliabilitySubObsWithContext";
+			ar << typeString;
+			ar << subObs->getContext();
+			ar << *subObs;
+			typeString = "networkReliabilitySubObsWithContext_end";
+			ar << typeString;
+		}
+		template<class Archive> void load(Archive& ar, const unsigned int version)
+		{
+			std::string typeString;
+			ar >> typeString;
+			if(typeString != "networkReliabilitySubObsWithContext")
+			{
+				throw std::runtime_error("Incorrect type specifier");
+			}
+			context.reset(new Context(ar));
+			subObs.reset(new NetworkReliabilitySubObs(*context.get(), ar));
+			ar >> typeString;
+			if(typeString != "networkReliabilitySubObsWithContext_end")
+			{
+				throw std::runtime_error("Incorrect type specifier");
+			}
+		}
+		boost::shared_ptr<const Context> context;
+		boost::shared_ptr<NetworkReliabilitySubObs> subObs;
+	};
 }
+
 #endif

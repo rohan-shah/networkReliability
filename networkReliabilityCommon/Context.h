@@ -7,6 +7,8 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/utility.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/graph/adj_list_serialize.hpp>
 #include <vector>
 #include "TruncatedBinomialDistribution.h"
@@ -18,7 +20,8 @@ namespace networkReliability
 	class Context : private boost::noncopyable
 	{
 	public:
-		template<class Archive> friend void readNetworkReliabilitySubObs(Archive& ar, boost::shared_ptr<const Context>& context, boost::shared_ptr<NetworkReliabilitySubObs>& subObs);
+		Context(boost::archive::binary_iarchive& ar);
+		Context(boost::archive::text_iarchive& ar);
 		friend class boost::serialization::access;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_index_t, int> > inputGraph;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_index_t, int> > internalGraph;
@@ -70,6 +73,8 @@ namespace networkReliability
 			ar & nEdges;
 			ar << boost::serialization::make_array(edgeDistances.get(), nEdges*nEdges);
 			ar << operationalProbability << inoperationalProbabilityD << minCutEdges;
+			typeString = "end_context";
+			ar << typeString;
 		}
 		template<class Archive> void load(Archive& ar, const unsigned int version)
 		{
@@ -77,7 +82,7 @@ namespace networkReliability
 			ar >> typeString;
 			if(typeString != "context")
 			{
-				throw std::runtime_error("File did not start with correct type specifier");
+				throw std::runtime_error("Incorrect type specifier");
 			}
 			//load all shared_ptrs as references
 			//have to load as non-const
@@ -113,6 +118,11 @@ namespace networkReliability
 			edgeDistances.reset(new double[nEdges*nEdges]);
 			ar >> boost::serialization::make_array(edgeDistances.get(), nEdges*nEdges);
 			ar >> operationalProbability >> inoperationalProbabilityD >> minCutEdges;
+			ar >> typeString;
+			if(typeString != "end_context")
+			{
+				throw std::runtime_error("File did not end with correct type specifier");
+			}
 		}
 		bool _useMinCut;
 		Context();

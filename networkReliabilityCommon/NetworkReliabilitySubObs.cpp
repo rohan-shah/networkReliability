@@ -8,6 +8,16 @@
 #include "seriesParallelReduction.hpp"
 namespace networkReliability
 {
+	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context, boost::archive::text_iarchive& ar)
+		:context(context)
+	{
+		ar >> *this;
+	}
+	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context, boost::archive::binary_iarchive& ar)
+		:context(context)
+	{
+		ar >> *this;
+	}
 	NetworkReliabilitySubObs::NetworkReliabilitySubObs(Context const& context, boost::shared_array<EdgeState> state, int radius, int conditioningCount, conditioning_type conditioningProb)
 		:context(context), state(state), radius(radius), conditioningCount(conditioningCount), fixedInop(0), conditioningProb(conditioningProb)
 	{
@@ -72,7 +82,7 @@ namespace networkReliability
 	{
 		return minCut;
 	}
-	void NetworkReliabilitySubObs::getRadius1ReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
+	void NetworkReliabilitySubObs::getReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
 	{
 		int nComponents = countComponents(context, state.get(), components, stack, colorMap);
 		edgeCounts.clear();
@@ -116,7 +126,7 @@ namespace networkReliability
 			minimumInoperative = std::max(0, conditioningCount - fixedInop);
 		}
 	}
-	void NetworkReliabilitySubObs::getRadius1ReducedGraphNoSelfWithWeights(getRadius1ReducedGraphNoSelfWithWeightsInput& input) const
+	void NetworkReliabilitySubObs::getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const
 	{
 		input.nUnreducedEdges = 0;
 		int nComponents = countComponents(context, state.get(), input.components, input.stack, input.colorMap);
@@ -294,5 +304,15 @@ namespace networkReliability
 	int NetworkReliabilitySubObs::getRadius() const
 	{
 		return radius;
+	}
+	NetworkReliabilitySubObsWithContext::NetworkReliabilitySubObsWithContext(NetworkReliabilitySubObs& inputSubObs)
+	{
+		boost::shared_array<EdgeState> copiedState(new EdgeState[inputSubObs.getContext().getNEdges()]);
+		memcpy(copiedState.get(), inputSubObs.getState(), sizeof(EdgeState) * inputSubObs.getContext().getNEdges());
+		subObs.reset(new NetworkReliabilitySubObs(inputSubObs.getContext(), copiedState, inputSubObs.getRadius(), inputSubObs.getConditioningCount(), inputSubObs.getConditioningProb()));
+	}
+	const NetworkReliabilitySubObs& NetworkReliabilitySubObsWithContext::getSubObs()
+	{
+		return *subObs;
 	}
 }

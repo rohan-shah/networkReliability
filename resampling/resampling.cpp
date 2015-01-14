@@ -200,7 +200,7 @@ namespace networkReliability
 		}
 		if (nPMC > 0)
 		{
-			//Working data for call to getRadius1ReducedGraph
+			//Working data for call to getReducedGraph
 			std::vector<int> edgeCounts;
 			std::vector<int> reducedGraphInterestVertices(interestVertices.size());
 			
@@ -209,7 +209,7 @@ namespace networkReliability
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				Context::internalGraph reducedGraph;
-				j->getRadius1ReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
+				j->getReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
 				turnipInput.n = (int)nPMC;
 				turnipInput.graph = &reducedGraph;
 				const std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
@@ -262,8 +262,8 @@ namespace networkReliability
 			int tooManyEdgesCount = 0;
 			estimate = 0;
 			std::vector<EdgeState> edgeStates;
-			NetworkReliabilitySubObs::getRadius1ReducedGraphNoSelfWithWeightsInput reducedGraphInput(interestVertices);
-			//This is used to check the connected components of the reduced graph (not used in the call to getRadius1ReducedGraphNoSelfWithWeights
+			NetworkReliabilitySubObs::getReducedGraphNoSelfWithWeightsInput reducedGraphInput(interestVertices);
+			//This is used to check the connected components of the reduced graph (not used in the call to getReducedGraphNoSelfWithWeights
 			std::vector<int> components2;
 			//Similarly, this is used for the connected components of the reduced graph. 
 			boost::detail::depth_first_visit_restricted_impl_helper<NetworkReliabilitySubObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
@@ -276,7 +276,7 @@ namespace networkReliability
 				{
 					mpfr_class currentEstimate = 0;
 					//get out the reduced graph
-					j->getRadius1ReducedGraphNoSelfWithWeights(reducedGraphInput);
+					j->getReducedGraphNoSelfWithWeights(reducedGraphInput);
 					std::size_t nReducedEdges = boost::num_edges(reducedGraphInput.outputGraph);
 					std::size_t nReducedVertices = boost::num_vertices(reducedGraphInput.outputGraph);
 					
@@ -326,9 +326,10 @@ namespace networkReliability
 					{
 						if(tooManyEdgesCount == 0)
 						{
-							std::ofstream outputStream("./tooManyEdges.dat");
-							boost::archive::text_oarchive outputArchive(outputStream);
-							writeNetworkReliabilitySubObs(outputArchive, *j);
+							std::ofstream outputStream("./tooManyEdges.dat", std::ios_base::out);
+							boost::archive::text_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
+							NetworkReliabilitySubObsWithContext subWithContext(*j);
+							outputArchive << subWithContext;
 						}
 						tooManyEdgesCount++;
 						NetworkReliabilityObs obs = j->getObservation(randomSource);
