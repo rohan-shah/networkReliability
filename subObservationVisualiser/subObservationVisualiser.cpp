@@ -1,6 +1,7 @@
 #include "subObservationVisualiser.h"
 #include <QEvent>
 #include <QKeyEvent>
+#include <QTimer>
 #include "ZoomGraphicsView.h"
 #include <QGraphicsRectItem>
 #include "graphAlgorithms.h"
@@ -16,16 +17,27 @@ namespace networkReliability
 	{
 		return first.second < second.second;
 	}
-	void subObservationVisualiser::updateObservation()
+	void subObservationVisualiser::updateReducedGraphData()
 	{
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
 		std::vector<boost::default_color_type> colorMap;
-		nUnreducedComponents = countComponents(context, subObs->getState(), reducedComponents, stack, colorMap);
-		subObs->getReducedGraphNoSelfWithWeights(reducedGraphData);
+		if(useSingleSubObs)
+		{
+			nUnreducedComponents = countComponents(context, subObs->getState(), reducedComponents, stack, colorMap);
+			subObs->getReducedGraphNoSelfWithWeights(reducedGraphData);
+		}
+		else
+		{
+			boost::shared_array<EdgeState> expandedState(new EdgeState[context.getNEdges()]);
+			collection->expand(currentIndex, expandedState);
+			//Entering dummy values for the last two inputs to the constructor
+			NetworkReliabilitySubObs expandedSubObs(context, expandedState, collection->getRadius(), 0, 0);
+			nUnreducedComponents = countComponents(context, expandedState.get(), reducedComponents, stack, colorMap);
+			expandedSubObs.getReducedGraphNoSelfWithWeights(reducedGraphData);
+		}
 		updateGraphics();
 	}
-	subObservationVisualiser::subObservationVisualiser(NetworkReliabilitySubObsWithContext& subObsWithContext, float pointSize)
-		:pointSize(pointSize), subObs(&(subObsWithContext.getSubObs())), highlightedReducedComponent(-1), reducedGraphData(subObsWithContext.getSubObs().getContext().getInterestVertices()), reduced(false), currentIndex(0), useSingleSubObs(true), context(subObsWithContext.getSubObs().getContext())
+	void subObservationVisualiser::initialiseQt()
 	{
 		graphicsScene = new QGraphicsScene();
 		graphicsScene->installEventFilter(this);
@@ -59,8 +71,31 @@ namespace networkReliability
 		maxY = std::max_element(vertexPositions.begin(), vertexPositions.end(), sortBySecond)->second + pointSize;
 
 		setCentralWidget(graphicsView);
-
-		updateObservation();
+	}
+	subObservationVisualiser::subObservationVisualiser(const NetworkReliabilitySubObsCollection& inputCollection, float pointSize)
+		:pointSize(pointSize), highlightedReducedComponent(-1), reducedGraphData(inputCollection.getContext().getInterestVertices()), reduced(false), currentIndex(0), useSingleSubObs(false), context(inputCollection.getContext()), collection(&inputCollection)
+	{
+		if(collection->getSampleSize() == 0)
+		{
+			QTimer::singleShot(0, this, SLOT(close()));
+		}
+		else
+		{
+			initialiseQt();
+			observationChanged();
+		}
+	}
+	void subObservationVisualiser::observationChanged()
+	{
+		highlightedReducedComponent = -1;
+		updateReducedGraphData();
+		updateGraphics();
+	}
+	subObservationVisualiser::subObservationVisualiser(const NetworkReliabilitySubObsWithContext& subObsWithContext, float pointSize)
+		:pointSize(pointSize), subObs(&(subObsWithContext.getSubObs())), highlightedReducedComponent(-1), reducedGraphData(subObsWithContext.getSubObs().getContext().getInterestVertices()), reduced(false), currentIndex(0), useSingleSubObs(true), context(subObsWithContext.getSubObs().getContext())
+	{
+		initialiseQt();
+		observationChanged();
 	}
 	subObservationVisualiser::~subObservationVisualiser()
 	{
@@ -94,7 +129,10 @@ namespace networkReliability
 	void subObservationVisualiser::addPoints()
 	{
 		std::size_t nVertices = boost::num_vertices(context.getGraph());
-		int radius = subObs->getRadius();
+		int radius;
+		if(useSingleSubObs) radius = subObs->getRadius();
+		else radius = collection->getRadius();
+
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 		const std::vector<int>& interestVertices = context.getInterestVertices();
 
@@ -131,8 +169,18 @@ namespace networkReliability
 	}
 	void subObservationVisualiser::addLines()
 	{
-		Context const& context = subObs->getContext();
-		const EdgeState* state = subObs->getState();
+		const EdgeState* state;
+		boost::shared_array<EdgeState> expandedState;
+		if(useSingleSubObs)
+		{
+			state = subObs->getState();
+		}
+		else
+		{
+			expandedState.reset(new EdgeState[context.getNEdges()]);
+			collection->expand(currentIndex, expandedState);
+			state = expandedState.get();
+		}
 		const Context::internalGraph& graph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
@@ -202,7 +250,6 @@ namespace networkReliability
 			std::stringstream ss;
 			ss << "(" << position.x() << ", " << position.y() << ")";
 			positionLabel->setText(QString::fromStdString(ss.str()));
-			Context const& context = subObs->getContext();
 			const Context::internalGraph& graph = context.getGraph();
 			std::size_t nVertices = boost::num_vertices(graph);
 			const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
@@ -241,12 +288,28 @@ namespace networkReliability
 				updateGraphics();
 				return true;
 			}
+			else if(keyEvent->key() == Qt::Key_Left && !useSingleSubObs)
+			{
+				if(currentIndex > 1)
+				{
+					currentIndex--;
+					observationChanged();
+				}
+			}
+			else if(keyEvent->key() == Qt::Key_Right && !useSingleSubObs)
+			{
+				if(currentIndex < collection->getSampleSize() - 1)
+				{
+					currentIndex++;
+					observationChanged();
+				}
+			}
+
 		}
 		return false;
 	}
 	void subObservationVisualiser::addReducedPoints()
 	{
-		Context const& context = subObs->getContext();
 		const Context::internalGraph& unreducedGraph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 		std:size_t nUnreducedVertices = boost::num_vertices(unreducedGraph);
@@ -280,7 +343,6 @@ namespace networkReliability
 	}
 	void subObservationVisualiser::addReducedLines()
 	{
-		Context const& context = subObs->getContext();
 		const Context::internalGraph& unreducedGraph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 		std:size_t nUnreducedVertices = boost::num_vertices(unreducedGraph);
@@ -298,7 +360,15 @@ namespace networkReliability
 
 		Context::internalGraph::edge_iterator currentEdge, lastEdge;
 		boost::tie(currentEdge, lastEdge) = boost::edges(unreducedGraph);
-		const EdgeState* state = subObs->getState();
+		const EdgeState* state;
+		boost::shared_array<EdgeState> expandedState;
+		if(useSingleSubObs) state = subObs->getState();
+		else
+		{
+			expandedState.reset(new EdgeState[context.getNEdges()]);
+			collection->expand(currentIndex, expandedState);
+			state = expandedState.get();
+		}
 		for(; currentEdge != lastEdge; currentEdge++)
 		{
 			int sourceVertex = boost::source(*currentEdge, unreducedGraph);

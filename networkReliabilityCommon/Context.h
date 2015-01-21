@@ -123,6 +123,12 @@ namespace networkReliability
 			{
 				throw std::runtime_error("File did not end with correct type specifier");
 			}
+			capacityVector.clear();
+			capacityVector.resize(2*nEdges, 1);
+			edgeResidualCapacityVector.resize(2*nEdges);
+			vertexPredecessorVector.resize(2*nEdges);
+			colorVector.resize(2*nEdges);
+			distanceVector.resize(2*nEdges);
 		}
 		bool _useMinCut;
 		Context();

@@ -78,7 +78,7 @@ namespace networkReliability
 			std::cout << "Input `fromFile' is required" << std::endl;
 			return 0;
 		}
-		std::ifstream inputStream(variableMap["fromFile"].as<std::string>().c_str(), std::ios_base::in);
+		std::ifstream inputStream(variableMap["fromFile"].as<std::string>().c_str(), std::ios_base::in | std::ios_base::binary);
 		if(!inputStream)
 		{
 			std::cout << "Unable to open specified file" << std::endl;
@@ -87,7 +87,7 @@ namespace networkReliability
 		//First try a single subObservation. 
 		try
 		{
-			boost::archive::text_iarchive archive(inputStream, boost::archive::no_codecvt);
+			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
 			NetworkReliabilitySubObsWithContext subObsWithContext(archive);
 			subObservationVisualiser viewer(subObsWithContext, pointSize);
 			viewer.show();
@@ -100,6 +100,19 @@ namespace networkReliability
 		//If that doesn't work, try a subObservationCollection
 		try
 		{
+			inputStream.clear();
+			inputStream.seekg(0, std::ios::beg);
+			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
+			NetworkReliabilitySubObsCollection collection(archive);
+			if(collection.getSampleSize() == 0)
+			{
+				std::cout << "NetworkReliabilitySubObsCollection was empty" << std::endl;
+				return 0;
+			}
+			subObservationVisualiser viewer(collection, pointSize);
+			viewer.show();
+			app.exec();
+			return 0;
 		}
 		catch(std::runtime_error& err)
 		{}

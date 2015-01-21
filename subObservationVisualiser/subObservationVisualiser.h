@@ -9,6 +9,7 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include "NetworkReliabilityObs.h"
+#include "NetworkReliabilitySubObsCollection.h"
 namespace networkReliability
 {
 	//If the next state is RESIMULATE, then we resimulate until we observe something that hits the next level, BUT
@@ -16,13 +17,16 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		subObservationVisualiser(NetworkReliabilitySubObsWithContext& subObsWithContextVector, float pointSize);
+		subObservationVisualiser(const NetworkReliabilitySubObsWithContext& subObsWithContextVector, float pointSize);
+		subObservationVisualiser(const NetworkReliabilitySubObsCollection& collection, float pointSize);
 		~subObservationVisualiser();
 		bool eventFilter(QObject* object, QEvent *event);
 	private:
+		void observationChanged();
+		void initialiseQt();
 		void addBackgroundRectangle();
 		void updateGraphics();
-		void updateObservation();
+		void updateReducedGraphData();
 		void fromStart();
 		void addPoints();
 		void addLines();
@@ -33,6 +37,8 @@ namespace networkReliability
 
 		//Are we using a single sub-observation, or a vector of inputs?
 		bool useSingleSubObs;
+		//The collection, if we have it
+		const NetworkReliabilitySubObsCollection* collection;
 		QGraphicsScene* graphicsScene;
 		QGraphicsView* graphicsView;
 		QStatusBar* statusBar;
@@ -43,7 +49,7 @@ namespace networkReliability
 		float minX, maxX, minY, maxY;
 		//If we have a vector of input objects, which one are we currently looking at?
 		int currentIndex;
-		//and what is the current object? This is set for both single input / multiple inputs
+		//If we have a single input, what is it?
 		const NetworkReliabilitySubObs* subObs;
 		//If the radius of the sub observation is 1, this holds the connected components of the sub observation. 
 		std::vector<int> reducedComponents;

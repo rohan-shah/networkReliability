@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles Arguments.cpp ArgumentsMPFR.cpp Context.cpp NetworkReliabilityObs.cpp NetworkReliabilitySubObs.cpp Turnip.cpp ZoomGraphicsView.cpp computeConditionalProb.cpp conditionalPMC.cpp graphAlgorithms.cpp empiricalDistribution.cpp binaryDataSet.cpp)
+set(CppFiles Arguments.cpp ArgumentsMPFR.cpp Context.cpp NetworkReliabilityObs.cpp NetworkReliabilitySubObs.cpp Turnip.cpp ZoomGraphicsView.cpp computeConditionalProb.cpp conditionalPMC.cpp graphAlgorithms.cpp empiricalDistribution.cpp binaryDataSet.cpp NetworkReliabilitySubObsCollection.cpp)
 set(HeaderFiles Arguments.h ArgumentsMPFR.h Context.h EdgeState.h NetworkReliabilityObs.h NetworkReliabilitySubObs.h Turnip.h ZoomGraphicsView.h computeConditionalProb.h conditionalPMC.h graphAlgorithms.h includeMPFR.h astCode.hpp empiricalDistribution.h seriesParallelReduction.hpp binaryDataSet.h)
 
 if(WIN32)

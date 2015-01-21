@@ -3,6 +3,7 @@
 #include "Arguments.h"
 #include "NetworkReliabilityObs.h"
 #include "NetworkReliabilitySubObs.h"
+#include "NetworkReliabilitySubObsCollection.h"
 #include <vector>
 #include "graphAlgorithms.h"
 #include <boost/accumulators/statistics.hpp>
@@ -40,6 +41,7 @@ namespace networkReliability
 			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
 			("nPMC", boost::program_options::value<std::size_t>()->default_value(0ULL)->implicit_value(0ULL), "(int) Number of PMC samples to use")
 			("useCompleteEnumeration", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Use complete enumeration in the last step")
+			("outputPenultimateSubObservations", boost::program_options::value<std::string>(), "(path) Only relevant with complete enumeration; File to outputthe penultimate sub-observation objects to")
 			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
 			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take.")
 			("help", "Display this message");
@@ -198,7 +200,7 @@ namespace networkReliability
 				}
 			}
 		}
-		if (nPMC > 0)
+		if (nPMC > 0 && thresholds.size() > 1)
 		{
 			//Working data for call to getReducedGraph
 			std::vector<int> edgeCounts;
@@ -257,8 +259,23 @@ namespace networkReliability
 			}
 			estimate /= n;
 		}
-		else if(useCompleteEnumeration)
+		else if(useCompleteEnumeration && thresholds.size() > 1)
 		{
+			if(variableMap.count("outputPenultimateSubObservations") > 0)
+			{
+				std::string outputPenultimateSubObservations = variableMap["outputPenultimateSubObservations"].as<std::string>();
+				std::ofstream outputStream(outputPenultimateSubObservations.c_str(), std::ios_base::out | std::ios_base::binary);
+				if(outputStream)
+				{
+					boost::archive::binary_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
+					NetworkReliabilitySubObsCollection penultimate(&context, *(thresholds.rbegin()+1));
+					for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+					{
+						penultimate.add(*j);
+					}
+					outputArchive << penultimate;
+				}
+			}
 			int tooManyEdgesCount = 0;
 			estimate = 0;
 			std::vector<EdgeState> edgeStates;
@@ -267,9 +284,10 @@ namespace networkReliability
 			std::vector<int> components2;
 			//Similarly, this is used for the connected components of the reduced graph. 
 			boost::detail::depth_first_visit_restricted_impl_helper<NetworkReliabilitySubObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
+			//Holds the subObservations that couldn't be completely enumerated
+			NetworkReliabilitySubObsCollection tooManyEdges(&context, *(thresholds.rbegin()+1));
 
 			int counter = 0;
-			int cachedValues = 0;
 			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++, counter++)
 			{
 				if(j->getMinCut() > 0)
@@ -324,13 +342,7 @@ namespace networkReliability
 					}
 					else
 					{
-						if(tooManyEdgesCount == 0)
-						{
-							std::ofstream outputStream("./tooManyEdges.dat", std::ios_base::out);
-							boost::archive::text_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
-							NetworkReliabilitySubObsWithContext subWithContext(*j);
-							outputArchive << subWithContext;
-						}
+						tooManyEdges.add(*j);
 						tooManyEdgesCount++;
 						NetworkReliabilityObs obs = j->getObservation(randomSource);
 						if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
@@ -341,9 +353,15 @@ namespace networkReliability
 				}
 				else estimate += j->getGeneratedObservationConditioningProb();
 			}
+			if(tooManyEdgesCount > 0)
+			{
+				std::ofstream outputStream("./tooManyEdges.dat", std::ios_base::out | std::ios_base::binary);
+				boost::archive::binary_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
+				outputArchive << tooManyEdges;
+			}
+
 			estimate /= n;
 			std::cout << tooManyEdgesCount << " graphs had too many edges for complete enumeration" << std::endl;
-			std::cout << "Used cached values " << cachedValues << " times" << std::endl;
 		}
 		else
 		{
@@ -358,8 +376,8 @@ namespace networkReliability
 				try
 				{
 					std::ofstream outputStream(variableMap["outputConditionalDistribution"].as<std::string>().c_str(), std::ios_base::binary);
-					boost::archive::binary_oarchive archive(outputStream);
-					archive << outputDistributions;
+					boost::archive::binary_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
+					outputArchive << outputDistributions;
 				}
 				catch(std::runtime_error& err)
 				{

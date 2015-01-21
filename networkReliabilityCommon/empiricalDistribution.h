@@ -13,7 +13,7 @@
 namespace networkReliability
 {
 	class NetworkReliabilitySubObs;
-	class empiricalDistribution : public boost::noncopyable, binaryDataSet1
+	class empiricalDistribution : public boost::noncopyable, protected binaryDataSet1
 	{
 	public:
 		empiricalDistribution(boost::archive::text_iarchive& ar)

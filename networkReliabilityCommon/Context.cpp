@@ -140,7 +140,6 @@ namespace networkReliability
 		edgeResidualCapacityVector.resize(2*nEdges);
 		vertexPredecessorVector.resize(2*nEdges);
 		capacityVector.resize(2*nEdges, 1);
-		vertexPredecessorVector.resize(2*nEdges);
 		colorVector.resize(2*nEdges);
 		distanceVector.resize(2*nEdges);
 
