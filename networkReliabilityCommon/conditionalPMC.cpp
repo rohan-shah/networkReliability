@@ -7,7 +7,7 @@
 namespace networkReliability
 {
 	ConditionalTurnipInput::ConditionalTurnipInput(boost::mt19937& randomSource, const Context::internalGraph* graph, const std::vector<int>& interestVertices)
-		:randomSource(randomSource), graph(graph), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false), interestVertices(interestVertices)
+		:randomSource(randomSource), graph(graph), interestVertices(interestVertices), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false)
 	{}
 	void conditionalPMC(ConditionalTurnipInput& input)
 	{
@@ -81,11 +81,11 @@ namespace networkReliability
 		std::vector<mpfr_class> computeConditionalProbScratch;
 		//Used to hold the connected component IDS
 		std::vector<int> componentIDs(nVertices);
-		for (int i = 0; i < input.n; i++)
+		for (std::size_t i = 0; i < input.n; i++)
 		{
 			//determine which edges are going to be left out (it'll be the last ones of this shuffled vector)
 			boost::random_shuffle(input.workingEdgeCounts, generator);
-			for (int j = 0; j < nEdges; j++)
+			for (std::size_t j = 0; j < nEdges; j++)
 			{
 				input.exponentialRates[j] = input.edgeCounts[j] * input.exponentialRate;
 			}
@@ -93,7 +93,7 @@ namespace networkReliability
 			//The first rate is going to be this
 			mpfr_class currentRate = sumAllRates;
 			//which edge in the permutation are we currently looking at?
-			int permutationCounter = 0;
+			std::size_t permutationCounter = 0;
 			//these are going to be the rates for the matrix exponential
 			ratesForPMC.clear();
 			secondRatesForPMC.clear();
@@ -128,7 +128,7 @@ namespace networkReliability
 				if (!connected)
 				{
 					connected = true;
-					for (int k = 1; k < interestVertices.size(); k++)
+					for (std::size_t k = 1; k < interestVertices.size(); k++)
 					{
 						connected &= (componentIDs[interestVertices[k]] == componentIDs[interestVertices[0]]);
 					}

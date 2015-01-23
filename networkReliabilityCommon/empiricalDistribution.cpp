@@ -4,7 +4,7 @@
 namespace networkReliability
 {
 	empiricalDistribution::empiricalDistribution(bool _isWeighted, std::size_t nEdges)
-	:_isWeighted(_isWeighted), nEdges(nEdges), sampleSize(0)
+	:nEdges(nEdges), sampleSize(0), _isWeighted(_isWeighted)
 	{}
 	void empiricalDistribution::hintDataCount(std::size_t size)
 	{
@@ -52,14 +52,14 @@ namespace networkReliability
 	}
 	empiricalDistribution& empiricalDistribution::operator=(empiricalDistribution&& other)
 	{
-		*static_cast<binaryDataSet1*>(this) = other;
+		*static_cast<binaryDataSet1*>(this) = static_cast<binaryDataSet1&&>(other);
 		_isWeighted = other._isWeighted;
 		weights.swap(other.weights);
 		sampleSize = other.sampleSize;
 		return *this;
 	}
 	empiricalDistribution::empiricalDistribution(empiricalDistribution&& other)
-		:binaryDataSet1(other)
+		:binaryDataSet1(std::move(other))
 	{
 		_isWeighted = other._isWeighted;
 		weights.swap(other.weights);

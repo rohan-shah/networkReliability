@@ -17,7 +17,7 @@ namespace networkReliability
 		char codeFile[] = "./codeFileXXXXXX";
 		mkstemps(codeFile, 0);
 		std::ofstream outputCodeStream(codeFile, std::ios::out);
-		for(int i = 0; i  < functions.size(); i++)
+		for(std::size_t i = 0; i  < functions.size(); i++)
 		{
 			outputCodeStream << "int compiledFunction" << i << "(long edgeMask)" << std::endl;
 			outputCodeStream << "{" << std::endl;

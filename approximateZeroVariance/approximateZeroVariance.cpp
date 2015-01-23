@@ -106,7 +106,7 @@ namespace networkReliability
 		mpfr_class qTilde;
 		mpfr_class initialQTilde = inopProbability*minCutDownProb;
 		initialQTilde = initialQTilde / (initialQTilde  + opProbability * minCutUpProb);
-		for(long i = 0; i < n; i++)
+		for(std::size_t i = 0; i < n; i++)
 		{
 			//we might break out of this loop early because the value of the indicator function is already known.
 			bool exitedEarly = false;
@@ -116,7 +116,7 @@ namespace networkReliability
 			std::fill(state.begin(), state.end(), 1);
 
 			float random = uniformReal(randomSource);
-			int edgeCounter = 0;
+			std::size_t edgeCounter = 0;
 			if(random < initialQTilde)
 			{
 				state[0] = state[1] = 0; outputStates[0] = UNFIXED_INOP;

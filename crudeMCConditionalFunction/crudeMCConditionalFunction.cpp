@@ -85,14 +85,14 @@ namespace networkReliability
 		std::vector<boost::default_color_type> colorMap;
 		std::vector<mpfr_class> sums(nFunctions, 0);
 		long countDisconnected = 0;
-		for(int i = 0; i < n; i++)
+		for(std::size_t i = 0; i < n; i++)
 		{
 			NetworkReliabilityObs obs(context, randomSource);
 			if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
 			{
 				const EdgeState* state = obs.getState();
 				countDisconnected++;
-				for(int functionCounter = 0; functionCounter < nFunctions; functionCounter++)
+				for(std::size_t functionCounter = 0; functionCounter < nFunctions; functionCounter++)
 				{
 					//For the edges which are relevant to the function, set those values in the vector to the state of the obseration
 					for(std::vector<int>::iterator relevantEdgesIterator = driver.edgeIDs[functionCounter].begin(); relevantEdgesIterator != driver.edgeIDs[functionCounter].end(); relevantEdgesIterator++)
@@ -103,7 +103,7 @@ namespace networkReliability
 				}
 			}			
 		}
-		for(int functionCounter = 0; functionCounter < nFunctions; functionCounter++)
+		for(std::size_t functionCounter = 0; functionCounter < nFunctions; functionCounter++)
 		{
 			std::cout << "Estimated value of function " << functionCounter << " was " << (sums[functionCounter]/countDisconnected) << std::endl;
 		}

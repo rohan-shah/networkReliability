@@ -17,7 +17,7 @@ namespace networkReliability
 		countComponents(context, state, components, stack, colorMap);
 		const std::vector<int>& interestVertices = context.getInterestVertices();
 		int firstInterestComponentID = components[interestVertices[0]];
-		for(int i = 1; i < interestVertices.size(); i++)
+		for(std::size_t i = 1; i < interestVertices.size(); i++)
 		{
 			if(components[interestVertices[i]] != firstInterestComponentID)
 			{

@@ -33,7 +33,7 @@ namespace networkReliability
 		> internalDirectedGraph;
 		typedef std::pair<float, float> vertexPosition;
 
-		Context(boost::shared_ptr<const inputGraph> graph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances = boost::shared_array<double>());
+		Context(boost::shared_ptr<const inputGraph> graph, boost::shared_ptr<const std::vector<unsigned int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances = boost::shared_array<double>());
 
 		Context& operator=(Context&& other);
 		Context(Context&& other);

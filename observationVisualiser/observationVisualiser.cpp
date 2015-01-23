@@ -28,7 +28,7 @@ namespace networkReliability
 		};
 	}
 	observationVisualiser::observationVisualiser(Context const& context, boost::mt19937& randomSource, float pointSize)
-		:randomSource(randomSource), pointSize(pointSize), context(context), obs(context, randomSource)
+		:obs(context, randomSource), context(context), randomSource(randomSource), pointSize(pointSize)
 	{
 		graphicsScene = new QGraphicsScene();
 		graphicsScene->installEventFilter(this);
@@ -84,7 +84,7 @@ namespace networkReliability
 		const std::vector<int>& interestVertices = context.getInterestVertices();
 		
 		std::vector<int> interestComponents;
-		for(int i = 0; i < interestVertices.size(); i++)
+		for(std::size_t i = 0; i < interestVertices.size(); i++)
 		{
 			interestComponents.push_back(components[interestVertices[i]]);
 		}
@@ -121,7 +121,7 @@ namespace networkReliability
 		redPen.setStyle(Qt::NoPen);
 		QBrush redBrush(QColor("red"));
 
-		for(int vertexCounter = 0; vertexCounter < nVertices; vertexCounter++)
+		for(std::size_t vertexCounter = 0; vertexCounter < nVertices; vertexCounter++)
 		{
 			Context::vertexPosition currentPosition = vertexPositions[vertexCounter];
 			float x = currentPosition.first;

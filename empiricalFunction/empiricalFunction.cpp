@@ -60,13 +60,13 @@ namespace networkReliability
 				loadedDistribution.expand(sampleCounter, edges);
 				double weight = 1;
 				if(loadedDistribution.isWeighted()) weight = loadedDistribution.getWeight(sampleCounter);
-				for(int i = 0; i < nFunctions; i++)
+				for(std::size_t i = 0; i < nFunctions; i++)
 				{
 					sums[i] += weight * driver.result[i]->calculate(edges);
 				}
 				sumAllWeights += weight;
 			}
-			for(int i = 0; i < nFunctions; i++)
+			for(std::size_t i = 0; i < nFunctions; i++)
 			{
 				std::cout << "Estimated value of function " << i << " was " << (sums[i]/sumAllWeights) << std::endl;
 			}

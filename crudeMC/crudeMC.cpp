@@ -80,7 +80,7 @@ namespace networkReliability
 		std::vector<boost::accumulators::accumulator_set<int, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > > conditioningProbabilities(splitting + 1);
 		std::vector<boost::accumulators::accumulator_set<int, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > > probabilities(splitting + 1);
 
-		for(int i = 0; i < n; i++)
+		for(std::size_t i = 0; i < n; i++)
 		{
 			NetworkReliabilityObs obs(context, randomSource);
 			if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
@@ -90,8 +90,8 @@ namespace networkReliability
 			if(splitting > 0)
 			{
 				const EdgeState* obsState = obs.getState();
-				int nDeactivated = 0;
-				for(int k = 0; k < nEdges; k++)
+				std::size_t nDeactivated = 0;
+				for(std::size_t k = 0; k < nEdges; k++)
 				{
 					if(obsState[k] & INOP_MASK) nDeactivated++;
 				}
@@ -107,7 +107,7 @@ namespace networkReliability
 					NetworkReliabilitySubObs subObs = obsWithFixed.getSubObservation(j);
 					int subObsFixedInop = 0;
 					const EdgeState* subObsState = subObs.getState();
-					for(int k = 0; k < nEdges; k++)
+					for(std::size_t k = 0; k < nEdges; k++)
 					{
 						if(subObsState[k] & FIXED_INOP) subObsFixedInop++;
 					}
@@ -129,7 +129,7 @@ namespace networkReliability
 						probabilities[j](1);
 					}
 					//anything that's fixed in subObs stays fixed
-					for(int k = 0; k < nEdges; k++)
+					for(std::size_t k = 0; k < nEdges; k++)
 					{
 						if(subObsState[k] & FIXED_MASK) updatedObsState[k] = subObsState[k];
 					}

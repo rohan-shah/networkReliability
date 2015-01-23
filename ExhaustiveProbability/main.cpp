@@ -18,7 +18,7 @@ namespace networkReliability
 		exhaustiveProbabilityOptions.add_options()
 			("opProbability", boost::program_options::value<std::string>(), "(float) The probability that an edge is operational. ")
 			("minimumFailedEdges", boost::program_options::value<int>(), "(int) Condition on having at least this number of edges failed")
-			("zeroProbability", boost::program_options::value<unsigned long long>(), "(Positive integer) Output the probability of getting a zero estimate from CMC, with specified number of samples");
+			("zeroProbability", boost::program_options::value<unsigned long long>(), "(Positive integer) Output the probability of getting a zero estimate from CMC, with specified number of samples")
 			("help", "Display this message");
 		boost::program_options::variables_map exhaustiveProbabilityVariableMap;
 
@@ -132,13 +132,13 @@ namespace networkReliability
 
 		typedef long long counterType;
 		boost::scoped_array<mpfr_class> sizeCounters(new mpfr_class[nEdges+1]);
-		for(int i = 0; i < nEdges+1; i++)
+		for(std::size_t i = 0; i < nEdges+1; i++)
 		{
 			std::vector<std::string> splitCounterLine;
 			boost::split(splitCounterLine, lines[i+2], boost::is_any_of(":"), boost::token_compress_on);
 			boost::trim(splitCounterLine[0]);
 			boost::trim(splitCounterLine[1]);
-			if(splitCounterLine.size() != 2 || boost::lexical_cast<int>(splitCounterLine[0]) != i)
+			if(splitCounterLine.size() != 2 || boost::lexical_cast<std::size_t>(splitCounterLine[0]) != i)
 			{
 				std::cout << "Invalid format for data line" << std::endl;
 				return 0;
@@ -159,7 +159,7 @@ namespace networkReliability
 		else minimumFailedEdges = 0;
 
 		mpfr_class result = 0;
-		for(int i = 0; i < nEdges+1-minimumFailedEdges; i++)
+		for(std::size_t i = 0; i < nEdges+1-minimumFailedEdges; i++)
 		{
 			mpfr_class probabilityPower = boost::multiprecision::pow(probability_mpfr, i);
 			mpfr_class compProbabilityPower = boost::multiprecision::pow(compProbability_mpfr, (unsigned long)(nEdges - i));

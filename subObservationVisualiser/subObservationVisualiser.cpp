@@ -73,7 +73,7 @@ namespace networkReliability
 		setCentralWidget(graphicsView);
 	}
 	subObservationVisualiser::subObservationVisualiser(const NetworkReliabilitySubObsCollection& inputCollection, float pointSize)
-		:pointSize(pointSize), highlightedReducedComponent(-1), reducedGraphData(inputCollection.getContext().getInterestVertices()), reduced(false), currentIndex(0), useSingleSubObs(false), context(inputCollection.getContext()), collection(&inputCollection)
+		:pointSize(pointSize), useSingleSubObs(false), collection(&inputCollection), currentIndex(0), highlightedReducedComponent(-1), reduced(false), reducedGraphData(inputCollection.getContext().getInterestVertices()), context(inputCollection.getContext())
 	{
 		if(collection->getSampleSize() == 0)
 		{
@@ -92,7 +92,7 @@ namespace networkReliability
 		updateGraphics();
 	}
 	subObservationVisualiser::subObservationVisualiser(const NetworkReliabilitySubObsWithContext& subObsWithContext, float pointSize)
-		:pointSize(pointSize), subObs(&(subObsWithContext.getSubObs())), highlightedReducedComponent(-1), reducedGraphData(subObsWithContext.getSubObs().getContext().getInterestVertices()), reduced(false), currentIndex(0), useSingleSubObs(true), context(subObsWithContext.getSubObs().getContext())
+		:pointSize(pointSize), useSingleSubObs(true), collection(NULL), currentIndex(0), subObs(&(subObsWithContext.getSubObs())), highlightedReducedComponent(-1), reduced(false), reducedGraphData(subObsWithContext.getSubObs().getContext().getInterestVertices()), context(subObsWithContext.getSubObs().getContext())
 	{
 		initialiseQt();
 		observationChanged();
@@ -129,9 +129,6 @@ namespace networkReliability
 	void subObservationVisualiser::addPoints()
 	{
 		std::size_t nVertices = boost::num_vertices(context.getGraph());
-		int radius;
-		if(useSingleSubObs) radius = subObs->getRadius();
-		else radius = collection->getRadius();
 
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 		const std::vector<int>& interestVertices = context.getInterestVertices();
@@ -148,7 +145,7 @@ namespace networkReliability
 		greenPen.setStyle(Qt::NoPen);
 		QBrush greenBrush(QColor("green"));
 
-		for(int vertexCounter = 0; vertexCounter < nVertices; vertexCounter++)
+		for(std::size_t vertexCounter = 0; vertexCounter < nVertices; vertexCounter++)
 		{
 			Context::vertexPosition currentPosition = vertexPositions[vertexCounter];
 			float x = currentPosition.first;
@@ -257,7 +254,7 @@ namespace networkReliability
 			if(!reduced)
 			{
 				std::vector<double> distances(vertexPositions.size());
-				for(int i = 0; i < nVertices; i++)
+				for(std::size_t i = 0; i < nVertices; i++)
 				{
 					distances[i] = (position.x() - vertexPositions[i].first) * (position.x() - vertexPositions[i].first) + (position.y() - vertexPositions[i].second) * (position.y() - vertexPositions[i].second);
 				}
@@ -298,7 +295,7 @@ namespace networkReliability
 			}
 			else if(keyEvent->key() == Qt::Key_Right && !useSingleSubObs)
 			{
-				if(currentIndex < collection->getSampleSize() - 1)
+				if(currentIndex < (int)(collection->getSampleSize() - 1))
 				{
 					currentIndex++;
 					observationChanged();
@@ -312,8 +309,6 @@ namespace networkReliability
 	{
 		const Context::internalGraph& unreducedGraph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
-		std:size_t nUnreducedVertices = boost::num_vertices(unreducedGraph);
-		std::size_t nReducedVertices = boost::num_vertices(reducedGraphData.outputGraph);
 
 		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
 		NetworkReliabilitySubObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
@@ -345,8 +340,6 @@ namespace networkReliability
 	{
 		const Context::internalGraph& unreducedGraph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
-		std:size_t nUnreducedVertices = boost::num_vertices(unreducedGraph);
-		std::size_t nReducedVertices = boost::num_vertices(reducedGraphData.outputGraph);
 
 		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
 		NetworkReliabilitySubObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;

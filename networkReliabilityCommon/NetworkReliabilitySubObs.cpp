@@ -25,12 +25,12 @@ namespace networkReliability
 		const std::size_t nEdges = boost::num_edges(context.getGraph());
 		//Profiling has indicated that the push_back below costs in terms of calls to new[]. 
 		int couldBeDeactivatedCounter = 0;
-		for(int i = 0; i < nEdges; i++)
+		for(std::size_t i = 0; i < nEdges; i++)
 		{
 			if(state[i] & (UNFIXED_INOP | UNFIXED_OP)) couldBeDeactivatedCounter++;
 		}
 		couldBeDeactivated.reserve(couldBeDeactivatedCounter);
-		for(int i = 0; i < nEdges; i++)
+		for(std::size_t i = 0; i < nEdges; i++)
 		{
 			if(state[i] == FIXED_OP) 
 			{
@@ -47,7 +47,6 @@ namespace networkReliability
 				fixedInop++;
 			}
 		}
-		const Context::internalDirectedGraph& directedGraph = context.getDirectedGraph();
 		minCut = context.getMinCut(capacityVector);
 		if(minCut >= HIGH_CAPACITY)
 		{}
@@ -184,7 +183,7 @@ namespace networkReliability
 		boost::tie(current, end) = boost::vertices(input.outputGraph);
 		for(; current != end; current++)
 		{
-			for(int i = 0; i < input.interestVertices.size(); i++)
+			for(std::size_t i = 0; i < input.interestVertices.size(); i++)
 			{
 				if(boost::get(boost::vertex_name, input.outputGraph, *current) == input.components[input.interestVertices[i]])
 				{
@@ -311,7 +310,7 @@ namespace networkReliability
 		memcpy(copiedState.get(), inputSubObs.getState(), sizeof(EdgeState) * inputSubObs.getContext().getNEdges());
 		subObs.reset(new NetworkReliabilitySubObs(inputSubObs.getContext(), copiedState, inputSubObs.getRadius(), inputSubObs.getConditioningCount(), inputSubObs.getConditioningProb()));
 	}
-	const NetworkReliabilitySubObs& NetworkReliabilitySubObsWithContext::getSubObs()
+	const NetworkReliabilitySubObs& NetworkReliabilitySubObsWithContext::getSubObs() const
 	{
 		return *subObs;
 	}

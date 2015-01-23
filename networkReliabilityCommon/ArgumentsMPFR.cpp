@@ -49,7 +49,6 @@ namespace networkReliability
 				std::cout << "Error reading graphml file. " << message << ". Exiting..." << std::endl;
 				return false;
 			}
-			std::size_t nVertices = boost::num_vertices(out.getGraph());
 		}
 		else if (variableMap.count("gridGraph") == 1)
 		{

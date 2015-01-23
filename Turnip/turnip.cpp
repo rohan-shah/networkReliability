@@ -66,7 +66,6 @@ namespace networkReliability
 		readSeed(variableMap, randomSource);
 
 		const Context::internalGraph& graph = context.getGraph();
-		const std::size_t nEdges = context.getNEdges();
 	
 		TurnipEqualRateInput input(randomSource, &graph, context.getInterestVertices());
 		//set up exponential rates

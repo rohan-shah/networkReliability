@@ -8,11 +8,14 @@ namespace networkReliability
 {
 	class binaryDataSet
 	{
+	public:
+		binaryDataSet& operator=(binaryDataSet&& other);
 	protected:
 		friend class boost::serialization::access;
 		binaryDataSet()
 			:nStoredBits(0),storedBits(0)
 		{}
+		binaryDataSet(binaryDataSet&& other);
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive & ar, const unsigned int version) const
 		{
@@ -30,6 +33,9 @@ namespace networkReliability
 	{
 	public:
 		void add(const EdgeState* state, const std::size_t size);
+		void reserve(unsigned int nBits);
+		binaryDataSet1& operator=(binaryDataSet1&&);
+		binaryDataSet1(binaryDataSet1&& other);
 	protected:
 		binaryDataSet1()
 		{}
@@ -49,6 +55,9 @@ namespace networkReliability
 	{
 	public:
 		void add(const EdgeState* state, const std::size_t size);
+		void reserve(unsigned int nStates);
+		binaryDataSet2& operator=(binaryDataSet2&&);
+		binaryDataSet2(binaryDataSet2&& other);
 	protected:
 		binaryDataSet2()
 		{}

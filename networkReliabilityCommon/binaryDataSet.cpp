@@ -4,7 +4,7 @@ namespace networkReliability
 {
 	void binaryDataSet1::add(const EdgeState* state, const std::size_t size)
 	{
-		for(int k = 0; k < size; k++)
+		for(std::size_t k = 0; k < size; k++)
 		{
 			nStoredBits++;
 			storedBits <<=1;
@@ -15,6 +15,20 @@ namespace networkReliability
 				storedBits = nStoredBits = 0u;
 			}
 		}
+	}
+	void binaryDataSet1::reserve(unsigned int nBits)
+	{
+		data.reserve((nBits / sizeof(unsigned int))+1);
+	}
+	void binaryDataSet2::reserve(unsigned int nStates)
+	{
+		data.reserve((2*nStates / sizeof(unsigned int))+1);
+	}
+	binaryDataSet::binaryDataSet(binaryDataSet&& other)
+	{
+		storedBits = other.storedBits;
+		nStoredBits = other.nStoredBits;
+		data.swap(other.data);
 	}
 	//A version more suitable for being saved to disk
 	enum SavedEdgeState
@@ -48,12 +62,14 @@ namespace networkReliability
 			return UNFIXED_OP_SAVED;
 		case UNFIXED_INOP:
 			return UNFIXED_INOP_SAVED;
+		default:
+			;
 		}
 		throw std::runtime_error("Internal error");
 	}
 	void binaryDataSet2::add(const EdgeState* state, const std::size_t size)
 	{
-		for(int k = 0; k < size; k++)
+		for(std::size_t k = 0; k < size; k++)
 		{
 			nStoredBits+=2;
 			storedBits <<=2;
@@ -68,17 +84,17 @@ namespace networkReliability
 	void binaryDataSet1::expand(int index, std::vector<int>& output) const 
 	{
 		const std::size_t nEdges = output.size();
-		int initialBit = (int)(index*nEdges);
-		int initialInt = (int)(initialBit / (sizeof(unsigned int)*8));
+		std::size_t initialBit = index*nEdges;
+		std::size_t initialInt = initialBit / (sizeof(unsigned int)*8);
 		unsigned int storedBits = data[initialInt];
-		int extraBitsRead = initialBit - (initialInt* sizeof(unsigned int)*8);
-		int nStoredBits = sizeof(unsigned int)*8;
+		std::size_t extraBitsRead = (std::size_t)(initialBit - (initialInt* sizeof(unsigned int)*8));
+		unsigned int nStoredBits = (unsigned int)sizeof(unsigned int)*8;
 		if(extraBitsRead > 0)
 		{
 			storedBits <<= extraBitsRead;
-			nStoredBits = sizeof(unsigned int)*8 - extraBitsRead;
+			nStoredBits = (unsigned int)(sizeof(unsigned int)*8 - extraBitsRead);
 		}
-		int currentInt = initialInt;
+		std::size_t currentInt = initialInt;
 		for(std::size_t edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
 		{
 			if(nStoredBits == 0)
@@ -107,17 +123,17 @@ namespace networkReliability
 	}
 	void binaryDataSet2::expand(int index, EdgeState* output, const std::size_t nEdges) const
 	{
-		int initialBit = (int)(index*nEdges*2);
-		int initialInt = (int)(initialBit / (sizeof(unsigned int)*8));
+		std::size_t initialBit = index*nEdges*2;
+		std::size_t initialInt = initialBit / (sizeof(unsigned int)*8);
 		unsigned int storedBits = data[initialInt];
-		int extraBitsRead = initialBit - (initialInt* sizeof(unsigned int)*8);
-		int nStoredBits = sizeof(unsigned int)*8;
+		std::size_t extraBitsRead = (std::size_t)(initialBit - (initialInt* sizeof(unsigned int)*8));
+		std::size_t nStoredBits = sizeof(unsigned int)*8;
 		if(extraBitsRead > 0)
 		{
 			storedBits <<= extraBitsRead;
 			nStoredBits = sizeof(unsigned int)*8 - extraBitsRead;
 		}
-		int currentInt = initialInt;
+		std::size_t currentInt = initialInt;
 		for(std::size_t edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
 		{
 			if(nStoredBits == 0)
@@ -139,5 +155,28 @@ namespace networkReliability
 			storedBits<<=2;
 			nStoredBits-=2;
 		}
+	}
+	binaryDataSet1& binaryDataSet1::operator=(binaryDataSet1&& other)
+	{
+		*static_cast<binaryDataSet*>(this) = static_cast<binaryDataSet&&>(other);
+		return *this;
+	}
+	binaryDataSet& binaryDataSet::operator=(binaryDataSet&& other)
+	{
+		storedBits = other.storedBits;
+		nStoredBits = other.nStoredBits;
+		data.swap(other.data);
+		return *this;
+	}
+	binaryDataSet1::binaryDataSet1(binaryDataSet1&& other)
+		:binaryDataSet(std::move(other))
+	{}
+	binaryDataSet2::binaryDataSet2(binaryDataSet2&& other)
+		:binaryDataSet(std::move(other))
+	{}
+	binaryDataSet2& binaryDataSet2::operator=(binaryDataSet2&& other)
+	{
+		*static_cast<binaryDataSet*>(this) = static_cast<binaryDataSet&&>(other);
+		return *this;
 	}
 }

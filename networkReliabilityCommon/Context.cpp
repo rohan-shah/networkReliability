@@ -128,8 +128,8 @@ namespace networkReliability
 	{
 		ar >> *this;
 	}
-	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances)
-		:vertexPositions(vertexPositions), interestVertices(interestVertices), operationalProbability(operationalProbability), _useMinCut(false)
+	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<unsigned int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances)
+		:_useMinCut(false), interestVertices(interestVertices), vertexPositions(vertexPositions), operationalProbability(operationalProbability)
 	{
 		mpfr_class inoperationalProbability = (1 - operationalProbability);
 		inoperationalProbabilityD = inoperationalProbability.convert_to<double>();
@@ -208,9 +208,9 @@ namespace networkReliability
 			allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
 			allPointsMaxFlow::allPointsMaxFlow<Context::internalDirectedGraph, int>(flowMatrix, capacityVector, *directedGraph.get(), scratch);
 			int maxFlow = std::numeric_limits<int>::max();
-			for(int i = 0; i < interestVertices->size(); i++)
+			for(std::size_t i = 0; i < interestVertices->size(); i++)
 			{
-				for(int j = i+1; j < interestVertices->size(); j++)
+				for(std::size_t j = i+1; j < interestVertices->size(); j++)
 				{
 					maxFlow = std::min(maxFlow, flowMatrix[(*interestVertices)[i] + (*interestVertices)[j] * nVertices]);
 				}
@@ -263,7 +263,7 @@ namespace networkReliability
 		}
 	}
 	Context::Context()
-		:graph(), directedGraph(), vertexPositions(), nEdges(0), _useMinCut(false)
+		:_useMinCut(false), graph(), directedGraph(), vertexPositions(), nEdges(0)
 	{}
 	Context Context::emptyContext()
 	{
@@ -319,8 +319,8 @@ namespace networkReliability
 				if(j != gridDimension - 1) boost::add_edge(i + j*gridDimension, i + (j+1)*gridDimension, *graph);
 			}
 		}
-		boost::shared_ptr<std::vector<int> > edgeOrdering(new std::vector<int>(boost::num_edges(*graph)));
-		for(int i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = i;
+		boost::shared_ptr<std::vector<unsigned int> > edgeOrdering(new std::vector<unsigned int>(boost::num_edges(*graph)));
+		for(std::size_t i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = i;
 		return Context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
 	}
 	Context Context::completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability)
@@ -344,8 +344,8 @@ namespace networkReliability
 				boost::add_edge(i, j, *graph);
 			}
 		}
-		boost::shared_ptr<std::vector<int> > edgeOrdering(new std::vector<int>(boost::num_edges(*graph)));
-		for(int i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = i;
+		boost::shared_ptr<std::vector<unsigned int> > edgeOrdering(new std::vector<unsigned int>(boost::num_edges(*graph)));
+		for(std::size_t i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = i;
 
 		return Context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
 	}
@@ -402,7 +402,7 @@ namespace networkReliability
 		//check that the edge_index values are either all 0, or distinct. 
 		//In the process copy the values into a vector
 		bool allZero = true;
-		boost::shared_ptr<std::vector<int> > ordering(new std::vector<int>(boost::num_edges(*graph)));
+		boost::shared_ptr<std::vector<unsigned int> > ordering(new std::vector<unsigned int>(boost::num_edges(*graph)));
 		Context::inputGraph::edge_iterator current, end;
 		boost::tie(current, end) = boost::edges(*graph);
 		for (; current != end; current++)
@@ -415,17 +415,17 @@ namespace networkReliability
 		}
 		if (allZero)
 		{
-			std::copy(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges), ordering->begin());
+			std::copy(boost::counting_iterator<unsigned int>(0), boost::counting_iterator<unsigned int>(nEdges), ordering->begin());
 		}
 		else
 		{
 			std::vector<bool> foundEdgeIndex(nEdges, false);
 			boost::tie(current, end) = boost::edges(*graph);
-			std::vector<int>::iterator outputIterator = ordering->begin();
+			std::vector<unsigned int>::iterator outputIterator = ordering->begin();
 			for (; current != end; current++)
 			{
 				int edgeIndex = boost::get(boost::edge_index, *graph, *current);
-				if (edgeIndex >= nEdges || edgeIndex < 0)
+				if (edgeIndex >= (int)nEdges || edgeIndex < 0)
 				{
 					message = "Invalid order value specified";
 					successful = false;
@@ -446,7 +446,7 @@ namespace networkReliability
 
 		int maxInterest = *std::max_element(interestVertices->begin(), interestVertices->end());
 		int minInterest = *std::min_element(interestVertices->begin(), interestVertices->end());
-		if(minInterest < 0 || maxInterest >= boost::num_vertices(*graph))
+		if(minInterest < 0 || maxInterest >= (int)boost::num_vertices(*graph))
 		{
 			successful = false;
 			message = "Invalid vertex indices entered for input interestVertices";
@@ -461,7 +461,7 @@ namespace networkReliability
 
 			boost::tie(firstEdge, end) = boost::edges(*graph);
 			std::vector<vertexPosition> edgeCentres(nEdges);
-			std::vector<int>::iterator orderIterator = ordering->begin();
+			std::vector<unsigned int>::iterator orderIterator = ordering->begin();
 			for(;firstEdge != end; firstEdge++,orderIterator++)
 			{
 				int edgeIndex = *orderIterator;
@@ -477,7 +477,7 @@ namespace networkReliability
 				int firstEdgeIndex = *orderIterator;
 				boost::tie(secondEdge, end) = boost::edges(*graph);
 				vertexPosition& firstEdgeCentre = edgeCentres[firstEdgeIndex];
-				std::vector<int>::iterator secondOrderIterator = ordering->begin();
+				std::vector<unsigned int>::iterator secondOrderIterator = ordering->begin();
 				for(; secondEdge != end; secondEdge++, secondOrderIterator++)
 				{
 					if(firstEdge != secondEdge)
@@ -540,7 +540,6 @@ namespace networkReliability
 	}
 	void Context::constructDirectedGraph()
 	{
-		const std::size_t nEdges = boost::num_edges(*graph);
 		boost::shared_ptr<internalDirectedGraph> directedGraph(new internalDirectedGraph(boost::num_vertices(*graph)));
 		internalDirectedGraph& directedGraphRef = *directedGraph;
 	

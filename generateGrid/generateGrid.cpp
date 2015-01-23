@@ -60,7 +60,6 @@ namespace networkReliability
 			}
 			counter += extraIncrement;
 		}
-		const std::size_t nEdges = boost::num_edges(graph);
 
 		typedef boost::property_map<graphType, boost::edge_index_t>::type edgeIndexMapType;
 		edgeIndexMapType edgeIndexMap = boost::get(boost::edge_index, graph);

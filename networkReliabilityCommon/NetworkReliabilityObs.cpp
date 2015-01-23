@@ -36,7 +36,7 @@ namespace networkReliability
 		std::fill(state.get(), state.get() + nEdges, UNFIXED_OP);
 
 		std::vector<int> indices(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges));
-		for(int i = 0; i < nRemovedEdges; i++)
+		for(std::size_t i = 0; i < nRemovedEdges; i++)
 		{
 			boost::random::uniform_int_distribution<int> removedEdgeIndexDistribution(0, (int)indices.size()-1);
 			int index = removedEdgeIndexDistribution(randomSource);

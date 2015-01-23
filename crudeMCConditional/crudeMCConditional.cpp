@@ -92,7 +92,7 @@ namespace networkReliability
 			boost::random_shuffle(permutation, generator);
 			int nOperational = operationalEdgesDist(randomSource);
 			for (int j = 0; j < nOperational; j++) edgeStates[permutation[j]] = UNFIXED_OP;
-			for (int j = nOperational; j < nEdges; j++) edgeStates[permutation[j]] = UNFIXED_INOP;
+			for (std::size_t j = nOperational; j < nEdges; j++) edgeStates[permutation[j]] = UNFIXED_INOP;
 
 			if (!isSingleComponent(context, edgeStates.get(), components, stack, colorMap))
 			{

@@ -70,7 +70,7 @@ namespace networkReliability
 		std::size_t nFunctions = driver.result.size();
 		//Work out the range of the function
 		std::vector<int> functionMax(nFunctions, 0), functionMin(nFunctions, 0), functionRanges(nFunctions, 0);
-		for(int i = 0; i < nFunctions; i++)
+		for(std::size_t i = 0; i < nFunctions; i++)
 		{
 			int& currentFunctionMax = functionMax[i];
 			int& currentFunctionMin = functionMin[i];
@@ -108,7 +108,7 @@ namespace networkReliability
 		}
 		typedef int (*compiledFunctionType)(long);
 		std::vector<compiledFunctionType> compiledFunctions(nFunctions, NULL);
-		for(int i = 0; i < nFunctions; i++)
+		for(std::size_t i = 0; i < nFunctions; i++)
 		{
 			std::string functionName = "compiledFunction" + boost::lexical_cast<std::string>(i);
 			compiledFunctionType compiledFunction = (compiledFunctionType)dlsym(compiledHandle, functionName.c_str());
@@ -153,7 +153,7 @@ namespace networkReliability
 			for(counterType state = 0; state < maximumState; state++)
 			{
 				int nEdgesThisGraph = 0;
-				for(int edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
+				for(std::size_t edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
 				{
 					if(state & (1LL << edgeCounter))
 					{
@@ -168,7 +168,7 @@ namespace networkReliability
 				bool currentGraphConnected = isSingleComponent(context, edgeStatePtr, privateConnectedComponents, stack, colorMap);
 				if(!currentGraphConnected)
 				{
-					for(int i = 0; i < nFunctions; i++)
+					for(std::size_t i = 0; i < nFunctions; i++)
 					{
 						int functionValue = compiledFunctions[i](state);
 						(&(privateSizeCounterArrays[i]))[nEdgesThisGraph*functionRanges[i] + (functionValue - functionMin[i])]++;
@@ -177,9 +177,9 @@ namespace networkReliability
 			}
 			#pragma omp critical
 			{
-				for(int j = 0; j < nFunctions; j++)
+				for(std::size_t j = 0; j < nFunctions; j++)
 				{
-					for(int i = 0; i < (nEdges+1)*functionRanges[j]; i++)
+					for(std::size_t i = 0; i < (nEdges+1)*functionRanges[j]; i++)
 					{
 						(&(sizeCounterArrays[j]))[i] += (&(privateSizeCounterArrays[j]))[i];
 					}
@@ -196,10 +196,10 @@ namespace networkReliability
 		std::cout << argv[argc-1] << "\"" << std::endl;
 		std::cout << nFunctions << " functions input" << std::endl;
 		std::cout << "Graph had " << nEdges << " edges" << std::endl;
-		for(int j = 0; j < nFunctions;j ++)
+		for(std::size_t j = 0; j < nFunctions;j ++)
 		{
 			std::cout << "Function " << j << " took on " << functionRanges[j] << " values" << std::endl;
-			for(int i = 0; i < (nEdges+1)*functionRanges[j]; i++)
+			for(std::size_t i = 0; i < (nEdges+1)*functionRanges[j]; i++)
 			{
 				int functionValue = (i % functionRanges[j]);
 				int nEdges = i / functionRanges[j];

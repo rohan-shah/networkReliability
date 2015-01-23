@@ -5,5 +5,5 @@ networkReliability.opensdf
 networkReliability.v12.suo
 debug/
 release/
-cmake
+cmakeCommand
 relWithDebInfo/

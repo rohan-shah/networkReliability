@@ -6,7 +6,7 @@
 namespace networkReliability
 {
 	TurnipEqualRateInput::TurnipEqualRateInput(boost::mt19937& randomSource, const Context::internalGraph* graph, const std::vector<int>& interestVertices)
-		:randomSource(randomSource), graph(graph), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false), interestVertices(interestVertices)
+		:randomSource(randomSource), graph(graph), interestVertices(interestVertices), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false)
 	{}
 	void turnipEqualRate(TurnipEqualRateInput& input)
 	{
@@ -47,7 +47,7 @@ namespace networkReliability
 		std::vector<mpfr_class> computeConditionalProbScratch;
 		//Used to hold the connected component IDS
 		std::vector<int> componentIDs(nVertices);
-		for (int i = 0; i < input.n; i++)
+		for (std::size_t i = 0; i < input.n; i++)
 		{
 			//Simulate permutation
 			boost::random_shuffle(edgeOrdering, generator);
@@ -56,7 +56,7 @@ namespace networkReliability
 			//The first rate is going to be this
 			mpfr_class currentRate = sumAllRates;
 			//which edge in the permutation are we currently looking at?
-			int permutationCounter = 0;
+			std::size_t permutationCounter = 0;
 			//these are going to be the rates for the matrix exponential
 			ratesForPMC.clear();
 			//reset connected component IDs
@@ -85,7 +85,7 @@ namespace networkReliability
 					int firstComponentID = componentIDs[input.edges[edgeIndex].first];
 					int secondComponentID = componentIDs[input.edges[edgeIndex].second];
 					//go through all the edges that haven't been seen yet. 
-					for (int j = 0; j < nEdges; j++)
+					for (std::size_t j = 0; j < nEdges; j++)
 					{
 						if (!alreadySeen[j])
 						{
@@ -100,7 +100,7 @@ namespace networkReliability
 					std::replace(componentIDs.begin(), componentIDs.end(), std::max(firstComponentID, secondComponentID), std::min(firstComponentID, secondComponentID));
 					//determine whether or not we've hit the critical threshold
 					bool connected = true;
-					for (int k = 1; k < interestVertices.size(); k++)
+					for (std::size_t k = 1; k < interestVertices.size(); k++)
 					{
 						connected &= (componentIDs[interestVertices[k]] == componentIDs[interestVertices[0]]);
 					}

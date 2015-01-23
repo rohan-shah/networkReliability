@@ -59,8 +59,8 @@ namespace networkReliability
 
 		const std::vector<int> interestVertices = context.getInterestVertices();
 
-		typedef long long counterType;
-		const counterType maximumState = 1LL << nEdges;
+		typedef unsigned long long counterType;
+		const counterType maximumState = 1ULL << nEdges;
 
 		counterType* sizeCounters = new counterType[nEdges+1];
 		memset(sizeCounters, 0, sizeof(counterType) * (nEdges+1));
@@ -81,9 +81,9 @@ namespace networkReliability
 			for(counterType state = 0; state < maximumState; state++)
 			{
 				int nEdgesThisGraph = 0;
-				for(int edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
+				for(std::size_t edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
 				{
-					if(state & (1LL << edgeCounter))
+					if(state & (1ULL << edgeCounter))
 					{
 						edgeStatePtr[edgeCounter] = UNFIXED_OP;
 						nEdgesThisGraph++;
@@ -105,7 +105,7 @@ namespace networkReliability
 			}
 			#pragma omp critical
 			{
-				for(int i = 0; i < nEdges+1; i++)
+				for(std::size_t i = 0; i < nEdges+1; i++)
 				{
 					sizeCounters[i] += privateSizeCounters[i];
 				}
@@ -123,7 +123,7 @@ namespace networkReliability
 
 		if (countDisconnected) std::cout << "Number of disconnected subgraphs with that number of edges" << std::endl;
 		else std::cout << "Number of connected subgraphs with that number of edges" << std::endl;
-		for(int i = 0; i < nEdges+1; i++)
+		for(std::size_t i = 0; i < nEdges+1; i++)
 		{
 			std::cout << std::setw(3) << i << ":  " << sizeCounters[i] << std::endl;
 		}

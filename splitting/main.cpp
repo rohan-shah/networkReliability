@@ -157,7 +157,7 @@ namespace networkReliability
 		ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
 		turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
 
-		for (int i = 0; i < n; i++)
+		for (std::size_t i = 0; i < n; i++)
 		{
 			NetworkReliabilityObs currentObs = NetworkReliabilityObs::constructConditional(context, randomSource);
 			conditioningProbabilities[0](currentObs.getConditioningProb());
@@ -215,7 +215,7 @@ namespace networkReliability
 				if (nReducedEdges == 0)
 				{
 					bool alwaysConnected = true;
-					for (int interestCounter = 1; interestCounter < interestVertices.size(); interestCounter++)
+					for (std::size_t interestCounter = 1; interestCounter < interestVertices.size(); interestCounter++)
 					{
 						if (components[interestVertices[interestCounter]] != components[interestVertices[0]])
 						{
@@ -246,7 +246,7 @@ namespace networkReliability
 					}
 					turnipInput.edges[edgeIndex] = std::make_pair((int)current->m_source, (int)current->m_target);
 				}
-				for (int k = 0; k < interestVertices.size(); k++)
+				for (std::size_t k = 0; k < interestVertices.size(); k++)
 				{
 					reducedGraphInterestVertices[k] = components[interestVertices[k]];
 				}
@@ -274,7 +274,7 @@ namespace networkReliability
 				}
 				std::string outputConditionalDistribution = variableMap["outputConditionalDistribution"].as<std::string>();
 				std::ofstream outputStream(outputConditionalDistribution.c_str(), std::ios_base::out);
-				for (int j = 0; j < nEdges + 1; j++)
+				for (std::size_t j = 0; j < nEdges + 1; j++)
 				{
 					outputStream << std::setw(3) << j << ":  " << counts[j] << std::endl;
 				}

@@ -6,6 +6,7 @@
 #include "subObservationVisualiser.h"
 #include <fstream>
 #include <boost/archive/text_iarchive.hpp>
+#include <graphviz/gvc.h>
 #if defined(_WIN32)
 	#include <Windows.h>
 	#if defined(_MSC_VER)
