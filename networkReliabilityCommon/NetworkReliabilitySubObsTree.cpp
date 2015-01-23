@@ -9,7 +9,7 @@ namespace networkReliability
 	{
 		ar >> *this;
 	}
-	NetworkReliabilitySubObsTree::NetworkReliabilitySubObsTree(Context const* externalContext, unsigned int nLevels, unsigned int reservePerLevel, const std::vector<double>& thresholds)
+	NetworkReliabilitySubObsTree::NetworkReliabilitySubObsTree(Context const* externalContext, unsigned int nLevels, const std::vector<double>& thresholds)
 		:thresholds(thresholds)
 	{
 		parentData.resize(nLevels);
@@ -17,8 +17,15 @@ namespace networkReliability
 		for(unsigned int i = 0; i < nLevels; i++)
 		{
 			NetworkReliabilitySubObsCollection currentLevelData(externalContext, thresholds[i]);
-			currentLevelData.reserve(reservePerLevel);
 			levelData.push_back(std::move(currentLevelData));
+		}
+	}
+	void NetworkReliabilitySubObsTree::reserve(unsigned int reservePerLevel)
+	{
+		std::size_t nLevels = levelData.size();
+		for(std::size_t i = 0; i < nLevels; i++)
+		{
+			levelData[i].reserve(reservePerLevel);
 			parentData[i].reserve(reservePerLevel);
 			potentiallyDisconnected[i].reserve(reservePerLevel);
 		}
@@ -38,5 +45,15 @@ namespace networkReliability
 			throw std::runtime_error("Specified observation does not exist in specified level, in call to NetworkReliabilitySubObsTree::expand");
 		}
 		levelData[level].expand(index, state);
+	}
+	void NetworkReliabilitySubObsTree::add(const NetworkReliabilitySubObs& subObs, unsigned int level, int parentIndex, bool potentiallyDisconnected)
+	{
+		if(level >= levelData.size())
+		{
+			throw std::runtime_error("Specified level does not exist in call to NetworkReliabilitySubObsTree::add");
+		}
+		levelData[level].add(subObs);
+		parentData[level].push_back(parentIndex);
+		this->potentiallyDisconnected[level].push_back(potentiallyDisconnected);
 	}
 }

@@ -40,7 +40,7 @@ namespace networkReliability
 			("interestVertices", boost::program_options::value<std::vector<int> >()->multitoken(), "(int) The vertices of interest, that should be connected. ")
 			("initialRadius", boost::program_options::value<int>(), "(int) The initial radius to use")
 			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
-			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
+			("nPMC", boost::program_options::value<std::size_t>()->default_value(0ULL)->implicit_value(0ULL), "(int) Number of PMC samples to use")
 			("outputTree", boost::program_options::value<std::string>(), "(path) File to output simulation tree to")
 			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take.")
 			("help", "Display this message");
@@ -77,7 +77,14 @@ namespace networkReliability
 			return 0;
 		}
 		context.setMinCut(true);
-		const std::size_t nEdges = context.getNEdges();
+		const std::vector<int>& interestVertices = context.getInterestVertices();
+
+		std::size_t nPMC = variableMap["nPMC"].as<std::size_t>();
+		if(nPMC == 0)
+		{
+			std::cout << "Input nPMC cannot be zero" << std::endl;
+			return 0;
+		}
 
 		std::vector<double> thresholds;
 		std::string message;
@@ -117,7 +124,8 @@ namespace networkReliability
 
 		calculation_type estimate = 0;
 
-		int finalSplittingStep = thresholds.size()-1;
+		//If the usePMC flag is set, don't use splitting on the last step. Instead use PMC. 
+		int finalSplittingStep = thresholds.size()-2;
 
 		//If we specify the useMinCut option then we need to do resampling. This vector holds the probabilities
 		std::vector<double> resamplingProbabilities;
@@ -166,7 +174,7 @@ namespace networkReliability
 				goto returnEstimate;
 			}
 			std::size_t previousSize = observations.size();
-			//resampling step. Don't do this on the last step, because we're already at radius 0
+			//resampling step. Don't do this if we're on the last step, as it can only decrease the diversity in the population
 			if(splittingLevel < finalSplittingStep-1)
 			{
 				observations.clear();
@@ -188,25 +196,63 @@ namespace networkReliability
 			}
 			else observations.swap(nextStepObservations);
 		}
-		estimate = (boost::accumulators::sum(probabilities[finalSplittingStep]) / n);
-		if (variableMap.count("outputConditionalDistribution") > 0)
 		{
-			empiricalDistribution outputDistributions(true, nEdges);
-			for(std::vector<NetworkReliabilitySubObs>::iterator i = observations.begin(); i != observations.end(); i++)
+			//Working data for call to getReducedGraph
+			std::vector<int> edgeCounts;
+			std::vector<int> reducedGraphInterestVertices(interestVertices.size());
+			
+			ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
+			turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
+			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
-				outputDistributions.add(i->getState(), i->getConditioningProb().convert_to<double>());
+				Context::internalGraph reducedGraph;
+				j->getReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
+				turnipInput.n = (int)nPMC;
+				turnipInput.graph = &reducedGraph;
+				const std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
+				const std::size_t nReducedEdges = boost::num_edges(reducedGraph);
+				//If the graph is DEFINITELY disconnected, add a value of 1 and continue.
+				if (nReducedEdges == 0)
+				{
+					bool alwaysConnected = true;
+					for (std::size_t interestCounter = 1; interestCounter < interestVertices.size(); interestCounter++)
+					{
+						if (components[interestVertices[interestCounter]] != components[interestVertices[0]])
+						{
+							alwaysConnected = false;
+							break;
+						}
+					}
+					if (alwaysConnected) throw std::runtime_error("Internal error");
+					estimate += j->getConditioningProb();
+					continue;
+				}
+				turnipInput.edges.clear();
+				turnipInput.edges.resize(nReducedEdges);
+				turnipInput.edgeCounts.resize(nReducedEdges);
+				Context::internalGraph::edge_iterator current, end;
+				boost::tie(current, end) = boost::edges(reducedGraph);
+				for (; current != end; current++)
+				{
+					int edgeIndex = boost::get(boost::edge_index, reducedGraph, *current);
+					if (current->m_target != current->m_source)
+					{
+						turnipInput.edgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices] + edgeCounts[current->m_target + current->m_source * nReducedVertices];
+					}
+					else
+					{
+						turnipInput.edgeCounts[edgeIndex] = edgeCounts[current->m_source + current->m_target * nReducedVertices];
+					}
+					turnipInput.edges[edgeIndex] = std::make_pair((int)current->m_source, (int)current->m_target);
+				}
+				for (std::size_t k = 0; k < interestVertices.size(); k++)
+				{
+					reducedGraphInterestVertices[k] = components[interestVertices[k]];
+				}
+				conditionalPMC(turnipInput);
+				estimate += j->getGeneratedObservationConditioningProb() * turnipInput.estimateFirstMoment;
 			}
-			try
-			{
-				std::ofstream outputStream(variableMap["outputConditionalDistribution"].as<std::string>().c_str(), std::ios_base::binary);
-				boost::archive::binary_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
-				outputArchive << outputDistributions;
-			}
-			catch(std::runtime_error& err)
-			{
-				std::cout << "Error saving empirical distributions to file: " << err.what() << std::endl;
-				return 0;
-			}
+			estimate /= n;
 		}
 returnEstimate:
 		std::cout << "Estimate is " << estimate.convert_to<double>() << std::endl;

@@ -15,10 +15,11 @@ namespace networkReliability
 	public:
 		friend class boost::serialization::access;
 		//The levels go 0, 1, ..., nLevels - 1, with level 0 being the topmost level of the tree
-		NetworkReliabilitySubObsTree(Context const* externalContext, unsigned int nLevels, unsigned int reservePerLevel, const std::vector<double>& thresholds);
+		NetworkReliabilitySubObsTree(Context const* externalContext, unsigned int nLevels, const std::vector<double>& thresholds);
+		void reserve(unsigned int reservePerLevel);
 		NetworkReliabilitySubObsTree(boost::archive::binary_iarchive& ar);
 		NetworkReliabilitySubObsTree(boost::archive::text_iarchive& ar);
-		void add(const NetworkReliabilitySubObs& subObs, unsigned int level, unsigned int parentIndex, bool potentiallyDisconnected);
+		void add(const NetworkReliabilitySubObs& subObs, unsigned int level, int parentIndex, bool potentiallyDisconnected);
 		const Context& getContext() const;
 		void expand(boost::shared_array<EdgeState> state, unsigned int level, unsigned int index) const;
 		std::size_t getSampleSize(unsigned int level);
