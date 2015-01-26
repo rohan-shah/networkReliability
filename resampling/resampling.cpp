@@ -121,6 +121,10 @@ namespace networkReliability
 
 		//If we specify the useMinCut option then we need to do resampling. This vector holds the probabilities
 		std::vector<double> resamplingProbabilities;
+		//The ith entry in this vector gives the index within the n subObservations of the current generatio, of the ith potentially disconnected subOBservation. We need this for the tree.
+		std::vector<int> potentiallyDisconnectedIndices, nextPotentiallyDisconnectedIndices;
+		potentiallyDisconnectedIndices.reserve(n);
+		nextPotentiallyDisconnectedIndices.reserve(n);
 
 		//Object to hold the tree of generated objects, if input outputTree is specified
 		bool outputTree = variableMap.count("outputTree") > 0;
@@ -130,16 +134,16 @@ namespace networkReliability
 			NetworkReliabilityObs currentObs = NetworkReliabilityObs::constructConditional(context, randomSource);
 			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(thresholds[0]);
 
+			if(outputTree) tree.add(subObs, 0, -1, subObs.getMinCut() < HIGH_CAPACITY);
 			if (subObs.getMinCut() >= HIGH_CAPACITY)
 			{
 				probabilities[0](0);
-				if(outputTree) tree.add(subObs, 0, -1, false);
 			}
 			else
 			{
 				probabilities[0](1);
 				observations.push_back(std::move(subObs));
-				if(outputTree) tree.add(subObs, 0, -1, true);
+				potentiallyDisconnectedIndices.push_back(i);
 			}
 		}
 		if(observations.size() == 0)
@@ -149,16 +153,21 @@ namespace networkReliability
 		}
 		for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
 		{
+			nextPotentiallyDisconnectedIndices.clear();
 			nextStepObservations.clear();
 			for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				NetworkReliabilityObs newObs = j->getObservation(randomSource);
 				NetworkReliabilitySubObs sub = newObs.getSubObservation(thresholds[splittingLevel + 1]);
+				if(outputTree) tree.add(sub, splittingLevel+1, potentiallyDisconnectedIndices[std::distance(observations.begin(), j)], sub.getMinCut());
+
 				if(sub.getMinCut() < HIGH_CAPACITY)
 				{
-					probabilities[splittingLevel+1](newObs.getConditioningProb());
 					nextStepObservations.push_back(std::move(sub));
+					probabilities[splittingLevel+1](newObs.getConditioningProb());
+					nextPotentiallyDisconnectedIndices.push_back(std::distance(observations.begin(), j));
 				}
+
 			}
 			if(nextStepObservations.size() == 0)
 			{
@@ -170,6 +179,7 @@ namespace networkReliability
 			if(splittingLevel < finalSplittingStep-1)
 			{
 				observations.clear();
+				potentiallyDisconnectedIndices.clear();
 				resamplingProbabilities.clear();
 				mpfr_class sum = 0;
 				for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
@@ -184,6 +194,7 @@ namespace networkReliability
 				{
 					int index = alias(randomSource);
 					observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
+					potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
 				}
 			}
 			else observations.swap(nextStepObservations);
@@ -205,6 +216,23 @@ namespace networkReliability
 			catch(std::runtime_error& err)
 			{
 				std::cout << "Error saving empirical distributions to file: " << err.what() << std::endl;
+				return 0;
+			}
+		}
+		if(variableMap.count("outputTree") > 0)
+		{
+			std::cout << "Beginning tree layout....";
+			tree.layout();
+			std::cout << "Done" << std::endl;
+			try
+			{
+				std::ofstream outputStream(variableMap["outputTree"].as<std::string>().c_str(), std::ios_base::binary);
+				boost::archive::binary_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
+				outputArchive << tree;
+			}
+			catch(std::runtime_error& err)
+			{
+				std::cout << "Error saving tree to file: " << err.what() << std::endl;
 				return 0;
 			}
 		}

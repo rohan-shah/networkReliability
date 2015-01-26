@@ -314,4 +314,9 @@ namespace networkReliability
 	{
 		return *subObs;
 	}
+	const Context& NetworkReliabilitySubObsWithContext::getContext() const
+	{
+		if(context) return *context;
+		return subObs->getContext();
+	}
 }

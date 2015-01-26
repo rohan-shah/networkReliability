@@ -60,7 +60,7 @@ else()
   set(_GRAPHVIZ_FIND_OPTS "")
 endif()
 
-find_path(GRAPHVIZ_INCLUDE_DIR NAMES graphviz/graph.h graphviz/cgraph.h
+find_path(GRAPHVIZ_INCLUDE_DIR NAMES graphviz/cgraph.h graphviz/graph.h
   HINTS ${_GRAPHVIZ_INCLUDE_DIR}
   ${_GRAPHVIZ_FIND_OPTS})
 
@@ -173,3 +173,10 @@ else()
   endif()
 endif()
 
+#This is needed because even if you specify a full path to the graphviz shared libraries for cmake, it can discard the parth and just put in -lgvc, for example. This is retarded, but putting in a shared imported library seems to work around this. 
+add_library(graphviz_gvc SHARED IMPORTED)
+set_target_properties(graphviz_gvc PROPERTIES IMPORTED_LOCATION ${GRAPHVIZ_GVC_LIBRARY})
+add_library(graphviz_cgraph SHARED IMPORTED)
+set_target_properties(graphviz_cgraph PROPERTIES IMPORTED_LOCATION ${GRAPHVIZ_CGRAPH_LIBRARY})
+add_library(graphviz_pathplan SHARED IMPORTED)
+set_target_properties(graphviz_pathplan PROPERTIES IMPORTED_LOCATION ${GRAPHVIZ_PATHPLAN_LIBRARY})

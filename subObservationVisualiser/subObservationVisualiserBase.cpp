@@ -1,4 +1,11 @@
-#include "subObservationVisualiser.h"
+//I want assert always enabled in this particular file
+#ifdef NDEBUG
+#undef NDEBUG
+#include <assert.h>
+#define NDEBUG
+#endif
+
+#include "subObservationVisualiserBase.h"
 #include <QEvent>
 #include <QKeyEvent>
 #include <QTimer>
@@ -17,27 +24,29 @@ namespace networkReliability
 	{
 		return first.second < second.second;
 	}
-	void subObservationVisualiser::updateReducedGraphData()
+	void subObservationVisualiserBase::setReduced(bool reduced)
+	{
+		if(reduced != this->reduced)
+		{
+			this->reduced = reduced;
+			if(!this->reduced) highlightedReducedComponent = -1;
+			updateGraphics();
+		}
+	}
+	void subObservationVisualiserBase::switchReduced()
+	{
+		reduced = !reduced;
+		if(!reduced) highlightedReducedComponent = -1;
+		updateGraphics();
+	}
+	void subObservationVisualiserBase::updateReducedGraphData(const NetworkReliabilitySubObs& subObs)
 	{
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
 		std::vector<boost::default_color_type> colorMap;
-		if(useSingleSubObs)
-		{
-			nUnreducedComponents = countComponents(context, subObs->getState(), reducedComponents, stack, colorMap);
-			subObs->getReducedGraphNoSelfWithWeights(reducedGraphData);
-		}
-		else
-		{
-			boost::shared_array<EdgeState> expandedState(new EdgeState[context.getNEdges()]);
-			collection->expand(currentIndex, expandedState);
-			//Entering dummy values for the last two inputs to the constructor
-			NetworkReliabilitySubObs expandedSubObs(context, expandedState, collection->getRadius(), 0, 0);
-			nUnreducedComponents = countComponents(context, expandedState.get(), reducedComponents, stack, colorMap);
-			expandedSubObs.getReducedGraphNoSelfWithWeights(reducedGraphData);
-		}
-		updateGraphics();
+		nUnreducedComponents = countComponents(context, subObs.getState(), reducedComponents, stack, colorMap);
+		subObs.getReducedGraphNoSelfWithWeights(reducedGraphData);
 	}
-	void subObservationVisualiser::initialiseQt()
+	void subObservationVisualiserBase::initialiseControls()
 	{
 		graphicsScene = new QGraphicsScene();
 		graphicsScene->installEventFilter(this);
@@ -48,86 +57,92 @@ namespace networkReliability
 		graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->viewport()->installEventFilter(this);
 
-		statusBar = new QStatusBar();
-		statusFrame = new QFrame;
-		statusBar->addPermanentWidget(statusFrame, 1);
-
-		this->positionLabel = new QLabel;
-		positionLabel->setText("");
-		this->reducedLabel = new QLabel;
-		reducedLabel->setText("");
-
-		statusLayout = new QHBoxLayout;
-		statusLayout->addWidget(positionLabel, 1, Qt::AlignLeft);
-		statusLayout->addWidget(reducedLabel, 0, Qt::AlignRight);
-		statusFrame->setLayout(statusLayout);
-
-		setStatusBar(statusBar);
-
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first - pointSize;
 		maxX = std::max_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first + pointSize;
 		minY = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortBySecond)->second - pointSize;
 		maxY = std::max_element(vertexPositions.begin(), vertexPositions.end(), sortBySecond)->second + pointSize;
 
-		setCentralWidget(graphicsView);
+		layout = new QHBoxLayout;
+		layout->addWidget(graphicsView, 1);
+		layout->setContentsMargins(0,0,0,0);
+		setLayout(layout);
 	}
-	subObservationVisualiser::subObservationVisualiser(const NetworkReliabilitySubObsCollection& inputCollection, float pointSize)
-		:pointSize(pointSize), useSingleSubObs(false), collection(&inputCollection), currentIndex(0), highlightedReducedComponent(-1), reduced(false), reducedGraphData(inputCollection.getContext().getInterestVertices()), context(inputCollection.getContext())
+	subObservationVisualiserBase::subObservationVisualiserBase(const Context& context, float pointSize)
+		:pointSize(pointSize), highlightedReducedComponent(-1), reducedGraphData(context.getInterestVertices()), reduced(false), context(context), reducedPointsItem(NULL), reducedLinesItem(NULL), unreducedPointsItem(NULL), unreducedLinesItem(NULL), highlightedGroupItem(NULL), backgroundItem(NULL)
 	{
-		if(collection->getSampleSize() == 0)
-		{
-			QTimer::singleShot(0, this, SLOT(close()));
-		}
-		else
-		{
-			initialiseQt();
-			observationChanged();
-		}
+		initialiseControls();
+
+		QPen pen(Qt::NoPen);
+		QColor grey("grey");
+		grey.setAlphaF(0.5);
+		QBrush brush;
+		brush.setColor(grey);
+		brush.setStyle(Qt::SolidPattern);
+		backgroundItem = new QGraphicsRectItem(minX, minY, maxX - minX, maxY - minY, NULL);
+		backgroundItem->setPen(pen);
+		backgroundItem->setBrush(brush);
+		backgroundItem->setZValue(-1);
+		graphicsScene->addItem(backgroundItem);
+
+		unreducedPointsItem = new QGraphicsItemGroup(NULL);
+		constructUnreducedPoints();
 	}
-	void subObservationVisualiser::observationChanged()
+	void subObservationVisualiserBase::setObservation(const NetworkReliabilitySubObs& subObs)
 	{
 		highlightedReducedComponent = -1;
-		updateReducedGraphData();
+		reduced = false;
+		updateReducedGraphData(subObs);
+		constructGraphics(subObs);
 		updateGraphics();
 	}
-	subObservationVisualiser::subObservationVisualiser(const NetworkReliabilitySubObsWithContext& subObsWithContext, float pointSize)
-		:pointSize(pointSize), useSingleSubObs(true), collection(NULL), currentIndex(0), subObs(&(subObsWithContext.getSubObs())), highlightedReducedComponent(-1), reduced(false), reducedGraphData(subObsWithContext.getSubObs().getContext().getInterestVertices()), context(subObsWithContext.getSubObs().getContext())
-	{
-		initialiseQt();
-		observationChanged();
-	}
-	subObservationVisualiser::~subObservationVisualiser()
+	subObservationVisualiserBase::~subObservationVisualiserBase()
 	{
 	}
-	void subObservationVisualiser::updateGraphics()
+	void subObservationVisualiserBase::updateGraphics()
 	{
+		QList<QGraphicsItem*> allItems = graphicsScene->items();
+		for(QList<QGraphicsItem*>::iterator i = allItems.begin(); i != allItems.end(); i++) 
+		{
+			if(!(*i)->parentItem()) graphicsScene->removeItem(*i);
+		}
+		graphicsScene->addItem(backgroundItem);
 		if(reduced)
 		{
-			reducedLabel->setText("Reduced");
+			graphicsScene->addItem(reducedPointsItem);
+			graphicsScene->addItem(reducedLinesItem);
 		}
 		else
 		{
-			reducedLabel->setText("Unreduced");
-		}
-		QList<QGraphicsItem*> allItems = graphicsScene->items();
-		for(QList<QGraphicsItem*>::iterator i = allItems.begin(); i != allItems.end(); i++) delete *i;
-
-
-		addBackgroundRectangle();
-		if(!reduced)
-		{
-			addPoints();
-			addLines();
-		}
-		else
-		{
-			addReducedPoints();
-			addReducedLines();
+			graphicsScene->addItem(unreducedPointsItem);
+			graphicsScene->addItem(unreducedLinesItem);
 		}
 	}
-	void subObservationVisualiser::addPoints()
+	void subObservationVisualiserBase::constructGraphics(const NetworkReliabilitySubObs& subObs)
 	{
+		QList<QGraphicsItem*> allItems = graphicsScene->items();
+		for(QList<QGraphicsItem*>::iterator i = allItems.begin(); i != allItems.end(); i++) 
+		{
+			if(!(*i)->parentItem()) graphicsScene->removeItem(*i);
+		}
+
+		delete reducedPointsItem;
+		delete reducedLinesItem;
+		delete unreducedLinesItem;
+		delete highlightedGroupItem;
+
+		reducedPointsItem = new QGraphicsItemGroup(NULL);
+		reducedLinesItem = new QGraphicsItemGroup(NULL);
+		unreducedLinesItem = new QGraphicsItemGroup(NULL);
+		highlightedGroupItem = new QGraphicsItemGroup(NULL);
+
+		constructReducedLines(subObs);
+		constructUnreducedLines(subObs);
+		constructReducedPoints();
+	}
+	void subObservationVisualiserBase::constructUnreducedPoints()
+	{
+		assert(unreducedPointsItem);
 		std::size_t nVertices = boost::num_vertices(context.getGraph());
 
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
@@ -152,32 +167,28 @@ namespace networkReliability
 			float y = currentPosition.second;
 			if(highlightedReducedComponent != -1 && reducedComponents[vertexCounter] == highlightedReducedComponent)
 			{
-				graphicsScene->addEllipse(x - pointSize, y - pointSize, 2*pointSize, 2*pointSize, greenPen, greenBrush);
+				QGraphicsEllipseItem* newItem = new QGraphicsEllipseItem(x - pointSize, y - pointSize, 2*pointSize, 2*pointSize, unreducedPointsItem);
+				newItem->setBrush(greenBrush);
+				newItem->setPen(greenPen);
 			}
 			if(interestVertices.end() == std::find(interestVertices.begin(), interestVertices.end(), vertexCounter))
 			{
-				graphicsScene->addEllipse(x - pointSize/2, y - pointSize/2, pointSize, pointSize, blackPen, blackBrush);
+				QGraphicsEllipseItem* newItem = new QGraphicsEllipseItem(x - pointSize/2, y - pointSize/2, pointSize, pointSize, unreducedPointsItem);
+				newItem->setBrush(blackBrush);
+				newItem->setPen(blackPen);
 			}
 			else
 			{
-				graphicsScene->addEllipse(x - pointSize/2, y - pointSize/2, pointSize, pointSize, redPen, redBrush);
+				QGraphicsEllipseItem* newItem = new QGraphicsEllipseItem(x - pointSize/2, y - pointSize/2, pointSize, pointSize, unreducedPointsItem);
+				newItem->setBrush(redBrush);
+				newItem->setPen(redPen);
 			}
 		}
 	}
-	void subObservationVisualiser::addLines()
+	void subObservationVisualiserBase::constructUnreducedLines(const NetworkReliabilitySubObs& subObs)
 	{
-		const EdgeState* state;
-		boost::shared_array<EdgeState> expandedState;
-		if(useSingleSubObs)
-		{
-			state = subObs->getState();
-		}
-		else
-		{
-			expandedState.reset(new EdgeState[context.getNEdges()]);
-			collection->expand(currentIndex, expandedState);
-			state = expandedState.get();
-		}
+		assert(unreducedLinesItem);
+		const EdgeState* state = subObs.getState();
 		const Context::internalGraph& graph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
@@ -207,46 +218,37 @@ namespace networkReliability
 			Context::vertexPosition sourcePosition = vertexPositions[start->m_source], targetPosition = vertexPositions[start->m_target];
 			if(state[boost::get(boost::edge_index, graph, *start)] & FIXED_OP)
 			{
-				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, redPen);
+				QGraphicsLineItem* newItem = new QGraphicsLineItem(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, unreducedLinesItem);
+				newItem->setPen(redPen);
 			}
 			else if(state[boost::get(boost::edge_index, graph, *start)] & UNFIXED_OP)
 			{
-				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, pen);
+				QGraphicsLineItem* newItem = new QGraphicsLineItem(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, unreducedLinesItem);
+				newItem->setPen(pen);
 			}
 			else if(state[boost::get(boost::edge_index, graph, *start)] & UNFIXED_INOP)
 			{
-				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, dashedPen);
+				QGraphicsLineItem* newItem = new QGraphicsLineItem(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, unreducedLinesItem);
+				newItem->setPen(dashedPen);
 			}
 			else
 			{
-				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, dashedRedPen);
+				QGraphicsLineItem* newItem = new QGraphicsLineItem(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, unreducedLinesItem);
+				newItem->setPen(dashedRedPen);
 			}
-			QGraphicsSimpleTextItem* textItem = graphicsScene->addSimpleText(QString::fromStdString(boost::lexical_cast<std::string>(boost::get(edgeIndexMap, *start)))); 
+			QGraphicsSimpleTextItem* textItem = new QGraphicsSimpleTextItem(QString::fromStdString(boost::lexical_cast<std::string>(boost::get(edgeIndexMap, *start))), unreducedLinesItem); 
 			textItem->setPos((sourcePosition.first + targetPosition.first)/2, (sourcePosition.second + targetPosition.second)/2);
 			start++;
 		}
 	}
-	void subObservationVisualiser::addBackgroundRectangle()
-	{
-		QPen pen(Qt::NoPen);
-		QColor grey("grey");
-		grey.setAlphaF(0.5);
-
-		QBrush brush;
-		brush.setColor(grey);
-		brush.setStyle(Qt::SolidPattern);
-		QGraphicsRectItem* rect = graphicsScene->addRect(minX, minY, maxX - minX, maxY - minY, pen, brush);
-		rect->setZValue(-1);
-	}
-	bool subObservationVisualiser::eventFilter(QObject* object, QEvent *event)
+	bool subObservationVisualiserBase::eventFilter(QObject* object, QEvent *event)
 	{
 		if(event->type() == QEvent::GraphicsSceneMouseMove && object == graphicsScene)
 		{
 			QGraphicsSceneMouseEvent* mouseEvent = static_cast<QGraphicsSceneMouseEvent*>(event);
 			QPointF position = mouseEvent->scenePos();
-			std::stringstream ss;
-			ss << "(" << position.x() << ", " << position.y() << ")";
-			positionLabel->setText(QString::fromStdString(ss.str()));
+			emit positionChanged(position.x(), position.y());
+
 			const Context::internalGraph& graph = context.getGraph();
 			std::size_t nVertices = boost::num_vertices(graph);
 			const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
@@ -265,48 +267,43 @@ namespace networkReliability
 					updateGraphics();
 				}
 			}
-			else
+			return true;
+		}
+		else if(event->type() == QEvent::KeyPress)
+		{
+			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+			if(keyEvent->key() == Qt::Key_Left && keyEvent->modifiers() & Qt::ShiftModifier)
 			{
-				
+				emit observationLeft();
+				return true;
+			}
+			else if(keyEvent->key() == Qt::Key_Right && keyEvent->modifiers() & Qt::ShiftModifier)
+			{
+				emit observationRight();
+				return true;
+			}
+			else if(keyEvent->key() == Qt::Key_Down && keyEvent->modifiers() & Qt::ShiftModifier)
+			{
+				emit observationDown();
+				return true;
+			}
+			else if(keyEvent->key() == Qt::Key_Up && keyEvent->modifiers() & Qt::ShiftModifier)
+			{
+				emit observationUp();
+				return true;
 			}
 		}
 		else if(event->type() == QEvent::Leave && object == graphicsScene)
 		{
 			highlightedReducedComponent = -1;
 			updateGraphics();
-		}
-		else if(event->type() == QEvent::KeyPress)
-		{
-			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-			if(keyEvent->key() == Qt::Key_R)
-			{
-				reduced = !reduced;
-				if(!reduced) highlightedReducedComponent = -1;
-				updateGraphics();
-				return true;
-			}
-			else if(keyEvent->key() == Qt::Key_Left && !useSingleSubObs)
-			{
-				if(currentIndex > 1)
-				{
-					currentIndex--;
-					observationChanged();
-				}
-			}
-			else if(keyEvent->key() == Qt::Key_Right && !useSingleSubObs)
-			{
-				if(currentIndex < (int)(collection->getSampleSize() - 1))
-				{
-					currentIndex++;
-					observationChanged();
-				}
-			}
-
+			return true;
 		}
 		return false;
 	}
-	void subObservationVisualiser::addReducedPoints()
+	void subObservationVisualiserBase::constructReducedPoints()
 	{
+		assert(reducedPointsItem);
 		const Context::internalGraph& unreducedGraph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
@@ -332,12 +329,15 @@ namespace networkReliability
 				float x = currentPosition.first;
 				float y = currentPosition.second;
 
-				graphicsScene->addEllipse(x - pointSize/2, y - pointSize/2, pointSize, pointSize, blackPen, blackBrush);
+				QGraphicsEllipseItem* newItem = new QGraphicsEllipseItem(x - pointSize/2, y - pointSize/2, pointSize, pointSize, reducedPointsItem);
+				newItem->setBrush(blackBrush);
+				newItem->setPen(blackPen);
 			}
 		}
 	}
-	void subObservationVisualiser::addReducedLines()
+	void subObservationVisualiserBase::constructReducedLines(const NetworkReliabilitySubObs& subObs)
 	{
+		assert(reducedLinesItem);
 		const Context::internalGraph& unreducedGraph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
@@ -353,15 +353,7 @@ namespace networkReliability
 
 		Context::internalGraph::edge_iterator currentEdge, lastEdge;
 		boost::tie(currentEdge, lastEdge) = boost::edges(unreducedGraph);
-		const EdgeState* state;
-		boost::shared_array<EdgeState> expandedState;
-		if(useSingleSubObs) state = subObs->getState();
-		else
-		{
-			expandedState.reset(new EdgeState[context.getNEdges()]);
-			collection->expand(currentIndex, expandedState);
-			state = expandedState.get();
-		}
+		const EdgeState* state = subObs.getState();
 		for(; currentEdge != lastEdge; currentEdge++)
 		{
 			int sourceVertex = boost::source(*currentEdge, unreducedGraph);
@@ -369,7 +361,8 @@ namespace networkReliability
 			if(stillPresentInReduced[reducedComponents[sourceVertex]] && reducedComponents[sourceVertex] == reducedComponents[targetVertex] && (state[boost::get(boost::edge_index, unreducedGraph, *currentEdge)] & OP_MASK))
 			{
 				Context::vertexPosition sourcePosition = vertexPositions[sourceVertex], targetPosition = vertexPositions[targetVertex];
-				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, blackPen);
+				QGraphicsLineItem* newItem = new QGraphicsLineItem(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, reducedLinesItem);
+				newItem->setPen(blackPen);
 			}
 		}
 	}

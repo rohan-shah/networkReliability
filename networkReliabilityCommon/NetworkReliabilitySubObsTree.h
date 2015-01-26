@@ -13,6 +13,28 @@ namespace networkReliability
 	class NetworkReliabilitySubObsTree : public boost::noncopyable
 	{
 	public:
+		struct vertexProperty
+		{
+		public:
+			bool potentiallyDisconnected;
+			int level;
+			int index;
+			double x, y;
+			friend class boost::serialization::access;
+		private:
+			BOOST_SERIALIZATION_SPLIT_MEMBER()
+			template<class Archive> void save(Archive& ar, const unsigned int version) const
+			{
+				ar << potentiallyDisconnected << level << index << x << y;
+			}
+			template<class Archive> void load(Archive& ar, const unsigned int version)
+			{
+				ar >> potentiallyDisconnected >> level >> index >> x >> y;
+			}
+		};
+		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, vertexProperty, boost::no_property> treeGraphType;
+
+		typedef boost::adjacency_list< > laidOutBoostGraph;
 		friend class boost::serialization::access;
 		//The levels go 0, 1, ..., nLevels - 1, with level 0 being the topmost level of the tree
 		NetworkReliabilitySubObsTree(Context const* externalContext, unsigned int nLevels, const std::vector<double>& thresholds);
@@ -22,33 +44,42 @@ namespace networkReliability
 		void add(const NetworkReliabilitySubObs& subObs, unsigned int level, int parentIndex, bool potentiallyDisconnected);
 		const Context& getContext() const;
 		void expand(boost::shared_array<EdgeState> state, unsigned int level, unsigned int index) const;
-		std::size_t getSampleSize(unsigned int level);
+		std::size_t getSampleSize(unsigned int level) const;
+		std::size_t nLevels() const;
+		const treeGraphType& getTreeGraph() const;
+		void layout() const;
+		const std::vector<std::vector<int > >& getPerLevelVertexIds() const;
+		const std::vector<double>& getThresholds() const;
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const
 		{
 			std::string typeString = "networkReliabilitySubObsTree";
 			ar << typeString;
+			ar << thresholds;
 			if(containedContext)
 			{
 				ar << *containedContext.get();
 			}
 			else ar << *externalContext;
-			ar << levelData.size();
-			for(std::vector<NetworkReliabilitySubObsCollection>::iterator i = levelData.begin(); i != levelData.end(); i++)
+			std::size_t levelDataSize = levelData.size();
+			ar << levelDataSize;
+			for(std::vector<NetworkReliabilitySubObsCollection>::const_iterator i = levelData.begin(); i != levelData.end(); i++)
 			{
 				ar << *i;
 			}
-			ar << parentData;
-			ar << potentiallyDisconnected;
-			ar << thresholds;
+			if(!treeGraph) layout();
+			ar << *treeGraph;
 			typeString = "networkReliabilitySubObsTree_end";
 			ar << typeString;
 		}
+		void vectorsFromGraph();
+		void perLevelVertexIdsFromGraph() const;
 		template<class Archive> void load(Archive& ar, const unsigned int version)
 		{
 			std::string typeString;
 			ar >> typeString;
+			ar >> thresholds;
 			if(typeString != "networkReliabilitySubObsTree")
 			{
 				throw std::runtime_error("Incorrect type specifier");
@@ -61,9 +92,9 @@ namespace networkReliability
 				NetworkReliabilitySubObsCollection newCollection(ar);
 				levelData.push_back(std::move(newCollection));
 			}
-			ar >> parentData;
-			ar >> potentiallyDisconnected;
-			ar >> thresholds;
+			treeGraph.reset(new treeGraphType());
+			ar >> *treeGraph;
+			vectorsFromGraph();
 			ar >> typeString;
 			if(typeString != "networkReliabilitySubObsTree_end")
 			{
@@ -87,11 +118,13 @@ namespace networkReliability
 		//Binary encoding for every observation, at every level of the tree
 		std::vector<NetworkReliabilitySubObsCollection> levelData;
 		//Values giving the parents of every observation, at every level of the tree
-		std::vector<std::vector<int>> parentData;
-		std::vector<std::vector<bool>> potentiallyDisconnected;
+		std::vector<std::vector<int> > parentData;
+		std::vector<std::vector<bool> > potentiallyDisconnected;
+		mutable std::vector<std::vector<int> > perLevelVertexIds;
 		std::shared_ptr<Context> containedContext;
 		Context const* externalContext;
 		std::vector<double> thresholds;
+		mutable std::shared_ptr<treeGraphType> treeGraph;
 	};
 }
 #endif

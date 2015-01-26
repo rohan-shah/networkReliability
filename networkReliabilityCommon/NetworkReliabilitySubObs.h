@@ -119,6 +119,7 @@ namespace networkReliability
 		NetworkReliabilitySubObsWithContext(NetworkReliabilitySubObs& subObs);
 		friend class boost::serialization::access;
 		const NetworkReliabilitySubObs& getSubObs() const;
+		const Context& getContext() const;
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const

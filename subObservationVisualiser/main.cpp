@@ -1,12 +1,13 @@
-#include "NetworkReliabilityObs.h"
+#include "NetworkReliabilitySubObs.h"
 #include "Context.h"
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include <QApplication>
-#include "subObservationVisualiser.h"
+#include "subObservationVisualiserSingle.h"
+#include "subObservationVisualiserCollection.h"
+#include "subObservationVisualiserTree.h"
 #include <fstream>
 #include <boost/archive/text_iarchive.hpp>
-#include <graphviz/gvc.h>
 #if defined(_WIN32)
 	#include <Windows.h>
 	#if defined(_MSC_VER)
@@ -90,7 +91,7 @@ namespace networkReliability
 		{
 			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
 			NetworkReliabilitySubObsWithContext subObsWithContext(archive);
-			subObservationVisualiser viewer(subObsWithContext, pointSize);
+			subObservationVisualiserSingle viewer(subObsWithContext, pointSize);
 			viewer.show();
 			app.exec();
 			return 0;
@@ -110,10 +111,30 @@ namespace networkReliability
 				std::cout << "NetworkReliabilitySubObsCollection was empty" << std::endl;
 				return 0;
 			}
-			subObservationVisualiser viewer(collection, pointSize);
+			subObservationVisualiserCollection viewer(collection, pointSize);
 			viewer.show();
 			app.exec();
 			return 0;
+		}
+		catch(std::runtime_error& err)
+		{}
+		//If that doesn't work, try a subObservationTree
+		try
+		{
+			inputStream.clear();
+			inputStream.seekg(0, std::ios::beg);
+			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
+			NetworkReliabilitySubObsTree tree(archive);
+			if(tree.nLevels() == 0 || tree.getSampleSize(0) == 0)
+			{
+				std::cout << "NetworkReliabilitySubObsTree was empty" << std::endl;
+				return 0;
+			}
+			subObservationVisualiserTree viewer(tree, pointSize);
+			viewer.show();
+			app.exec();
+			return 0;
+
 		}
 		catch(std::runtime_error& err)
 		{}
