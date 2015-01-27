@@ -42,7 +42,7 @@ namespace networkReliability
 			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
 			("nPMC", boost::program_options::value<std::size_t>()->default_value(0ULL)->implicit_value(0ULL), "(int) Number of PMC samples to use")
 			("outputTree", boost::program_options::value<std::string>(), "(path) File to output simulation tree to")
-			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take.")
+			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two or three numbers numbers; A maximum distance, an optional minimum distance and the number of steps to take.")
 			("help", "Display this message");
 
 		boost::program_options::variables_map variableMap;

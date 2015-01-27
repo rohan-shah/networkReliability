@@ -81,9 +81,11 @@ namespace networkReliability
 						boost::vector_property_map<std::string> posProperty;
 						boost::property_map<treeGraphType, int vertexProperty::*>::type levelProperty(boost::get(&vertexProperty::level, *treeGraph));
 						boost::property_map<treeGraphType, int vertexProperty::*>::type indexProperty(boost::get(&vertexProperty::index, *treeGraph));
+						boost::property_map<treeGraphType, bool vertexProperty::*>::type potentiallyDisconnectedProperty(boost::get(&vertexProperty::potentiallyDisconnected, *treeGraph));
 						dynamicProperties.property("pos", posProperty);
 						dynamicProperties.property("level", levelProperty);
 						dynamicProperties.property("index", indexProperty);
+						dynamicProperties.property("potDiscon", potentiallyDisconnectedProperty);
 						//actually read graph back into boos
 						treeGraph->clear();
 						boost::read_graphviz(laidOutDot, laidOutDot+laidOutDotLength, *treeGraph, dynamicProperties);

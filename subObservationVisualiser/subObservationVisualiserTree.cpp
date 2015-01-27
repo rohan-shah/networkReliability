@@ -7,6 +7,7 @@
 #include "graphAlgorithms.h"
 #include <boost/lexical_cast.hpp>
 #include <QGraphicsSceneMouseEvent>
+#include <QSizePolicy>
 namespace networkReliability
 {
 	subObservationVisualiserTree::subObservationVisualiserTree(const NetworkReliabilitySubObsTree& inputTree, float pointSize)
@@ -21,17 +22,45 @@ namespace networkReliability
 			statusBar = new subObservationStatusBar;
 			setStatusBar(statusBar);
 			
+			centralFrame = new QFrame;
+			layout = new QHBoxLayout;
 			base = new subObservationVisualiserBase(tree.getContext(), pointSize);
-			setCentralWidget(base);
+			treeFrame = new treeVisualiserFrame(inputTree, pointSize);
+
+			treeFrame->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored));
+			base->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored));
+			
+			layout->addWidget(base, 0.5, Qt::AlignLeft);
+			layout->addWidget(treeFrame, 0.5, Qt::AlignRight);
+			layout->setContentsMargins(0,0,0,0);
+			centralFrame->setLayout(layout);
+
+			setCentralWidget(centralFrame);
 			base->installEventFilter(this);
 
 			QObject::connect(base, &subObservationVisualiserBase::positionChanged, this, &subObservationVisualiserTree::positionChanged);
+
 			QObject::connect(base, &subObservationVisualiserBase::observationUp, this, &subObservationVisualiserTree::observationUp);
 			QObject::connect(base, &subObservationVisualiserBase::observationLeft, this, &subObservationVisualiserTree::observationLeft);
 			QObject::connect(base, &subObservationVisualiserBase::observationRight, this, &subObservationVisualiserTree::observationRight);
 			QObject::connect(base, &subObservationVisualiserBase::observationDown, this, &subObservationVisualiserTree::observationDown);
+
+			QObject::connect(treeFrame, &treeVisualiserFrame::observationUp, this, &subObservationVisualiserTree::observationUp);
+			QObject::connect(treeFrame, &treeVisualiserFrame::observationLeft, this, &subObservationVisualiserTree::observationLeft);
+			QObject::connect(treeFrame, &treeVisualiserFrame::observationRight, this, &subObservationVisualiserTree::observationRight);
+			QObject::connect(treeFrame, &treeVisualiserFrame::observationDown, this, &subObservationVisualiserTree::observationDown);
+
+			QObject::connect(treeFrame, &treeVisualiserFrame::vertexSelected, this, &subObservationVisualiserTree::treeVertexClicked);
+
 			setObservation();
 		}
+	}
+	void subObservationVisualiserTree::treeVertexClicked(int vertex)
+	{
+		const NetworkReliabilitySubObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
+		currentIndex = treeGraph[vertex].index;
+		currentLevel = treeGraph[vertex].level;
+		setObservation();
 	}
 	void subObservationVisualiserTree::setObservation()
 	{
@@ -40,13 +69,21 @@ namespace networkReliability
 		//Putting in dummy values for the last two constructor arguments
 		NetworkReliabilitySubObs subObs(tree.getContext(), expandedState, tree.getThresholds()[currentLevel], 0, 0);
 		base->setObservation(subObs);
+
+		const NetworkReliabilitySubObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
+		const std::vector<std::vector<int > >& perLevelIds = tree.getPerLevelVertexIds();
+		int currentVertex = perLevelIds[currentLevel][currentIndex];
+		double x = treeGraph[currentVertex].x;
+		double y = treeGraph[currentVertex].y;
+		treeFrame->centreOn(x, y);
+		treeFrame->highlightPosition(x, y);
 	}
 	subObservationVisualiserTree::~subObservationVisualiserTree()
 	{
 	}
 	void subObservationVisualiserTree::observationLeft()
 	{
-		if(currentIndex > 1)
+		if(currentIndex > 0)
 		{
 			currentIndex--;
 			setObservation();
@@ -79,7 +116,12 @@ namespace networkReliability
 				minXIndex = potentialNewIndex;
 			}
 		}
-		if(minXIndex != -1) setObservation();
+		if(minXIndex != -1) 
+		{
+			currentLevel++;
+			currentIndex = minXIndex;
+			setObservation();
+		}
 	}
 	void subObservationVisualiserTree::observationUp()
 	{
@@ -113,12 +155,12 @@ namespace networkReliability
 				observationRight();
 				return true;
 			}
-			else if(keyEvent->key() == Qt::Key_Down && keyEvent->modifiers() & Qt::ShiftModifier)
+			else if(keyEvent->key() == Qt::Key_Up && keyEvent->modifiers() & Qt::ShiftModifier)
 			{
 				observationDown();
 				return true;
 			}
-			else if(keyEvent->key() == Qt::Key_Up && keyEvent->modifiers() & Qt::ShiftModifier)
+			else if(keyEvent->key() == Qt::Key_Down && keyEvent->modifiers() & Qt::ShiftModifier)
 			{
 				observationUp();
 				return true;

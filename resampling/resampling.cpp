@@ -42,7 +42,7 @@ namespace networkReliability
 			("n", boost::program_options::value<std::size_t>(), "(int) The number of graphs initially generated")
 			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
 			("outputTree", boost::program_options::value<std::string>(), "(path) File to output simulation tree to")
-			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take.")
+			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two or three numbers numbers; A maximum distance, an optional minimum distance and the number of steps to take.")
 			("help", "Display this message");
 
 		boost::program_options::variables_map variableMap;
@@ -142,24 +142,44 @@ namespace networkReliability
 			else
 			{
 				probabilities[0](1);
-				observations.push_back(std::move(subObs));
-				potentiallyDisconnectedIndices.push_back(i);
+				nextStepObservations.push_back(std::move(subObs));
+				nextPotentiallyDisconnectedIndices.push_back(i);
 			}
 		}
-		if(observations.size() == 0)
+		if(nextStepObservations.size() == 0)
 		{
 			estimate = 0;
 			goto returnEstimate;
 		}
 		for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
 		{
+			//resampling step
+			observations.clear();
+			potentiallyDisconnectedIndices.clear();
+			resamplingProbabilities.clear();
+			mpfr_class sum = 0;
+			for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
+			{
+				sum += j->getGeneratedObservationConditioningProb();
+				resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
+			}
+			if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
+			mpfr_class averageWeight = sum / n;
+			aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
+			for (std::size_t k = 0; k < n; k++)
+			{
+				int index = alias(randomSource);
+				observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
+				potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
+			}
+
 			nextPotentiallyDisconnectedIndices.clear();
 			nextStepObservations.clear();
 			for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				NetworkReliabilityObs newObs = j->getObservation(randomSource);
 				NetworkReliabilitySubObs sub = newObs.getSubObservation(thresholds[splittingLevel + 1]);
-				if(outputTree) tree.add(sub, splittingLevel+1, potentiallyDisconnectedIndices[std::distance(observations.begin(), j)], sub.getMinCut());
+				if(outputTree) tree.add(sub, splittingLevel+1, potentiallyDisconnectedIndices[std::distance(observations.begin(), j)], sub.getMinCut() < HIGH_CAPACITY);
 
 				if(sub.getMinCut() < HIGH_CAPACITY)
 				{
@@ -174,30 +194,6 @@ namespace networkReliability
 				estimate = 0;
 				goto returnEstimate;
 			}
-			std::size_t previousSize = observations.size();
-			//resampling step. Don't do this on the last step, because we're already at radius 0
-			if(splittingLevel < finalSplittingStep-1)
-			{
-				observations.clear();
-				potentiallyDisconnectedIndices.clear();
-				resamplingProbabilities.clear();
-				mpfr_class sum = 0;
-				for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
-				{
-					sum += j->getGeneratedObservationConditioningProb();
-					resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
-				}
-				if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
-				mpfr_class averageWeight = sum / previousSize;
-				aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
-				for (std::size_t k = 0; k < previousSize; k++)
-				{
-					int index = alias(randomSource);
-					observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
-					potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
-				}
-			}
-			else observations.swap(nextStepObservations);
 		}
 		estimate = (boost::accumulators::sum(probabilities[finalSplittingStep]) / n);
 		if (variableMap.count("outputConditionalDistribution") > 0)
@@ -219,6 +215,7 @@ namespace networkReliability
 				return 0;
 			}
 		}
+	returnEstimate:
 		if(variableMap.count("outputTree") > 0)
 		{
 			std::cout << "Beginning tree layout....";
@@ -236,7 +233,6 @@ namespace networkReliability
 				return 0;
 			}
 		}
-returnEstimate:
 		std::cout << "Estimate is " << estimate.convert_to<double>() << std::endl;
 		return 0;
 	}

@@ -11,6 +11,7 @@
 #include "subObservationVisualiserBase.h"
 #include "subObservationStatusBar.h"
 #include "NetworkReliabilitySubObsTree.h"
+#include "treeVisualiserFrame.h"
 namespace networkReliability
 {
 	//If the next state is RESIMULATE, then we resimulate until we observe something that hits the next level, BUT
@@ -27,10 +28,14 @@ namespace networkReliability
 		void observationRight();
 		void observationUp();
 		void observationDown();
+		void treeVertexClicked(int vertex);
 	private:
 		void setObservation();
 		subObservationStatusBar* statusBar;
 		subObservationVisualiserBase* base;
+		treeVisualiserFrame* treeFrame;
+		QHBoxLayout* layout;
+		QFrame* centralFrame;
 		const NetworkReliabilitySubObsTree& tree;
 		int currentLevel;
 		int currentIndex;

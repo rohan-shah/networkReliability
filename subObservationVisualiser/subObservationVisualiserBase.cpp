@@ -282,12 +282,12 @@ namespace networkReliability
 				emit observationRight();
 				return true;
 			}
-			else if(keyEvent->key() == Qt::Key_Down && keyEvent->modifiers() & Qt::ShiftModifier)
+			else if(keyEvent->key() == Qt::Key_Up && keyEvent->modifiers() & Qt::ShiftModifier)
 			{
 				emit observationDown();
 				return true;
 			}
-			else if(keyEvent->key() == Qt::Key_Up && keyEvent->modifiers() & Qt::ShiftModifier)
+			else if(keyEvent->key() == Qt::Key_Down && keyEvent->modifiers() & Qt::ShiftModifier)
 			{
 				emit observationUp();
 				return true;

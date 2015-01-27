@@ -42,34 +42,74 @@ namespace networkReliability
 		else
 		{
 			std::vector<double> thresholds = variableMap["useSpatialDistances"].as<std::vector<double> >();
-			if(thresholds.size() != 2)
+			if(thresholds.size() != 2 && thresholds.size() != 3)
 			{
-				message = "Input spatial distances must consist of two numbers; A maximum distance and the number of steps to take. ";
+				message = "Input spatial distances must consist of either two numbers or three; The two number case is a maximum distance and the number of steps to take. The three number case is a maximum distance, a minimum distance and the number of steps to take between the minimum and maximum (inclusive). Zero is added as the last threshold. ";
 				return false;
 			}
-			double maximumDistance = thresholds[0], nSteps = thresholds[1];
-			if(maximumDistance != maximumDistance || nSteps != nSteps || boost::math::isinf(nSteps) || boost::math::isinf(maximumDistance))
+			if(thresholds.size() == 2)
 			{
-				message = "Inputs for useSpatialDistances cannot be NA or infinity";
-				return false;
+				double maximumDistance = thresholds[0], nSteps = thresholds[1];
+				if(maximumDistance != maximumDistance || nSteps != nSteps || boost::math::isinf(nSteps) || boost::math::isinf(maximumDistance))
+				{
+					message = "Inputs for useSpatialDistances cannot be NA or infinity";
+					return false;
+				}
+				if(abs(nSteps - floor(nSteps + 0.5)) > 1e-6)
+				{
+					message = "Number of steps to take for input `useSpatialDistances' must be an integer";
+					return false;
+				}
+				if(nSteps < 0.5)
+				{
+					message = "Number of steps to take for input `useSpatialDistances' must be positive";
+					return false;
+				}
+				if(nSteps == 1)
+				{
+					message = "Specifying useSpatialDistances with 1 step would be equivalent to crude Monte Carlo";
+					return false;
+				}
+				int nStepsInt = floor(nSteps + 0.5);
+				out.clear();
+				for(int currentStep = nStepsInt; currentStep > 0; currentStep--)
+				{
+					out.push_back(maximumDistance * ((double)(currentStep-1) / (double)(nStepsInt-1)));
+				}
+				return true;
 			}
-			if(abs(nSteps - floor(nSteps + 0.5)) > 1e-6)
+			else
 			{
-				message = "Number of steps to take for input `useSpatialDistances' must be an integer";
-				return false;
+				double maximumDistance = thresholds[0], minimumDistance = thresholds[1], nSteps = thresholds[2];
+				if(minimumDistance != minimumDistance || maximumDistance != maximumDistance || nSteps != nSteps || boost::math::isinf(nSteps) || boost::math::isinf(maximumDistance) || boost::math::isinf(minimumDistance))
+				{
+					message = "Inputs for useSpatialDistances cannot be NA or infinity";
+					return false;
+				}
+				if(abs(nSteps - floor(nSteps + 0.5)) > 1e-6)
+				{
+					message = "Number of steps to take for input `useSpatialDistances' must be an integer";
+					return false;
+				}
+				if(nSteps < 0.5)
+				{
+					message = "Number of steps to take for input `useSpatialDistances' must be positive";
+					return false;
+				}
+				if(nSteps == 1)
+				{
+					message = "When specifying three inputs for useSpatialDistances, the number of steps must be at least 2";
+					return false;
+				}
+				int nStepsInt = round(nSteps + 0.5);
+				out.clear();
+				for(int currentStep = nStepsInt; currentStep > 0; currentStep--)
+				{
+					out.push_back((maximumDistance - minimumDistance)* ((double)(currentStep-1) / (double)(nStepsInt-1)) + minimumDistance);
+				}
+				out.push_back(0);
+				return true;
 			}
-			if(nSteps < 0.5)
-			{
-				message = "Number of steps to take for input `useSpatialDistances' must be positive";
-				return false;
-			}
-			int nStepsInt = round(nSteps + 0.5);
-			out.clear();
-			for(int currentStep = nStepsInt; currentStep > 0; currentStep--)
-			{
-				out.push_back(maximumDistance * ((double)(currentStep-1) / (double)(nStepsInt-1)));
-			}
-			return true;
 		}
 	}
 
