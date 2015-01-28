@@ -129,6 +129,10 @@ namespace networkReliability
 
 		//If we specify the useMinCut option then we need to do resampling. This vector holds the probabilities
 		std::vector<double> resamplingProbabilities;
+		//The ith entry in this vector gives the index within the n subObservations of the current generatio, of the ith potentially disconnected subOBservation. We need this for the tree.
+		std::vector<int> potentiallyDisconnectedIndices, nextPotentiallyDisconnectedIndices;
+		potentiallyDisconnectedIndices.reserve(n);
+		nextPotentiallyDisconnectedIndices.reserve(n);
 
 		//Object to hold the tree of generated objects, if input outputTree is specified
 		bool outputTree = variableMap.count("outputTree") > 0;
@@ -138,34 +142,58 @@ namespace networkReliability
 			NetworkReliabilityObs currentObs = NetworkReliabilityObs::constructConditional(context, randomSource);
 			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(thresholds[0]);
 
+			if(outputTree) tree.add(subObs, 0, -1, subObs.getMinCut() < HIGH_CAPACITY);
 			if (subObs.getMinCut() >= HIGH_CAPACITY)
 			{
 				probabilities[0](0);
-				if(outputTree) tree.add(subObs, 0, -1, false);
 			}
 			else
 			{
 				probabilities[0](1);
-				observations.push_back(std::move(subObs));
-				if(outputTree) tree.add(subObs, 0, -1, true);
+				nextStepObservations.push_back(std::move(subObs));
+				nextPotentiallyDisconnectedIndices.push_back(i);
 			}
 		}
-		if(observations.size() == 0)
+		if(nextStepObservations.size() == 0)
 		{
 			estimate = 0;
 			goto returnEstimate;
 		}
 		for(int splittingLevel = 0; splittingLevel < finalSplittingStep; splittingLevel++)
 		{
+			//resampling step
+			observations.clear();
+			potentiallyDisconnectedIndices.clear();
+			resamplingProbabilities.clear();
+			mpfr_class sum = 0;
+			for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
+			{
+				sum += j->getGeneratedObservationConditioningProb();
+				resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
+			}
+			if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
+			mpfr_class averageWeight = sum / n;
+			aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
+			for (std::size_t k = 0; k < n; k++)
+			{
+				int index = alias(randomSource);
+				observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
+				potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
+			}
+
+			nextPotentiallyDisconnectedIndices.clear();
 			nextStepObservations.clear();
 			for(std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				NetworkReliabilityObs newObs = j->getObservation(randomSource);
 				NetworkReliabilitySubObs sub = newObs.getSubObservation(thresholds[splittingLevel + 1]);
+				if(outputTree) tree.add(sub, splittingLevel+1, potentiallyDisconnectedIndices[std::distance(observations.begin(), j)], sub.getMinCut() < HIGH_CAPACITY);
+
 				if(sub.getMinCut() < HIGH_CAPACITY)
 				{
-					probabilities[splittingLevel+1](newObs.getConditioningProb());
 					nextStepObservations.push_back(std::move(sub));
+					probabilities[splittingLevel+1](newObs.getConditioningProb());
+					nextPotentiallyDisconnectedIndices.push_back(std::distance(observations.begin(), j));
 				}
 			}
 			if(nextStepObservations.size() == 0)
@@ -173,29 +201,8 @@ namespace networkReliability
 				estimate = 0;
 				goto returnEstimate;
 			}
-			std::size_t previousSize = observations.size();
-			//resampling step. Don't do this if we're on the last step, as it can only decrease the diversity in the population
-			if(splittingLevel < finalSplittingStep-1)
-			{
-				observations.clear();
-				resamplingProbabilities.clear();
-				mpfr_class sum = 0;
-				for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
-				{
-					sum += j->getGeneratedObservationConditioningProb();
-					resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
-				}
-				if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
-				mpfr_class averageWeight = sum / previousSize;
-				aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
-				for (std::size_t k = 0; k < previousSize; k++)
-				{
-					int index = alias(randomSource);
-					observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
-				}
-			}
-			else observations.swap(nextStepObservations);
 		}
+		observations.swap(nextStepObservations);
 		{
 			//Working data for call to getReducedGraph
 			std::vector<int> edgeCounts;
@@ -255,6 +262,23 @@ namespace networkReliability
 			estimate /= n;
 		}
 returnEstimate:
+		if(variableMap.count("outputTree") > 0)
+		{
+			std::cout << "Beginning tree layout....";
+			tree.layout();
+			std::cout << "Done" << std::endl;
+			try
+			{
+				std::ofstream outputStream(variableMap["outputTree"].as<std::string>().c_str(), std::ios_base::binary);
+				boost::archive::binary_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
+				outputArchive << tree;
+			}
+			catch(std::runtime_error& err)
+			{
+				std::cout << "Error saving tree to file: " << err.what() << std::endl;
+				return 0;
+			}
+		}
 		std::cout << "Estimate is " << estimate.convert_to<double>() << std::endl;
 		return 0;
 	}
