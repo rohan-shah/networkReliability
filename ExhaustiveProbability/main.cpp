@@ -130,7 +130,6 @@ namespace networkReliability
 		}*/
 		const std::size_t nEdges = lines.size() - 3;
 
-		typedef long long counterType;
 		boost::scoped_array<mpfr_class> sizeCounters(new mpfr_class[nEdges+1]);
 		for(std::size_t i = 0; i < nEdges+1; i++)
 		{
