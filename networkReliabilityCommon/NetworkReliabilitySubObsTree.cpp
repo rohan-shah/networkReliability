@@ -135,9 +135,10 @@ namespace networkReliability
 		if(externalContext) return *externalContext;
 		return *containedContext;
 	}
-	NetworkReliabilitySubObsTree::NetworkReliabilitySubObsTree(Context const* externalContext, unsigned int nLevels, const std::vector<double>& thresholds)
+	NetworkReliabilitySubObsTree::NetworkReliabilitySubObsTree(Context const* externalContext, const std::vector<double>& thresholds)
 		:externalContext(externalContext), thresholds(thresholds)
 	{
+		std::size_t nLevels = thresholds.size();
 		parentData.resize(nLevels);
 		potentiallyDisconnected.resize(nLevels);
 		for(unsigned int i = 0; i < nLevels; i++)

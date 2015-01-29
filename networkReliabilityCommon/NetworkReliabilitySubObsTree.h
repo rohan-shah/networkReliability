@@ -37,7 +37,7 @@ namespace networkReliability
 		typedef boost::adjacency_list< > laidOutBoostGraph;
 		friend class boost::serialization::access;
 		//The levels go 0, 1, ..., nLevels - 1, with level 0 being the topmost level of the tree
-		NetworkReliabilitySubObsTree(Context const* externalContext, unsigned int nLevels, const std::vector<double>& thresholds);
+		NetworkReliabilitySubObsTree(Context const* externalContext, const std::vector<double>& thresholds);
 		void reserve(unsigned int reservePerLevel);
 		NetworkReliabilitySubObsTree(boost::archive::binary_iarchive& ar);
 		NetworkReliabilitySubObsTree(boost::archive::text_iarchive& ar);
