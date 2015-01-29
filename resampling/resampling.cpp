@@ -187,7 +187,6 @@ namespace networkReliability
 					probabilities[splittingLevel+1](newObs.getConditioningProb());
 					nextPotentiallyDisconnectedIndices.push_back(std::distance(observations.begin(), j));
 				}
-
 			}
 			if(nextStepObservations.size() == 0)
 			{
