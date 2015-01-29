@@ -319,4 +319,13 @@ namespace networkReliability
 		if(context) return *context;
 		return subObs->getContext();
 	}
+	int NetworkReliabilitySubObs::getFixedInopCount() const
+	{
+		return fixedInop;
+	}
+	const std::vector<int>& NetworkReliabilitySubObs::getPotentiallyDeactivated() const
+	{
+		return couldBeDeactivated;
+	}
+
 }

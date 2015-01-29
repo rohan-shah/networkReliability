@@ -30,6 +30,8 @@ namespace networkReliability
 	class NetworkReliabilitySubObs : public boost::noncopyable
 	{
 	public:
+		int getFixedInopCount() const;
+		const std::vector<int>& getPotentiallyDeactivated() const;
 		friend class boost::serialization::access;
 		NetworkReliabilitySubObs(Context const& context, boost::archive::text_iarchive& ar);
 		NetworkReliabilitySubObs(Context const& context, boost::archive::binary_iarchive& ar);
