@@ -219,6 +219,7 @@ namespace networkReliability
 		if(variableMap.count("outputTree") > 0)
 		{
 			std::cout << "Beginning tree layout....";
+			std::cout.flush();
 			tree.layout();
 			std::cout << "Done" << std::endl;
 			try
