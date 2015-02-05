@@ -235,7 +235,7 @@ namespace networkReliability
 		
 		edgeDistances = boost::shared_array<double>(new double[nEdges * nEdges]);
 		double* edgeDistancePtr = edgeDistances.get();
-		memset(edgeDistancePtr, (int)(sizeof(int)*nEdges*nEdges), 0);
+		memset(edgeDistancePtr, 0, sizeof(double)*nEdges*nEdges);
 
 		Context::internalGraph::edge_iterator currentFirst, end;
 		boost::tie(currentFirst, end) = boost::edges(*graph);
