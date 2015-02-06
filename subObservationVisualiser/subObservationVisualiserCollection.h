@@ -18,7 +18,7 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		subObservationVisualiserCollection(const NetworkReliabilitySubObsCollection& collection, float pointSize);
+		subObservationVisualiserCollection(const NetworkReliabilitySubObsCollection& collection, float pointSize, std::string text = "");
 		~subObservationVisualiserCollection();
 		bool eventFilter(QObject* object, QEvent *event);
 	public slots:
@@ -30,6 +30,7 @@ namespace networkReliability
 		subObservationVisualiserBase* base;
 		const NetworkReliabilitySubObsCollection& collection;
 		int currentIndex;
+		std::string text;
 	};
 }
 #endif

@@ -14,6 +14,24 @@ namespace networkReliability
 	{
 		ar >> *this;
 	}
+	NetworkReliabilitySubObsCollection::NetworkReliabilitySubObsCollection(const empiricalDistribution& other)
+		:sampleSize(other.getNSamples()), radius(0)
+	{
+		externalContext = &other.getContext();
+		std::size_t nEdges = externalContext->getNEdges();
+		std::vector<int> vectorStates(nEdges);
+		boost::scoped_array<EdgeState> state(new EdgeState[nEdges]);
+		for(std::size_t i = 0; i < sampleSize; i++)
+		{
+			other.expand(i, vectorStates);
+			for(std::size_t j = 0; j < nEdges; j++)
+			{
+				if(vectorStates[j]) state[j] = FIXED_OP;
+				else state[j] = FIXED_INOP;
+			}
+			static_cast<binaryDataSet2*>(this)->add(state.get(), nEdges);
+		}
+	}
 	void NetworkReliabilitySubObsCollection::reserve(unsigned int count)
 	{
 		const Context* currentContext;

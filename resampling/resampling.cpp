@@ -108,7 +108,6 @@ namespace networkReliability
 
 		mpfr_class estimate = 0;
 
-		NetworkReliabilitySubObsTree tree(&context, resamplingInputs.thresholds);
 		resamplingOutput resamplingOutputs(observations, randomSource, context, resamplingInputs.thresholds);
 		doResampling(resamplingInputs, resamplingOutputs);
 		if(resamplingOutputs.zeroEstimate)
@@ -119,7 +118,7 @@ namespace networkReliability
 		estimate = (boost::accumulators::sum(resamplingOutputs.probabilities[resamplingInputs.finalSplittingStep]) / n);
 		if (variableMap.count("outputConditionalDistribution") > 0)
 		{
-			empiricalDistribution outputDistributions(true, nEdges);
+			empiricalDistribution outputDistributions(true, nEdges, context);
 			for(std::vector<NetworkReliabilitySubObs>::iterator i = observations.begin(); i != observations.end(); i++)
 			{
 				outputDistributions.add(i->getState(), i->getConditioningProb().convert_to<double>());
@@ -141,13 +140,13 @@ namespace networkReliability
 		{
 			std::cout << "Beginning tree layout....";
 			std::cout.flush();
-			tree.layout();
+			resamplingOutputs.tree.layout();
 			std::cout << "Done" << std::endl;
 			try
 			{
 				std::ofstream outputStream(variableMap["outputTree"].as<std::string>().c_str(), std::ios_base::binary);
 				boost::archive::binary_oarchive outputArchive(outputStream, boost::archive::no_codecvt);
-				outputArchive << tree;
+				outputArchive << resamplingOutputs.tree;
 			}
 			catch(std::runtime_error& err)
 			{

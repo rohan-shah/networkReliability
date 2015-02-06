@@ -13,6 +13,7 @@
 #include <vector>
 #include "TruncatedBinomialDistribution.h"
 #include "allPointsMaxFlow.hpp"
+#include "serializeGMP.hpp"
 #define HIGH_CAPACITY 100000
 namespace networkReliability
 {

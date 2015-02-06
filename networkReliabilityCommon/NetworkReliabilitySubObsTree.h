@@ -79,11 +79,11 @@ namespace networkReliability
 		{
 			std::string typeString;
 			ar >> typeString;
-			ar >> thresholds;
 			if(typeString != "networkReliabilitySubObsTree")
 			{
 				throw std::runtime_error("Incorrect type specifier");
 			}
+			ar >> thresholds;
 			containedContext.reset(new Context(ar));
 			std::size_t levelDataSize;
 			ar >> levelDataSize;

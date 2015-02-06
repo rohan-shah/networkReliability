@@ -91,7 +91,6 @@ namespace networkReliability
 	void subObservationVisualiserBase::setObservation(const NetworkReliabilitySubObs& subObs)
 	{
 		highlightedReducedComponent = -1;
-		reduced = false;
 		updateReducedGraphData(subObs);
 		constructGraphics(subObs);
 		updateGraphics();

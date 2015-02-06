@@ -96,6 +96,7 @@ namespace networkReliability
 					int nUnfixed = nextStepObservations[index].getPotentiallyDeactivated().size();
 					int minCut = nextStepObservations[index].getMinCut();
 					output.observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight * boost::math::binomial_coefficient<mpfr_class>(nUnfixed, minCut)));
+					potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
 				}
 			}
 

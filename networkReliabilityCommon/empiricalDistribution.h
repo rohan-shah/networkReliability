@@ -1,7 +1,7 @@
 #ifndef EMPIRICAL_DISTRIBUTION_HEADER_GUARD
 #define EMPIRICAL_DISTRIBUTION_HEADER_GUARD
 #include <boost/noncopyable.hpp>
-#include "astCode.hpp"
+#include "Context.h"
 #include "EdgeState.h"
 #include <string>
 #include <boost/serialization/split_member.hpp>
@@ -27,20 +27,26 @@ namespace networkReliability
 		friend class boost::serialization::access;
 		empiricalDistribution(empiricalDistribution&& other);
 		empiricalDistribution& operator=(empiricalDistribution&& other);
-		empiricalDistribution(bool isWeighted, std::size_t nEdges);
+		empiricalDistribution(bool isWeighted, std::size_t nEdges, const Context& context);
 		void hintDataCount(std::size_t size);
 		void add(const EdgeState* state);
 		void add(const EdgeState* state, double weight);
-		void expand(int count, std::vector<int>& output);
+		void expand(int count, std::vector<int>& output) const;
 		std::size_t getNSamples() const;
 		std::size_t getNEdges() const;
 		bool isWeighted() const;
 		double getWeight(std::size_t index) const;
+		const Context& getContext() const;
 	private:
 		template<class Archive> void save(Archive & ar, const unsigned int version) const
 		{
 			std::string typeString = "empiricalDistribution";
 			ar << typeString;
+			if(containedContext)
+			{
+				ar << *containedContext.get();
+			}
+			else ar << *externalContext;
 			if(_isWeighted)
 			{
 				std::string weighted = "weighted";
@@ -70,6 +76,7 @@ namespace networkReliability
 			{
 				throw std::runtime_error("File did not start with correct type specifier");
 			}
+			containedContext.reset(new Context(ar));
 			std::string weightString;
 			ar >> weightString;
 			if(weightString == "weighted")
@@ -130,6 +137,9 @@ namespace networkReliability
 		std::size_t sampleSize;
 		bool _isWeighted;
 		std::vector<double> weights;
+
+		std::shared_ptr<Context> containedContext;
+		Context const* externalContext;
 	};
 }
 #endif

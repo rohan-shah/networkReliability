@@ -3,8 +3,8 @@
 #include <fstream>
 namespace networkReliability
 {
-	empiricalDistribution::empiricalDistribution(bool _isWeighted, std::size_t nEdges)
-	:nEdges(nEdges), sampleSize(0), _isWeighted(_isWeighted)
+	empiricalDistribution::empiricalDistribution(bool _isWeighted, std::size_t nEdges, const Context& context)
+	:nEdges(nEdges), sampleSize(0), _isWeighted(_isWeighted), externalContext(&context)
 	{}
 	void empiricalDistribution::hintDataCount(std::size_t size)
 	{
@@ -21,7 +21,7 @@ namespace networkReliability
 	{
 		return _isWeighted;
 	}
-	void empiricalDistribution::expand(int count, std::vector<int>& output)
+	void empiricalDistribution::expand(int count, std::vector<int>& output) const
 	{
 		if(output.size() != nEdges) throw std::runtime_error("Wrong number of elements in vector passed to empiricalDistribution::expand");
 		binaryDataSet1::expand(count, output);
@@ -56,6 +56,8 @@ namespace networkReliability
 		_isWeighted = other._isWeighted;
 		weights.swap(other.weights);
 		sampleSize = other.sampleSize;
+		externalContext = other.externalContext;
+		containedContext = other.containedContext;
 		return *this;
 	}
 	empiricalDistribution::empiricalDistribution(empiricalDistribution&& other)
@@ -64,6 +66,8 @@ namespace networkReliability
 		_isWeighted = other._isWeighted;
 		weights.swap(other.weights);
 		sampleSize = other.sampleSize;
+		externalContext = other.externalContext;
+		containedContext = other.containedContext;
 	}
 	empiricalDistribution::empiricalDistribution()
 	{}
@@ -75,5 +79,9 @@ namespace networkReliability
 	{
 		return nEdges;
 	}
-
+	const Context& empiricalDistribution::getContext() const
+	{
+		if(externalContext) return *externalContext;
+		return *containedContext.get();
+	}
 }

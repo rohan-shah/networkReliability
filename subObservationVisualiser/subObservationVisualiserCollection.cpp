@@ -9,8 +9,8 @@
 #include <QGraphicsSceneMouseEvent>
 namespace networkReliability
 {
-	subObservationVisualiserCollection::subObservationVisualiserCollection(const NetworkReliabilitySubObsCollection& inputCollection, float pointSize)
-		: collection(inputCollection), currentIndex(0)
+	subObservationVisualiserCollection::subObservationVisualiserCollection(const NetworkReliabilitySubObsCollection& inputCollection, float pointSize, std::string text)
+		: collection(inputCollection), currentIndex(0), text(text)
 	{
 		if(collection.getSampleSize() == 0)
 		{
@@ -18,7 +18,7 @@ namespace networkReliability
 		}
 		else
 		{
-			statusBar = new subObservationStatusBar;
+			statusBar = new subObservationStatusBar(text);
 			setStatusBar(statusBar);
 
 			base = new subObservationVisualiserBase(collection.getContext(), pointSize);
@@ -64,7 +64,7 @@ namespace networkReliability
 	}
 	void subObservationVisualiserCollection::observationLeft()
 	{
-		if(currentIndex > 1)
+		if(currentIndex > 0)
 		{
 			currentIndex--;
 			boost::shared_array<EdgeState> expandedState(new EdgeState[collection.getContext().getNEdges()]);

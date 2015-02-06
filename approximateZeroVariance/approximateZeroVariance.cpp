@@ -70,7 +70,7 @@ namespace networkReliability
 		bool standardDeviation = variableMap["standardDeviation"].as<bool>();
 		const std::size_t nEdges = context.getNEdges();
 		
-		empiricalDistribution dist(true, nEdges);
+		empiricalDistribution dist(true, nEdges, context);
 		if(outputConditionalDistribution)
 		{
 			dist.hintDataCount(n);

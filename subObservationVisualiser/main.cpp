@@ -138,6 +138,21 @@ namespace networkReliability
 		}
 		catch(std::runtime_error& err)
 		{}
+		//If that doesn't work, try an empirical distribution and convert it
+		try
+		{
+			inputStream.clear();
+			inputStream.seekg(0, std::ios::beg);
+			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
+			empiricalDistribution distribution(archive);
+			NetworkReliabilitySubObsCollection collection(distribution);
+			subObservationVisualiserCollection viewer(collection, pointSize, "Warning: Weights were discarded");
+			viewer.show();
+			app.exec();
+			return 0;
+		}
+		catch(std::runtime_error& err)
+		{}
 		std::cout << "Unable to load object from file" << std::endl;
 		return -1;
 	}

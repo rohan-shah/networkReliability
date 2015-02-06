@@ -4,13 +4,14 @@
 #include <QLabel>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <string>
 namespace networkReliability
 {
 	class subObservationStatusBar : public QStatusBar
 	{
 		Q_OBJECT
 	public:
-		subObservationStatusBar();
+		subObservationStatusBar(std::string text = "");
 		void setReduced(bool reduced);
 		void setPosition(double x, double y);
 	private:
@@ -18,6 +19,7 @@ namespace networkReliability
 		QLabel* reducedLabel;
 		QFrame* frame;
 		QHBoxLayout* layout;
+		std::string text;
 	};
 }
 #endif
