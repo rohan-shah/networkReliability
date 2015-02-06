@@ -134,6 +134,9 @@ namespace networkReliability
 			{
 				graphicsScene->addEllipse(x - pointSize/2, y - pointSize/2, pointSize, pointSize, redPen, redBrush);
 			}
+			QGraphicsSimpleTextItem* textItem = graphicsScene->addSimpleText(QString::fromStdString(boost::lexical_cast<std::string>(vertexCounter)));
+			textItem->setBrush(redBrush);
+			textItem->setPos(x, y);
 		}
 	}
 	void observationVisualiser::addLines()
@@ -154,6 +157,8 @@ namespace networkReliability
 			{
 				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, pen);
 			}
+			QGraphicsSimpleTextItem* text = graphicsScene->addSimpleText(QString::fromStdString(boost::lexical_cast<std::string>(boost::get(boost::edge_index, graph, *start))));
+			text->setPos((sourcePosition.first + targetPosition.first)/2, (sourcePosition.second + targetPosition.second)/2);
 			start++;
 		}
 	}
@@ -174,8 +179,9 @@ namespace networkReliability
 			{
 				obs = NetworkReliabilityObs(context, randomSource);
 				updateGraphics();
+				return true;
 			}
-			return true;
+			return false;
 		}
 		return false;
 	}
