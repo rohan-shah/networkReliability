@@ -24,6 +24,7 @@ namespace networkReliability
 			("relativeError", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Output relative error estimate")
 			("standardDeviation", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Output standard deviation estimate")
 			("outputConditionalDistribution", boost::program_options::value<std::string>(), "(path) File to output the empirical conditional distribution")
+			("optimiseMinCut", boost::program_options::value<bool>()->default_value(false)->implicit_value(true), "(flag) Should we try and optimise the number of mincut calls?")
 			("help", "Display this message");
 		
 		boost::program_options::variables_map variableMap;
@@ -75,6 +76,12 @@ namespace networkReliability
 		{
 			dist.hintDataCount(n);
 		}
+		bool optimiseMinCut = variableMap["optimiseMinCut"].as<bool>();
+		if(context.getInterestVertices().size() > 2 && optimiseMinCut)
+		{
+			std::cout << "Can only specify option optimiseMinCut with 2-terminal reliability" << std::endl;
+			return 0;
+		}
 
 		boost::random::uniform_01<float,float> uniformReal;
 
@@ -88,12 +95,20 @@ namespace networkReliability
 		//likelihood ratio of current term
 		mpfr_class currentLikelihoodRatio = 0;
 
+		//Cache powers of the inopProbability 
+		boost::scoped_array<mpfr_class> cachedInopPowers(new mpfr_class[nEdges+1]);
+		for(std::size_t i = 0; i < nEdges+1; i++)
+		{
+			cachedInopPowers[i] = boost::multiprecision::pow(inopProbability, i);
+		}
+		//Get out the vector that holds the flow
+		const std::vector<int>& residualCapacityVector = context.getResidualCapacityVector();
 		//Cache the two mincut calculations that are the same every time - The first two. 
 		mpfr_class minCutUpProb, minCutDownProb;
 		std::fill(state.begin(), state.end(), 1);
 		state[0] = state[1] = 0;
 		int initialMinCutSizeDown = context.getMinCut(state);
-		minCutDownProb = boost::multiprecision::pow(inopProbability, initialMinCutSizeDown);
+		minCutDownProb = cachedInopPowers[initialMinCutSizeDown];
 
 		state[0] = state[1] = HIGH_CAPACITY;
 		int initialMinCutSizeUp = context.getMinCut(state);
@@ -101,7 +116,7 @@ namespace networkReliability
 		{
 			minCutUpProb = 0;
 		}
-		else minCutUpProb = boost::multiprecision::pow(inopProbability, initialMinCutSizeUp);
+		else minCutUpProb = cachedInopPowers[initialMinCutSizeUp];
 
 		mpfr_class qTilde;
 		mpfr_class initialQTilde = inopProbability*minCutDownProb;
@@ -139,19 +154,21 @@ namespace networkReliability
 			}
 			if(!exitedEarly)
 			{
+				bool canReuseMinCut = false;
+				int minCutSizeDown, minCutSizeUp;
 				for(edgeCounter = 1; edgeCounter < nEdges; edgeCounter++)
 				{
 					state[2*edgeCounter] = state[2*edgeCounter+1] = 0;
-					int minCutSizeDown = context.getMinCut(state);
-					minCutDownProb = boost::multiprecision::pow(inopProbability, minCutSizeDown);
+					if(!canReuseMinCut || !optimiseMinCut) minCutSizeDown = context.getMinCut(state);
+					minCutDownProb = cachedInopPowers[minCutSizeDown];
 
 					state[2*edgeCounter] = state[2*edgeCounter+1] = HIGH_CAPACITY;
-					int minCutSizeUp = context.getMinCut(state);
+					if(!canReuseMinCut || !optimiseMinCut) minCutSizeUp = context.getMinCut(state);
 					if(minCutSizeUp >= HIGH_CAPACITY)
 					{
 						minCutUpProb = 0;
 					}
-					else minCutUpProb = boost::multiprecision::pow(inopProbability, minCutSizeUp);
+					else minCutUpProb = cachedInopPowers[ minCutSizeUp];
 
 					qTilde = inopProbability * minCutDownProb;
 					qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
@@ -176,6 +193,7 @@ namespace networkReliability
 							break;
 						}
 					}
+					canReuseMinCut = (residualCapacityVector[2*edgeCounter] == 1) && (residualCapacityVector[2*edgeCounter+1] == 1);
 				}
 			}
 			firstMoment += indicatorValue * currentLikelihoodRatio;

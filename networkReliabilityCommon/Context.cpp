@@ -647,4 +647,8 @@ namespace networkReliability
 	{
 		this->_useMinCut = useMinCut;
 	}
+	const std::vector<int>& Context::getResidualCapacityVector() const
+	{
+		return edgeResidualCapacityVector;
+	}
 }

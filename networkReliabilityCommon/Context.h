@@ -59,6 +59,7 @@ namespace networkReliability
 		double getInoperationalProbabilityD() const;
 		bool useMinCut() const;
 		void setMinCut(bool useMinCut);
+		const std::vector<int>& getResidualCapacityVector() const;
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const
