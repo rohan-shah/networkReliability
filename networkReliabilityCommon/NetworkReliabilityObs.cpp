@@ -66,6 +66,69 @@ namespace networkReliability
 		conditioningProb = other.conditioningProb;
 		return *this;
 	}
+	void NetworkReliabilityObs::getPotentiallyFixed(std::vector<int>& potentiallyFixedIndices, double oldThreshold, double newThreshold, EdgeState* workingMemory) const
+	{
+		if(newThreshold >= oldThreshold) throw std::runtime_error("Input newThreshold to NetworkReliabilityObs::getPotentiallyFixed must be smaller than oldThreshold");
+
+		potentiallyFixedIndices.clear();
+		const Context::internalGraph& graph = context.getGraph();
+		std::size_t nEdges = boost::num_edges(graph);
+		
+		const EdgeState* edgeStatesPtr = state.get();
+		const double* edgeDistances = context.getEdgeDistances();
+		//In this piece of code FIXED_OP and INOP are what the say. UNFIXED_INOP
+		std::fill(workingMemory, workingMemory + nEdges, FIXED_OP);
+
+		std::size_t sourceEdge = 0;
+		while(sourceEdge < nEdges)
+		{
+			//is this vertex marked as on, for one reason or another? If so continue from here
+			if((edgeStatesPtr[sourceEdge] & INOP_MASK) > 0 && workingMemory[sourceEdge] == FIXED_OP)
+			{
+				workingMemory[sourceEdge] = FIXED_INOP;
+				//Do we find another vertex in our search that is marked on, and is far enough away from the source?
+				//If so retain it, it will be our new starting point. 
+				//If no such found, we'll continue from finalSearchVertex+1
+				bool found = false;
+				std::size_t nextSourceEdge = -1;
+				//keep copy of source vertex
+				std::size_t copiedSourceEdge = sourceEdge;
+				//we want to begin on the NEXT vertex
+				sourceEdge++;
+				while(sourceEdge < nEdges) 
+				{
+					EdgeState previousState = edgeStatesPtr[sourceEdge];
+					if(edgeDistances[copiedSourceEdge + nEdges * sourceEdge] <= newThreshold)
+					{
+						if(previousState & FIXED_MASK) workingMemory[sourceEdge] = previousState;
+						else workingMemory[sourceEdge] = UNFIXED_OP;
+					}
+					else if(edgeDistances[copiedSourceEdge + nEdges * sourceEdge] <= oldThreshold)
+					{
+						if(previousState & FIXED_MASK) workingMemory[sourceEdge] = previousState;
+						else if(workingMemory[sourceEdge] != UNFIXED_OP) workingMemory[sourceEdge] = UNFIXED_INOP;
+					}
+					else if(!found && (previousState & INOP_MASK) > 0 && workingMemory[sourceEdge] == FIXED_OP)
+					{
+						nextSourceEdge = sourceEdge;
+						found = true;
+					}
+					sourceEdge++;
+				}
+				//if we found another vertex, continue from there. If no, we're already at finalSearchVertex+1. 
+				//Which is where we want to be.
+				if(found)
+				{
+					sourceEdge = nextSourceEdge;
+				}
+			}
+			else sourceEdge++;
+		}
+		for(std::size_t edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
+		{
+			if(workingMemory[edgeCounter] == UNFIXED_INOP) potentiallyFixedIndices.push_back(edgeCounter);
+		}
+	}
 	NetworkReliabilitySubObs NetworkReliabilityObs::getSubObservation(double radius) const
 	{
 		const Context::internalGraph& graph = context.getGraph();

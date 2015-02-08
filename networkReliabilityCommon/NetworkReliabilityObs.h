@@ -21,6 +21,7 @@ namespace networkReliability
 		static NetworkReliabilityObs constructConditional(Context const& context, boost::mt19937& randomSource);
 		int getConditioningCount() const;
 		conditioning_type getConditioningProb() const;
+		void getPotentiallyFixed(std::vector<int>& potentiallyFixedIndices, double oldThreshold, double newThreshold, EdgeState* workingMemory) const;
 	private:
 		Context const& context;
 		boost::shared_array<EdgeState> state;
