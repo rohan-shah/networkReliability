@@ -102,7 +102,7 @@ namespace networkReliability
 			cachedInopPowers[i] = boost::multiprecision::pow(inopProbability, i);
 		}
 		//Get out the vector that holds the flow
-		const std::vector<int>& residualCapacityVector = context.getResidualCapacityVector();
+		const std::vector<int>& residualCapacityVector = context.edgeResidualCapacityVector;
 		//Cache the two mincut calculations that are the same every time - The first two. 
 		mpfr_class minCutUpProb, minCutDownProb;
 		std::fill(state.begin(), state.end(), 1);

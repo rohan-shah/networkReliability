@@ -1,4 +1,4 @@
-#include "NetworkReliabilitySubObs.h"
+#include "NetworkReliabilityObs.h"
 #include "Context.h"
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
@@ -86,12 +86,12 @@ namespace networkReliability
 			std::cout << "Unable to open specified file" << std::endl;
 			return 0;
 		}
-		//First try a single subObservation. 
+		//First try a single observation. 
 		try
 		{
 			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
-			NetworkReliabilitySubObsWithContext subObsWithContext(archive);
-			subObservationVisualiserSingle viewer(subObsWithContext, pointSize);
+			NetworkReliabilityObsWithContext obsWithContext(archive);
+			subObservationVisualiserSingle viewer(obsWithContext, pointSize);
 			viewer.show();
 			app.exec();
 			return 0;
@@ -105,10 +105,10 @@ namespace networkReliability
 			inputStream.clear();
 			inputStream.seekg(0, std::ios::beg);
 			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
-			NetworkReliabilitySubObsCollection collection(archive);
+			NetworkReliabilityObsCollection collection(archive);
 			if(collection.getSampleSize() == 0)
 			{
-				std::cout << "NetworkReliabilitySubObsCollection was empty" << std::endl;
+				std::cout << "NetworkReliabilityObsCollection was empty" << std::endl;
 				return 0;
 			}
 			subObservationVisualiserCollection viewer(collection, pointSize);
@@ -124,10 +124,10 @@ namespace networkReliability
 			inputStream.clear();
 			inputStream.seekg(0, std::ios::beg);
 			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
-			NetworkReliabilitySubObsTree tree(archive);
+			NetworkReliabilityObsTree tree(archive);
 			if(tree.nLevels() == 0 || tree.getSampleSize(0) == 0)
 			{
-				std::cout << "NetworkReliabilitySubObsTree was empty" << std::endl;
+				std::cout << "NetworkReliabilityObsTree was empty" << std::endl;
 				return 0;
 			}
 			subObservationVisualiserTree viewer(tree, pointSize);
@@ -145,7 +145,7 @@ namespace networkReliability
 			inputStream.seekg(0, std::ios::beg);
 			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
 			empiricalDistribution distribution(archive);
-			NetworkReliabilitySubObsCollection collection(distribution);
+			NetworkReliabilityObsCollection collection(distribution);
 			subObservationVisualiserCollection viewer(collection, pointSize, "Warning: Weights were discarded");
 			viewer.show();
 			app.exec();

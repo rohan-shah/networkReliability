@@ -14,10 +14,10 @@
 #include "TruncatedBinomialDistribution.h"
 #include "allPointsMaxFlow.hpp"
 #include "serializeGMP.hpp"
+#include "depth_first_search_restricted.hpp"
 #define HIGH_CAPACITY 100000
 namespace networkReliability
 {
-	class NetworkReliabilitySubObs;
 	class Context : private boost::noncopyable
 	{
 	public:
@@ -53,13 +53,21 @@ namespace networkReliability
 		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getInopDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
 		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getOpDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
 		std::size_t getMinCutEdges() const;
-		std::vector<int>& getCapacityVector() const;
 		int getMinCut(std::vector<int>& capacityVector) const;
 		static Context completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability);
 		double getInoperationalProbabilityD() const;
-		bool useMinCut() const;
-		void setMinCut(bool useMinCut);
-		const std::vector<int>& getResidualCapacityVector() const;
+
+		//Temporary storage
+		mutable std::vector<int> edgeResidualCapacityVector;
+		mutable std::vector<int> capacityVector;
+		mutable std::vector<internalDirectedGraph::edge_descriptor> vertexPredecessorVector;
+		mutable std::vector<boost::default_color_type> colorVector;
+		mutable std::vector<int> distanceVector;
+		mutable boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType depthFirstStack;
+		//More temporary storage
+		mutable std::vector<int> maxFlowResults;
+		mutable allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
+
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const
@@ -132,7 +140,6 @@ namespace networkReliability
 			colorVector.resize(2*nEdges);
 			distanceVector.resize(2*nEdges);
 		}
-		bool _useMinCut;
 		Context();
 		void constructEdgeDistances();
 		void constructDirectedGraph();
@@ -150,16 +157,6 @@ namespace networkReliability
 		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allOpDistributions;
 		
 		std::size_t minCutEdges;
-
-		//These are used in the min paths call. Stored here so they can be reused. 
-		mutable std::vector<int> edgeResidualCapacityVector;
-		mutable std::vector<int> capacityVector;
-		mutable std::vector<internalDirectedGraph::edge_descriptor> vertexPredecessorVector;
-		mutable std::vector<boost::default_color_type> colorVector;
-		mutable std::vector<int> distanceVector;
-		//Temporary storage for Context::getMinCut()
-		mutable std::vector<int> maxFlowResults;
-		mutable allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
 	};
 }
 namespace boost

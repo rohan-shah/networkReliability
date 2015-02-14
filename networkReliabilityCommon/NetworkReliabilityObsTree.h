@@ -1,7 +1,7 @@
-#ifndef NETWORK_RELIABILITY_SUBOBS_TREE_HEADER_GUARD
-#define NETWORK_RELIABILITY_SUBOBS_TREE_HEADER_GUARD
-#include "NetworkReliabilitySubObsCollection.h"
-#include "NetworkReliabilitySubObs.h"
+#ifndef NETWORK_RELIABILITY_OBS_TREE_HEADER_GUARD
+#define NETWORK_RELIABILITY_OBS_TREE_HEADER_GUARD
+#include "NetworkReliabilityObsCollection.h"
+#include "NetworkReliabilityObs.h"
 #include <stdexcept>
 #include "binaryDataSet.h"
 #include <boost/serialization/access.hpp>
@@ -10,7 +10,7 @@
 #include <boost/archive/text_iarchive.hpp>
 namespace networkReliability
 {
-	class NetworkReliabilitySubObsTree : public boost::noncopyable
+	class NetworkReliabilityObsTree : public boost::noncopyable
 	{
 	public:
 		struct vertexProperty
@@ -37,11 +37,11 @@ namespace networkReliability
 		typedef boost::adjacency_list< > laidOutBoostGraph;
 		friend class boost::serialization::access;
 		//The levels go 0, 1, ..., nLevels - 1, with level 0 being the topmost level of the tree
-		NetworkReliabilitySubObsTree(Context const* externalContext, const std::vector<double>& thresholds);
+		NetworkReliabilityObsTree(Context const* externalContext, const std::vector<double>& thresholds);
 		void reserve(unsigned int reservePerLevel);
-		NetworkReliabilitySubObsTree(boost::archive::binary_iarchive& ar);
-		NetworkReliabilitySubObsTree(boost::archive::text_iarchive& ar);
-		void add(const NetworkReliabilitySubObs& subObs, unsigned int level, int parentIndex, bool potentiallyDisconnected);
+		NetworkReliabilityObsTree(boost::archive::binary_iarchive& ar);
+		NetworkReliabilityObsTree(boost::archive::text_iarchive& ar);
+		void add(const NetworkReliabilityObs& obs, unsigned int level, int parentIndex, bool potentiallyDisconnected);
 		const Context& getContext() const;
 		void expand(boost::shared_array<EdgeState> state, unsigned int level, unsigned int index) const;
 		std::size_t getSampleSize(unsigned int level) const;
@@ -54,7 +54,7 @@ namespace networkReliability
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const
 		{
-			std::string typeString = "networkReliabilitySubObsTree";
+			std::string typeString = "networkReliabilityObsTree";
 			ar << typeString;
 			ar << thresholds;
 			if(containedContext)
@@ -64,13 +64,13 @@ namespace networkReliability
 			else ar << *externalContext;
 			std::size_t levelDataSize = levelData.size();
 			ar << levelDataSize;
-			for(std::vector<NetworkReliabilitySubObsCollection>::const_iterator i = levelData.begin(); i != levelData.end(); i++)
+			for(std::vector<NetworkReliabilityObsCollection>::const_iterator i = levelData.begin(); i != levelData.end(); i++)
 			{
 				ar << *i;
 			}
 			if(!treeGraph) layout();
 			ar << *treeGraph;
-			typeString = "networkReliabilitySubObsTree_end";
+			typeString = "networkReliabilityObsTree_end";
 			ar << typeString;
 		}
 		void vectorsFromGraph();
@@ -79,7 +79,7 @@ namespace networkReliability
 		{
 			std::string typeString;
 			ar >> typeString;
-			if(typeString != "networkReliabilitySubObsTree")
+			if(typeString != "networkReliabilityObsTree")
 			{
 				throw std::runtime_error("Incorrect type specifier");
 			}
@@ -89,14 +89,14 @@ namespace networkReliability
 			ar >> levelDataSize;
 			for(std::size_t counter = 0; counter < levelDataSize; counter++)
 			{
-				NetworkReliabilitySubObsCollection newCollection(ar);
+				NetworkReliabilityObsCollection newCollection(ar);
 				levelData.push_back(std::move(newCollection));
 			}
 			treeGraph.reset(new treeGraphType());
 			ar >> *treeGraph;
 			vectorsFromGraph();
 			ar >> typeString;
-			if(typeString != "networkReliabilitySubObsTree_end")
+			if(typeString != "networkReliabilityObsTree_end")
 			{
 				throw std::runtime_error("Incorrect type specifier");
 			}
@@ -116,7 +116,7 @@ namespace networkReliability
 			}
 		}
 		//Binary encoding for every observation, at every level of the tree
-		std::vector<NetworkReliabilitySubObsCollection> levelData;
+		std::vector<NetworkReliabilityObsCollection> levelData;
 		//Values giving the parents of every observation, at every level of the tree
 		std::vector<std::vector<int> > parentData;
 		std::vector<std::vector<bool> > potentiallyDisconnected;

@@ -5,7 +5,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLabel>
-#include "NetworkReliabilitySubObs.h"
+#include "NetworkReliabilityObs.h"
 #include <QHBoxLayout>
 namespace networkReliability
 {
@@ -18,7 +18,7 @@ namespace networkReliability
 		bool eventFilter(QObject* object, QEvent *event);
 		void setReduced(bool reduced);
 		void switchReduced();
-		void setObservation(const NetworkReliabilitySubObs& subObs);
+		void setObservation(const NetworkReliabilityObs& subObs);
 	signals:
 		void positionChanged(double x, double y);
 		void observationLeft();
@@ -28,14 +28,14 @@ namespace networkReliability
 	private:
 		void initialiseControls();
 		void addBackgroundRectangle();
-		void constructGraphics(const NetworkReliabilitySubObs& subObs);
+		void constructGraphics(const NetworkReliabilityObs& subObs);
 		void updateGraphics();
-		void updateReducedGraphData(const NetworkReliabilitySubObs& subObs);
+		void updateReducedGraphData(const NetworkReliabilityObs& subObs);
 		void constructUnreducedPoints();
-		void constructUnreducedLines(const NetworkReliabilitySubObs& subObs);
+		void constructUnreducedLines(const NetworkReliabilityObs& subObs);
 
 		void constructReducedPoints();
-		void constructReducedLines(const NetworkReliabilitySubObs& subObs);
+		void constructReducedLines(const NetworkReliabilityObs& subObs);
 		float pointSize;
 
 		QGraphicsScene* graphicsScene;
@@ -47,7 +47,7 @@ namespace networkReliability
 		//...and this holds the currently highlighted component
 		int highlightedReducedComponent;
 		//...and the reduced graph 
-		NetworkReliabilitySubObs::getReducedGraphNoSelfWithWeightsInput reducedGraphData;
+		NetworkReliabilityObs::getReducedGraphNoSelfWithWeightsInput reducedGraphData;
 		//...and the number of components in the unreduced graph
 		int nUnreducedComponents;
 		bool reduced;

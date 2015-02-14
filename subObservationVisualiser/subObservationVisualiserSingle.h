@@ -17,7 +17,7 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		subObservationVisualiserSingle(const NetworkReliabilitySubObsWithContext& subObsWithContext, float pointSize);
+		subObservationVisualiserSingle(const NetworkReliabilityObsWithContext& obsWithContext, float pointSize);
 		~subObservationVisualiserSingle();
 		bool eventFilter(QObject* object, QEvent *event);
 	public slots:
@@ -25,7 +25,7 @@ namespace networkReliability
 	private:
 		subObservationStatusBar* statusBar;
 		subObservationVisualiserBase* base;
-		const NetworkReliabilitySubObsWithContext& subObsWithContext;
+		const NetworkReliabilityObsWithContext& obsWithContext;
 	};
 }
 #endif

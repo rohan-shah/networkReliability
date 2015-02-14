@@ -3,11 +3,11 @@
 #include <vector>
 #include "Context.h"
 #include <boost/random/mersenne_twister.hpp>
-#include "NetworkReliabilitySubObs.h"
-#include "NetworkReliabilitySubObsTree.h"
-#include <boost/accumulators/statistics.hpp>
+#include "NetworkReliabilityObsTree.h"
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/sum.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include "subObs/withResampling.h"
 namespace networkReliability
 {
 	struct resamplingInput
@@ -26,11 +26,11 @@ namespace networkReliability
 	struct resamplingOutput
 	{
 	public:
-		resamplingOutput(std::vector<NetworkReliabilitySubObs>& observations, boost::mt19937& randomSource, const Context& context, const std::vector<double>& thresholds);
-		std::vector<NetworkReliabilitySubObs>& observations;
+		resamplingOutput(std::vector<::networkReliability::subObs::withResampling>& observations, boost::mt19937& randomSource, const Context& context, const std::vector<double>& thresholds);
+		std::vector<::networkReliability::subObs::withResampling>& observations;
 		boost::mt19937& randomSource;
 		bool zeroEstimate;
-		NetworkReliabilitySubObsTree tree;
+		NetworkReliabilityObsTree tree;
 		std::vector<boost::accumulators::accumulator_set<mpfr_class, boost::accumulators::stats<boost::accumulators::tag::sum> > > probabilities;
 	private:
 		resamplingOutput();

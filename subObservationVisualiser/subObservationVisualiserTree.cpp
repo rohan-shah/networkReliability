@@ -10,7 +10,7 @@
 #include <QSizePolicy>
 namespace networkReliability
 {
-	subObservationVisualiserTree::subObservationVisualiserTree(const NetworkReliabilitySubObsTree& inputTree, float pointSize)
+	subObservationVisualiserTree::subObservationVisualiserTree(const NetworkReliabilityObsTree& inputTree, float pointSize)
 		:tree(inputTree), currentLevel(0), currentIndex(0)
 	{
 		if(tree.nLevels() == 0 || tree.getSampleSize(0) == 0)
@@ -57,7 +57,7 @@ namespace networkReliability
 	}
 	void subObservationVisualiserTree::treeVertexClicked(int vertex)
 	{
-		const NetworkReliabilitySubObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
+		const NetworkReliabilityObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
 		currentIndex = treeGraph[vertex].index;
 		currentLevel = treeGraph[vertex].level;
 		setObservation();
@@ -67,10 +67,10 @@ namespace networkReliability
 		boost::shared_array<EdgeState> expandedState(new EdgeState[tree.getContext().getNEdges()]);
 		tree.expand(expandedState, currentLevel, currentIndex);
 		//Putting in dummy values for the last two constructor arguments
-		NetworkReliabilitySubObs subObs(tree.getContext(), expandedState, tree.getThresholds()[currentLevel], 0, 0);
-		base->setObservation(subObs);
+		NetworkReliabilityObs obs(tree.getContext(), expandedState);
+		base->setObservation(obs);
 
-		const NetworkReliabilitySubObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
+		const NetworkReliabilityObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
 		const std::vector<std::vector<int > >& perLevelIds = tree.getPerLevelVertexIds();
 		int currentVertex = perLevelIds[currentLevel][currentIndex];
 		double x = treeGraph[currentVertex].x;
@@ -99,10 +99,10 @@ namespace networkReliability
 	}
 	void subObservationVisualiserTree::observationDown()
 	{
-		const NetworkReliabilitySubObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
+		const NetworkReliabilityObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
 		const std::vector<std::vector<int > >& perLevelIds = tree.getPerLevelVertexIds();
 		int currentVertex = perLevelIds[currentLevel][currentIndex];
-		NetworkReliabilitySubObsTree::treeGraphType::out_edge_iterator currentOutEdge, endOutEdge;
+		NetworkReliabilityObsTree::treeGraphType::out_edge_iterator currentOutEdge, endOutEdge;
 		boost::tie(currentOutEdge, endOutEdge) = boost::out_edges(currentVertex, treeGraph);
 		double currentX = std::numeric_limits<double>::infinity();
 		int minXIndex = -1;
@@ -127,7 +127,7 @@ namespace networkReliability
 	{
 		if(currentLevel > 0)
 		{
-			const NetworkReliabilitySubObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
+			const NetworkReliabilityObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
 			const std::vector<std::vector<int > >& perLevelIds = tree.getPerLevelVertexIds();
 			int currentVertex = perLevelIds[currentLevel][currentIndex];
 			currentIndex = treeGraph[boost::source(*(boost::in_edges(currentVertex, treeGraph).first), treeGraph)].index;

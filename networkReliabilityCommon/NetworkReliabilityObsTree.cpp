@@ -1,4 +1,4 @@
-#include "NetworkReliabilitySubObsTree.h"
+#include "NetworkReliabilityObsTree.h"
 #include <graphviz/gvc.h>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
@@ -6,20 +6,20 @@
 #include <boost/algorithm/string/classification.hpp>
 namespace networkReliability
 {
-	NetworkReliabilitySubObsTree::NetworkReliabilitySubObsTree(boost::archive::binary_iarchive& ar)
+	NetworkReliabilityObsTree::NetworkReliabilityObsTree(boost::archive::binary_iarchive& ar)
 		:externalContext(NULL)
 	{
 		ar >> *this;
 	}
-	NetworkReliabilitySubObsTree::NetworkReliabilitySubObsTree(boost::archive::text_iarchive& ar)
+	NetworkReliabilityObsTree::NetworkReliabilityObsTree(boost::archive::text_iarchive& ar)
 		:externalContext(NULL)
 	{
 		ar >> *this;
 	}
-	void NetworkReliabilitySubObsTree::layout() const
+	void NetworkReliabilityObsTree::layout() const
 	{
 		int totalVertices = 0;
-		for(std::vector<NetworkReliabilitySubObsCollection>::const_iterator i = levelData.begin(); i != levelData.end(); i++)
+		for(std::vector<NetworkReliabilityObsCollection>::const_iterator i = levelData.begin(); i != levelData.end(); i++)
 		{
 			totalVertices += i->getSampleSize();
 		}
@@ -110,11 +110,11 @@ namespace networkReliability
 		gvFreeContext(gvc);
 		perLevelVertexIdsFromGraph();
 	}
-	const std::vector<std::vector<int > >& NetworkReliabilitySubObsTree::getPerLevelVertexIds() const
+	const std::vector<std::vector<int > >& NetworkReliabilityObsTree::getPerLevelVertexIds() const
 	{
 		return perLevelVertexIds;
 	}
-	void NetworkReliabilitySubObsTree::perLevelVertexIdsFromGraph() const
+	void NetworkReliabilityObsTree::perLevelVertexIdsFromGraph() const
 	{
 		std::size_t nLevels = levelData.size();
 		perLevelVertexIds.clear();
@@ -130,12 +130,12 @@ namespace networkReliability
 			perLevelVertexIds[(*treeGraph)[*currentVertexIterator].level][(*treeGraph)[*currentVertexIterator].index] = *currentVertexIterator;
 		}
 	}
-	const Context& NetworkReliabilitySubObsTree::getContext() const
+	const Context& NetworkReliabilityObsTree::getContext() const
 	{
 		if(externalContext) return *externalContext;
 		return *containedContext;
 	}
-	NetworkReliabilitySubObsTree::NetworkReliabilitySubObsTree(Context const* externalContext, const std::vector<double>& thresholds)
+	NetworkReliabilityObsTree::NetworkReliabilityObsTree(Context const* externalContext, const std::vector<double>& thresholds)
 		:externalContext(externalContext), thresholds(thresholds)
 	{
 		std::size_t nLevels = thresholds.size();
@@ -143,11 +143,11 @@ namespace networkReliability
 		potentiallyDisconnected.resize(nLevels);
 		for(unsigned int i = 0; i < nLevels; i++)
 		{
-			NetworkReliabilitySubObsCollection currentLevelData(externalContext, thresholds[i]);
+			NetworkReliabilityObsCollection currentLevelData(externalContext, thresholds[i]);
 			levelData.push_back(std::move(currentLevelData));
 		}
 	}
-	void NetworkReliabilitySubObsTree::reserve(unsigned int reservePerLevel)
+	void NetworkReliabilityObsTree::reserve(unsigned int reservePerLevel)
 	{
 		std::size_t nLevels = levelData.size();
 		for(std::size_t i = 0; i < nLevels; i++)
@@ -157,39 +157,39 @@ namespace networkReliability
 			potentiallyDisconnected[i].reserve(reservePerLevel);
 		}
 	}
-	std::size_t NetworkReliabilitySubObsTree::nLevels() const
+	std::size_t NetworkReliabilityObsTree::nLevels() const
 	{
 		return levelData.size();
 	}
-	std::size_t NetworkReliabilitySubObsTree::getSampleSize(unsigned int level) const
+	std::size_t NetworkReliabilityObsTree::getSampleSize(unsigned int level) const
 	{
 		return levelData[level].getSampleSize();
 	}
-	void NetworkReliabilitySubObsTree::expand(boost::shared_array<EdgeState> state, unsigned int level, unsigned int index) const
+	void NetworkReliabilityObsTree::expand(boost::shared_array<EdgeState> state, unsigned int level, unsigned int index) const
 	{
 		if(level >= levelData.size())
 		{
-			throw std::runtime_error("Specified level does not exist in call to NetworkReliabilitySubObsTree::expand");
+			throw std::runtime_error("Specified level does not exist in call to NetworkReliabilityObsTree::expand");
 		}
 		if(index >= levelData[level].getSampleSize())
 		{
-			throw std::runtime_error("Specified observation does not exist in specified level, in call to NetworkReliabilitySubObsTree::expand");
+			throw std::runtime_error("Specified observation does not exist in specified level, in call to NetworkReliabilityObsTree::expand");
 		}
 		levelData[level].expand(index, state);
 	}
-	void NetworkReliabilitySubObsTree::add(const NetworkReliabilitySubObs& subObs, unsigned int level, int parentIndex, bool potentiallyDisconnected)
+	void NetworkReliabilityObsTree::add(const NetworkReliabilityObs& obs, unsigned int level, int parentIndex, bool potentiallyDisconnected)
 	{
 		//Graph will need to be laid out again
 		if(treeGraph) treeGraph.reset();
 		if(level >= levelData.size())
 		{
-			throw std::runtime_error("Specified level does not exist in call to NetworkReliabilitySubObsTree::add");
+			throw std::runtime_error("Specified level does not exist in call to NetworkReliabilityObsTree::add");
 		}
-		levelData[level].add(subObs);
+		levelData[level].add(obs);
 		parentData[level].push_back(parentIndex);
 		this->potentiallyDisconnected[level].push_back(potentiallyDisconnected);
 	}
-	void NetworkReliabilitySubObsTree::vectorsFromGraph()
+	void NetworkReliabilityObsTree::vectorsFromGraph()
 	{
 		assert(treeGraph);
 		treeGraphType::vertex_iterator current, end;
@@ -220,11 +220,11 @@ namespace networkReliability
 		}
 		perLevelVertexIdsFromGraph();
 	}
-	const std::vector<double>& NetworkReliabilitySubObsTree::getThresholds() const
+	const std::vector<double>& NetworkReliabilityObsTree::getThresholds() const
 	{
 		return thresholds;
 	}
-	const NetworkReliabilitySubObsTree::treeGraphType& NetworkReliabilitySubObsTree::getTreeGraph() const
+	const NetworkReliabilityObsTree::treeGraphType& NetworkReliabilityObsTree::getTreeGraph() const
 	{
 		if(!treeGraph) layout();
 		return *treeGraph;

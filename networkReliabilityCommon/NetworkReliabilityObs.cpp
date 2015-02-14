@@ -3,10 +3,22 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/math/distributions/binomial.hpp>
+#include "graphAlgorithms.h"
+#include "seriesParallelReduction.hpp"
 namespace networkReliability
 {
+	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::archive::binary_iarchive& archive)
+		:context(context)
+	{
+		archive >> *this;
+	}
+	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::archive::text_iarchive& archive)
+		:context(context)
+	{
+		archive >> *this;
+	}
 	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::mt19937& randomSource)
-		:context(context), conditioningCount(0), conditioningProb(1)
+		:context(context)
 	{
 		const Context::internalGraph& graph = context.getGraph();
 		const std::size_t nEdges = boost::num_edges(graph);
@@ -24,7 +36,7 @@ namespace networkReliability
 		}
 		this->state = state;
 	}
-	NetworkReliabilityObs NetworkReliabilityObs::constructConditional(Context const& context, boost::mt19937& randomSource)
+	void NetworkReliabilityObs::constructConditional(Context const& context, boost::mt19937& randomSource, EdgeState* state, bool fixed)
 	{
 		const Context::internalGraph& graph = context.getGraph();
 		const std::size_t nEdges = boost::num_edges(graph);
@@ -32,24 +44,30 @@ namespace networkReliability
 		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(minCutEdges, nEdges, nEdges);
 
 		const std::size_t nRemovedEdges = dist(randomSource);
-		boost::shared_array<EdgeState> state(new EdgeState[nEdges]);
-		std::fill(state.get(), state.get() + nEdges, UNFIXED_OP);
+		EdgeState inopState;
+		if(fixed) 
+		{
+			std::fill(state, state + nEdges, FIXED_OP);
+			inopState = FIXED_INOP;
+		}
+		else 
+		{
+			std::fill(state, state + nEdges, UNFIXED_OP);
+			inopState = UNFIXED_INOP;
+		}
 
 		std::vector<int> indices(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges));
 		for(std::size_t i = 0; i < nRemovedEdges; i++)
 		{
 			boost::random::uniform_int_distribution<int> removedEdgeIndexDistribution(0, (int)indices.size()-1);
 			int index = removedEdgeIndexDistribution(randomSource);
-			state[indices[index]] = UNFIXED_INOP;
+			state[indices[index]] = inopState;
 			std::swap(indices[index], *indices.rbegin());
 			indices.pop_back();
 		}
-		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& originalDist = context.getOpDistribution(0, nEdges, nEdges);
-		mpfr_class conditioningProb = originalDist.getCumulativeProbability(nEdges - minCutEdges);
-		return NetworkReliabilityObs(context, state, (int)minCutEdges, conditioningProb);
 	}
-	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::shared_array<EdgeState> state, int conditioningCount, conditioning_type conditioningProb)
-		:context(context), state(state), conditioningCount(conditioningCount), conditioningProb(conditioningProb)
+	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::shared_array<EdgeState> state)
+		:context(context), state(state)
 	{}
 	const EdgeState* NetworkReliabilityObs::getState() const
 	{
@@ -62,138 +80,140 @@ namespace networkReliability
 			throw std::runtime_error("Internal error");
 		}
 		state = other.state;
-		conditioningCount = other.conditioningCount;
-		conditioningProb = other.conditioningProb;
 		return *this;
 	}
-	void NetworkReliabilityObs::getPotentiallyFixed(std::vector<int>& potentiallyFixedIndices, double oldThreshold, double newThreshold, EdgeState* workingMemory) const
-	{
-		if(newThreshold >= oldThreshold) throw std::runtime_error("Input newThreshold to NetworkReliabilityObs::getPotentiallyFixed must be smaller than oldThreshold");
-
-		potentiallyFixedIndices.clear();
-		const Context::internalGraph& graph = context.getGraph();
-		std::size_t nEdges = boost::num_edges(graph);
-		
-		const EdgeState* edgeStatesPtr = state.get();
-		const double* edgeDistances = context.getEdgeDistances();
-		//In this piece of code FIXED_OP and INOP are what the say. UNFIXED_INOP
-		std::fill(workingMemory, workingMemory + nEdges, FIXED_OP);
-
-		std::size_t sourceEdge = 0;
-		while(sourceEdge < nEdges)
-		{
-			//is this vertex marked as on, for one reason or another? If so continue from here
-			if((edgeStatesPtr[sourceEdge] & INOP_MASK) > 0 && workingMemory[sourceEdge] == FIXED_OP)
-			{
-				workingMemory[sourceEdge] = FIXED_INOP;
-				//Do we find another vertex in our search that is marked on, and is far enough away from the source?
-				//If so retain it, it will be our new starting point. 
-				//If no such found, we'll continue from finalSearchVertex+1
-				bool found = false;
-				std::size_t nextSourceEdge = -1;
-				//keep copy of source vertex
-				std::size_t copiedSourceEdge = sourceEdge;
-				//we want to begin on the NEXT vertex
-				sourceEdge++;
-				while(sourceEdge < nEdges) 
-				{
-					EdgeState previousState = edgeStatesPtr[sourceEdge];
-					if(edgeDistances[copiedSourceEdge + nEdges * sourceEdge] <= newThreshold)
-					{
-						if(previousState & FIXED_MASK) workingMemory[sourceEdge] = previousState;
-						else workingMemory[sourceEdge] = UNFIXED_OP;
-					}
-					else if(edgeDistances[copiedSourceEdge + nEdges * sourceEdge] <= oldThreshold)
-					{
-						if(previousState & FIXED_MASK) workingMemory[sourceEdge] = previousState;
-						else if(workingMemory[sourceEdge] != UNFIXED_OP) workingMemory[sourceEdge] = UNFIXED_INOP;
-					}
-					else if(!found && (previousState & INOP_MASK) > 0 && workingMemory[sourceEdge] == FIXED_OP)
-					{
-						nextSourceEdge = sourceEdge;
-						found = true;
-					}
-					sourceEdge++;
-				}
-				//if we found another vertex, continue from there. If no, we're already at finalSearchVertex+1. 
-				//Which is where we want to be.
-				if(found)
-				{
-					sourceEdge = nextSourceEdge;
-				}
-			}
-			else sourceEdge++;
-		}
-		for(std::size_t edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
-		{
-			if(workingMemory[edgeCounter] == UNFIXED_INOP) potentiallyFixedIndices.push_back(edgeCounter);
-		}
-	}
-	NetworkReliabilitySubObs NetworkReliabilityObs::getSubObservation(double radius) const
-	{
-		const Context::internalGraph& graph = context.getGraph();
-		std::size_t nEdges = boost::num_edges(graph);
-		
-		boost::shared_array<EdgeState> newEdgeStates(new EdgeState[nEdges]);
-		EdgeState* newEdgeStatesPtr = newEdgeStates.get();
-		std::fill(newEdgeStatesPtr, newEdgeStatesPtr + nEdges, FIXED_OP);
-		
-		const EdgeState* oldEdgeStatesPtr = state.get();
-
-		const double* edgeDistances = context.getEdgeDistances();
-
-		std::size_t sourceEdge = 0;
-		while(sourceEdge < nEdges)
-		{
-			//is this vertex marked as on, for one reason or another? If so continue from here
-			if((oldEdgeStatesPtr[sourceEdge] & INOP_MASK) > 0 && newEdgeStatesPtr[sourceEdge] == FIXED_OP)
-			{
-				newEdgeStatesPtr[sourceEdge] = FIXED_INOP;
-
-				//Do we find another vertex in our search that is marked on, and is far enough away from the source?
-				//If so retain it, it will be our new starting point. 
-				//If no such found, we'll continue from finalSearchVertex+1
-				bool found = false;
-				std::size_t nextSourceEdge = -1;
-				//keep copy of source vertex
-				std::size_t copiedSourceEdge = sourceEdge;
-				//we want to begin on the NEXT vertex
-				sourceEdge++;
-				while(sourceEdge < nEdges) 
-				{
-					EdgeState previousState = oldEdgeStatesPtr[sourceEdge];
-					if(edgeDistances[copiedSourceEdge + nEdges * sourceEdge] <= radius)
-					{
-						if(previousState & FIXED_MASK) newEdgeStatesPtr[sourceEdge] = previousState;
-						else newEdgeStatesPtr[sourceEdge] = UNFIXED_INOP;
-					}
-					else if(!found && (previousState & INOP_MASK) > 0 && newEdgeStatesPtr[sourceEdge] == FIXED_OP)
-					{
-						nextSourceEdge = sourceEdge;
-						found = true;
-					}
-					sourceEdge++;
-				}
-				//if we found another vertex, continue from there. If no, we're already at finalSearchVertex+1. 
-				//Which is where we want to be.
-				if(found)
-				{
-					sourceEdge = nextSourceEdge;
-				}
-			}
-			else sourceEdge++;
-		}
-		return NetworkReliabilitySubObs(context, newEdgeStates, radius, conditioningCount, conditioningProb);
-	}
 	NetworkReliabilityObs::NetworkReliabilityObs(NetworkReliabilityObs&& other)
-		:context(other.context), state(other.state), conditioningCount(other.conditioningCount), conditioningProb(other.conditioningProb)
+		:context(other.context), state(other.state)
 	{}
-	NetworkReliabilityObs::conditioning_type NetworkReliabilityObs::getConditioningProb() const
+	const Context& NetworkReliabilityObs::getContext() const
 	{
-		return conditioningProb;
+		return context;
 	}
-	int NetworkReliabilityObs::getConditioningCount() const
+	void NetworkReliabilityObs::getReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
 	{
-		return conditioningCount;
+		int nComponents = countComponents(context, state.get(), components, stack, colorMap);
+		edgeCounts.clear();
+		edgeCounts.resize(nComponents * nComponents);
+
+		//determine the rates between all the different super-vertices
+		Context::internalGraph::edge_iterator current, end;
+		const Context::internalGraph& graph = context.getGraph();
+		boost::tie(current, end) = boost::edges(graph);
+		for (; current != end; current++)
+		{
+			int edgeIndex = boost::get(boost::edge_index, graph, *current);
+			//is it an edge between super-nodes?
+			if (state[edgeIndex] & UNFIXED_MASK)
+			{
+				edgeCounts[components[current->m_source] + components[current->m_target] * nComponents]++;
+			}
+		}
+		outputGraph = Context::internalGraph(nComponents);
+		int edgeCounter = 0;
+		for (int i = 0; i < nComponents; i++)
+		{
+			if (edgeCounts[i + i * nComponents] > 0)
+			{
+				boost::add_edge(i, i, edgeCounter++, outputGraph);
+			}
+			for (int j = i + 1; j < nComponents; j++)
+			{
+				if (edgeCounts[i + j * nComponents] + edgeCounts[j + i * nComponents] > 0)
+				{
+					boost::add_edge(i, j, edgeCounter++, outputGraph);
+				}
+			}
+		}
 	}
+	void NetworkReliabilityObs::getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const
+	{
+		input.nUnreducedEdges = 0;
+		int nComponents = countComponents(context, state.get(), input.components, input.stack, input.colorMap);
+		input.edgeCounts.clear();
+		input.edgeCounts.resize(nComponents * nComponents);
+
+		//determine the rates between all the different super-vertices
+		Context::internalGraph::edge_iterator currentBaseGraph, endBaseGraph;
+		const Context::internalGraph& graph = context.getGraph();
+		boost::tie(currentBaseGraph, endBaseGraph) = boost::edges(graph);
+		for (; currentBaseGraph != endBaseGraph; currentBaseGraph++)
+		{
+			int edgeIndex = boost::get(boost::edge_index, graph, *currentBaseGraph);
+			//is it an edge between super-nodes?
+			if (state[edgeIndex] & UNFIXED_MASK)
+			{
+				input.edgeCounts[input.components[currentBaseGraph->m_source] + input.components[currentBaseGraph->m_target] * nComponents]++;
+				input.nUnreducedEdges++;
+			}
+		}
+		//Construct graph where every connected chunk of vertices is now a single vertex
+		input.outputGraph = reducedGraphWithProbabilities(nComponents);
+		//Put in operational / inoperational probabilities for every edge
+		int edgeCounter = 0;
+		const mpfr_class& opProbability = context.getOperationalProbability();
+		mpfr_class inopProbability = 1 - opProbability;
+		for (int i = 0; i < nComponents; i++)
+		{
+			boost::put(boost::vertex_name, input.outputGraph, i, i);
+			for (int j = i + 1; j < nComponents; j++)
+			{
+				if (input.edgeCounts[i + j * nComponents] + input.edgeCounts[j + i * nComponents] > 0)
+				{
+					std::pair<reducedGraphWithProbabilities::edge_descriptor, bool> addedEdge = boost::add_edge(i, j, edgeCounter++, input.outputGraph);
+					mpfr_class thisEdgeInopProbability = boost::multiprecision::pow(inopProbability, input.edgeCounts[i + j * nComponents] + input.edgeCounts[j + i * nComponents]);
+					mpfr_class thisEdgeOpProbability = 1 - thisEdgeInopProbability;
+					boost::put(boost::edge_op_probability, input.outputGraph, addedEdge.first, thisEdgeOpProbability);
+					boost::put(boost::edge_inop_probability, input.outputGraph, addedEdge.first, thisEdgeInopProbability);
+				}
+			}
+		}
+		//Work out which vertices are the interest vertices in the reduced graph
+		input.reducedInterestVertices.clear();
+		for(std::vector<int>::const_iterator i = input.interestVertices.begin(); i != input.interestVertices.end(); i++)
+		{
+			input.reducedInterestVertices.push_back(input.components[*i]);
+		}
+		//Do series / parallel reduction
+		seriesParallelReduction(input.outputGraph, input.reducedInterestVertices);
+		//The reduced graph now has a different number of vertices to what it started with, but the names of the reduced vertices still correspond to connected components of the original graph. So we work backwards and get out the interest vertices in the reduced graph
+		input.edgeCounts.clear();
+		input.reducedInterestVertices.clear();
+		input.reducedInterestVertices.resize(input.interestVertices.size());
+		reducedGraphWithProbabilities::vertex_iterator current, end;
+		boost::tie(current, end) = boost::vertices(input.outputGraph);
+		for(; current != end; current++)
+		{
+			for(std::size_t i = 0; i < input.interestVertices.size(); i++)
+			{
+				if(boost::get(boost::vertex_name, input.outputGraph, *current) == input.components[input.interestVertices[i]])
+				{
+					input.reducedInterestVertices[i] = *current;
+				}
+			}
+		}
+		//Reset the edge_indices to be unique consecutive integers. 
+		reducedGraphWithProbabilities::edge_iterator currentEdge, endEdge;
+		boost::tie(currentEdge, endEdge) = boost::edges(input.outputGraph);
+		int counter = 0;
+		for(;currentEdge != endEdge; currentEdge++, counter++)
+		{
+			boost::put(boost::edge_index, input.outputGraph, *currentEdge, counter);
+		}
+	}
+	NetworkReliabilityObsWithContext::NetworkReliabilityObsWithContext(NetworkReliabilityObs& inputObs)
+	{
+		boost::shared_array<EdgeState> copiedState(new EdgeState[inputObs.getContext().getNEdges()]);
+		memcpy(copiedState.get(), inputObs.getState(), sizeof(EdgeState) * inputObs.getContext().getNEdges());
+		obs.reset(new NetworkReliabilityObs(inputObs.getContext(), copiedState));
+	}
+	const NetworkReliabilityObs& NetworkReliabilityObsWithContext::getObs() const
+	{
+		return *obs;
+	}
+	const Context& NetworkReliabilityObsWithContext::getContext() const
+	{
+		if(context) return *context;
+		return obs->getContext();
+	}
+
 }

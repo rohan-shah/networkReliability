@@ -1,9 +1,9 @@
 #include <boost/program_options.hpp>
 #include <boost/math/special_functions/binomial.hpp>
 #include "Arguments.h"
-#include "NetworkReliabilityObs.h"
-#include "NetworkReliabilitySubObs.h"
-#include "NetworkReliabilitySubObsCollection.h"
+#include "obs/withResampling.h"
+#include "subObs/withResampling.h"
+#include "NetworkReliabilityObsCollection.h"
 #include <vector>
 #include "graphAlgorithms.h"
 #include <boost/random/bernoulli_distribution.hpp>
@@ -20,7 +20,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/math/distributions.hpp>
-#include "NetworkReliabilitySubObsTree.h"
+#include "NetworkReliabilityObsTree.h"
 #include "resamplingCommon.h"
 #include "commonOptions.h"
 namespace networkReliability
@@ -73,7 +73,6 @@ namespace networkReliability
 			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
 		}
-		context.setMinCut(true);
 		const std::vector<int>& interestVertices = context.getInterestVertices();
 
 		std::size_t nPMC = variableMap["nPMC"].as<std::size_t>();
@@ -107,7 +106,7 @@ namespace networkReliability
 			return 0;
 		}
 		resamplingInputs.finalSplittingStep = resamplingInputs.thresholds.size() - 2;
-		std::vector<NetworkReliabilitySubObs> observations;
+		std::vector<::networkReliability::subObs::withResampling> observations;
 
 		//working data for graph algorithms
 		std::vector<int> components;
@@ -127,10 +126,11 @@ namespace networkReliability
 			
 			ConditionalTurnipInput turnipInput(randomSource, NULL, reducedGraphInterestVertices);
 			turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
-			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++)
+			for (std::vector<::networkReliability::subObs::withResampling>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
 				Context::internalGraph reducedGraph;
-				j->getReducedGraph(reducedGraph, turnipInput.minimumInoperative, edgeCounts, components, stack, colorMap);
+				turnipInput.minimumInoperative = j->getMinCut();
+				j->getReducedGraph(reducedGraph, edgeCounts, components, stack, colorMap);
 				turnipInput.n = (int)nPMC;
 				turnipInput.graph = &reducedGraph;
 				const std::size_t nReducedVertices = boost::num_vertices(reducedGraph);

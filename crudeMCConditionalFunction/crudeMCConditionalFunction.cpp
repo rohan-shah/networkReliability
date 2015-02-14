@@ -3,7 +3,7 @@
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include "graphAlgorithms.h"
-#include <boost/accumulators/statistics.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/sum_kahan.hpp>
 #include "formulaDriver.h"

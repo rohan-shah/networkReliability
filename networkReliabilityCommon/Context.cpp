@@ -95,7 +95,6 @@ namespace networkReliability
 
 		std::swap(nEdges, other.nEdges);
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
-		std::swap(_useMinCut, other._useMinCut);
 		return *this;
 	}
 	Context::Context(Context&& other)
@@ -118,7 +117,6 @@ namespace networkReliability
 
 		std::swap(nEdges, other.nEdges);
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
-		std::swap(_useMinCut, other._useMinCut);
 	}
 	Context::Context(boost::archive::binary_iarchive& ar)
 	{
@@ -129,7 +127,7 @@ namespace networkReliability
 		ar >> *this;
 	}
 	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<unsigned int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances)
-		:_useMinCut(false), interestVertices(interestVertices), vertexPositions(vertexPositions), operationalProbability(operationalProbability)
+		: interestVertices(interestVertices), vertexPositions(vertexPositions), operationalProbability(operationalProbability)
 	{
 		mpfr_class inoperationalProbability = (1 - operationalProbability);
 		inoperationalProbabilityD = inoperationalProbability.convert_to<double>();
@@ -263,7 +261,7 @@ namespace networkReliability
 		}
 	}
 	Context::Context()
-		:_useMinCut(false), graph(), directedGraph(), vertexPositions(), nEdges(0)
+		: graph(), directedGraph(), vertexPositions(), nEdges(0)
 	{}
 	Context Context::emptyContext()
 	{
@@ -302,7 +300,6 @@ namespace networkReliability
 		result.distanceVector.resize(2);
 
 		result.nEdges = 0;
-		result._useMinCut = false;
 
 		return result;
 	}
@@ -567,10 +564,6 @@ namespace networkReliability
 	{
 		return *directedGraph;
 	}
-	std::vector<int>& Context::getCapacityVector() const
-	{
-		return capacityVector;
-	}
 	int Context::getMinCut(std::vector<int>& capacityVector) const
 	{
 		std::size_t nVertices = boost::num_vertices(*graph);
@@ -631,10 +624,6 @@ namespace networkReliability
 			}
 		}
 	}
-	bool Context::useMinCut() const
-	{
-		return _useMinCut;
-	}
 	std::size_t Context::getNEdges() const
 	{
 		return nEdges;
@@ -642,13 +631,5 @@ namespace networkReliability
 	double Context::getInoperationalProbabilityD() const
 	{
 		return inoperationalProbabilityD;
-	}
-	void Context::setMinCut(bool useMinCut)
-	{
-		this->_useMinCut = useMinCut;
-	}
-	const std::vector<int>& Context::getResidualCapacityVector() const
-	{
-		return edgeResidualCapacityVector;
 	}
 }

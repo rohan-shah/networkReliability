@@ -9,7 +9,7 @@
 #include <QGraphicsSceneMouseEvent>
 namespace networkReliability
 {
-	subObservationVisualiserCollection::subObservationVisualiserCollection(const NetworkReliabilitySubObsCollection& inputCollection, float pointSize, std::string text)
+	subObservationVisualiserCollection::subObservationVisualiserCollection(const NetworkReliabilityObsCollection& inputCollection, float pointSize, std::string text)
 		: collection(inputCollection), currentIndex(0), text(text)
 	{
 		if(collection.getSampleSize() == 0)
@@ -32,7 +32,7 @@ namespace networkReliability
 			boost::shared_array<EdgeState> expandedState(new EdgeState[collection.getContext().getNEdges()]);
 			collection.expand(currentIndex, expandedState);
 			//Putting in dummy values for the last two constructor arguments
-			NetworkReliabilitySubObs subObs(collection.getContext(), expandedState, collection.getRadius(), 0, 0);
+			NetworkReliabilityObs subObs(collection.getContext(), expandedState);
 			base->setObservation(subObs);
 		}
 	}
@@ -70,8 +70,8 @@ namespace networkReliability
 			boost::shared_array<EdgeState> expandedState(new EdgeState[collection.getContext().getNEdges()]);
 			collection.expand(currentIndex, expandedState);
 			//Putting in dummy values for the last two constructor arguments
-			NetworkReliabilitySubObs subObs(collection.getContext(), expandedState, collection.getRadius(), 0, 0);
-			base->setObservation(subObs);
+			NetworkReliabilityObs obs(collection.getContext(), expandedState);
+			base->setObservation(obs);
 		}
 	}
 	void subObservationVisualiserCollection::observationRight()
@@ -82,8 +82,8 @@ namespace networkReliability
 			boost::shared_array<EdgeState> expandedState(new EdgeState[collection.getContext().getNEdges()]);
 			collection.expand(currentIndex, expandedState);
 			//Putting in dummy values for the last two constructor arguments
-			NetworkReliabilitySubObs subObs(collection.getContext(), expandedState, collection.getRadius(), 0, 0);
-			base->setObservation(subObs);
+			NetworkReliabilityObs obs(collection.getContext(), expandedState);
+			base->setObservation(obs);
 		}
 	}
 	void subObservationVisualiserCollection::positionChanged(double x, double y)

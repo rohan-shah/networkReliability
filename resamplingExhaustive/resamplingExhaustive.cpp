@@ -1,8 +1,8 @@
 #include <boost/program_options.hpp>
 #include "Arguments.h"
-#include "NetworkReliabilityObs.h"
-#include "NetworkReliabilitySubObs.h"
-#include "NetworkReliabilitySubObsCollection.h"
+#include "subObs/withResampling.h"
+#include "obs/withResampling.h"
+#include "NetworkReliabilityObsCollection.h"
 #include <vector>
 #include "graphAlgorithms.h"
 #include <boost/random/bernoulli_distribution.hpp>
@@ -18,7 +18,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/math/distributions.hpp>
-#include "NetworkReliabilitySubObsTree.h"
+#include "NetworkReliabilityObsTree.h"
 #include "commonOptions.h"
 #include "resamplingCommon.h"
 namespace networkReliability
@@ -70,7 +70,6 @@ namespace networkReliability
 			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
 		}
-		context.setMinCut(true);
 		const std::vector<int>& interestVertices = context.getInterestVertices();
 
 		if(interestVertices.size() > 2)
@@ -103,7 +102,7 @@ namespace networkReliability
 			return 0;
 		}
 		resamplingInputs.finalSplittingStep = resamplingInputs.thresholds.size()-2;
-		std::vector<NetworkReliabilitySubObs> observations;
+		std::vector<::networkReliability::subObs::withResampling> observations;
 
 		//working data for graph algorithms
 		std::vector<int> components;
@@ -119,16 +118,16 @@ namespace networkReliability
 		{
 			int tooManyEdgesCount = 0;
 			std::vector<EdgeState> edgeStates;
-			NetworkReliabilitySubObs::getReducedGraphNoSelfWithWeightsInput reducedGraphInput(interestVertices);
+			::networkReliability::subObs::subObs::getReducedGraphNoSelfWithWeightsInput reducedGraphInput(interestVertices);
 			//This is used to check the connected components of the reduced graph (not used in the call to getReducedGraphNoSelfWithWeights
 			std::vector<int> components2;
 			//Similarly, this is used for the connected components of the reduced graph. 
-			boost::detail::depth_first_visit_restricted_impl_helper<NetworkReliabilitySubObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
+			boost::detail::depth_first_visit_restricted_impl_helper<::networkReliability::subObs::subObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
 			//Holds the subObservations that couldn't be completely enumerated
-			NetworkReliabilitySubObsCollection tooManyEdges(&context, *(resamplingInputs.thresholds.rbegin()+1));
+			NetworkReliabilityObsCollection tooManyEdges(&context, *(resamplingInputs.thresholds.rbegin()+1));
 
 			int counter = 0;
-			for (std::vector<NetworkReliabilitySubObs>::iterator j = observations.begin(); j != observations.end(); j++, counter++)
+			for (std::vector<::networkReliability::subObs::withResampling>::iterator j = observations.begin(); j != observations.end(); j++, counter++)
 			{
 				if(j->getMinCut() > 0)
 				{
@@ -166,7 +165,7 @@ namespace networkReliability
 							if(!currentGraphConnected)
 							{
 								mpfr_class currentPart = 1;
-								NetworkReliabilitySubObs::reducedGraphWithProbabilities::edge_iterator current, end;
+								::networkReliability::subObs::subObs::reducedGraphWithProbabilities::edge_iterator current, end;
 								boost::tie(current, end) = boost::edges(reducedGraphInput.outputGraph);
 								for(std::size_t reducedEdgeCounter = 0; reducedEdgeCounter != nReducedEdges; reducedEdgeCounter++, current++)
 								{
@@ -184,7 +183,7 @@ namespace networkReliability
 					{
 						tooManyEdges.add(*j);
 						tooManyEdgesCount++;
-						NetworkReliabilityObs obs = j->getObservation(randomSource);
+						::networkReliability::obs::withResampling obs = ::networkReliability::subObs::getObservation<::networkReliability::subObs::withResampling>::get(*j, randomSource);
 						if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
 						{
 							estimate += j->getGeneratedObservationConditioningProb();

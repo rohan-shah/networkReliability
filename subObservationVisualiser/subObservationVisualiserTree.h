@@ -10,7 +10,7 @@
 #include <QHBoxLayout>
 #include "subObservationVisualiserBase.h"
 #include "subObservationStatusBar.h"
-#include "NetworkReliabilitySubObsTree.h"
+#include "NetworkReliabilityObsTree.h"
 #include "treeVisualiserFrame.h"
 namespace networkReliability
 {
@@ -19,7 +19,7 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		subObservationVisualiserTree(const NetworkReliabilitySubObsTree& tree, float pointSize);
+		subObservationVisualiserTree(const NetworkReliabilityObsTree& tree, float pointSize);
 		~subObservationVisualiserTree();
 		bool eventFilter(QObject* object, QEvent *event);
 	public slots:
@@ -36,7 +36,7 @@ namespace networkReliability
 		treeVisualiserFrame* treeFrame;
 		QHBoxLayout* layout;
 		QFrame* centralFrame;
-		const NetworkReliabilitySubObsTree& tree;
+		const NetworkReliabilityObsTree& tree;
 		int currentLevel;
 		int currentIndex;
 	};

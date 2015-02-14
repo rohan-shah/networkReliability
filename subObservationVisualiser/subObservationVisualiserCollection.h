@@ -10,7 +10,7 @@
 #include <QHBoxLayout>
 #include "subObservationVisualiserBase.h"
 #include "subObservationStatusBar.h"
-#include "NetworkReliabilitySubObsCollection.h"
+#include "NetworkReliabilityObsCollection.h"
 namespace networkReliability
 {
 	//If the next state is RESIMULATE, then we resimulate until we observe something that hits the next level, BUT
@@ -18,7 +18,7 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		subObservationVisualiserCollection(const NetworkReliabilitySubObsCollection& collection, float pointSize, std::string text = "");
+		subObservationVisualiserCollection(const NetworkReliabilityObsCollection& collection, float pointSize, std::string text = "");
 		~subObservationVisualiserCollection();
 		bool eventFilter(QObject* object, QEvent *event);
 	public slots:
@@ -28,7 +28,7 @@ namespace networkReliability
 	private:
 		subObservationStatusBar* statusBar;
 		subObservationVisualiserBase* base;
-		const NetworkReliabilitySubObsCollection& collection;
+		const NetworkReliabilityObsCollection& collection;
 		int currentIndex;
 		std::string text;
 	};

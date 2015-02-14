@@ -1,13 +1,16 @@
 #include "resamplingCommon.h"
-#include "NetworkReliabilityObs.h"
 #include "aliasMethod.h"
 #include <boost/math/special_functions/binomial.hpp>
+#include "obs/withResampling.h"
+#include "subObs/withResampling.h"
+#include "subObs/getObservation.hpp"
+#include "obs/getSubObservation.hpp"
 namespace networkReliability
 {
 	resamplingInput::resamplingInput(networkReliability::Context const& context, bool compensateInResampling)
 		:context(context), compensateInResampling(compensateInResampling)
 	{}
-	resamplingOutput::resamplingOutput(std::vector<NetworkReliabilitySubObs>& observations, boost::mt19937& randomSource, const Context& context, const std::vector<double>& thresholds)
+	resamplingOutput::resamplingOutput(std::vector<::networkReliability::subObs::withResampling>& observations, boost::mt19937& randomSource, const Context& context, const std::vector<double>& thresholds)
 		:observations(observations), randomSource(randomSource), tree(&context, thresholds)
 	{
 		boost::accumulators::accumulator_set<mpfr_class, boost::accumulators::stats<boost::accumulators::tag::sum> > zeroInitialisedAccumulator(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
@@ -21,7 +24,7 @@ namespace networkReliability
 		potentiallyDisconnectedIndices.reserve(input.n);
 		nextPotentiallyDisconnectedIndices.reserve(input.n);
 
-		std::vector<NetworkReliabilitySubObs> nextStepObservations;
+		std::vector<::networkReliability::subObs::withResampling> nextStepObservations;
 
 		//Used in the alias method application
 		std::vector<double> resamplingProbabilities;
@@ -30,8 +33,8 @@ namespace networkReliability
 
 		for (std::size_t i = 0; i < input.n; i++)
 		{
-			NetworkReliabilityObs currentObs = NetworkReliabilityObs::constructConditional(input.context, output.randomSource);
-			NetworkReliabilitySubObs subObs = currentObs.getSubObservation(input.thresholds[0]);
+			::networkReliability::obs::withResampling currentObs = ::networkReliability::obs::withResampling::constructConditional(input.context, output.randomSource);
+			::networkReliability::subObs::withResampling subObs = ::networkReliability::obs::getSubObservation<::networkReliability::obs::withResampling>::get(currentObs, input.thresholds[0]);
 
 			if(input.shouldOutputTree) output.tree.add(subObs, 0, -1, subObs.getMinCut() < HIGH_CAPACITY);
 			if (subObs.getMinCut() >= HIGH_CAPACITY)
@@ -59,7 +62,7 @@ namespace networkReliability
 			mpfr_class sum = 0;
 			if(!input.compensateInResampling)
 			{
-				for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
+				for (std::vector<::networkReliability::subObs::withResampling>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
 				{
 					sum += j->getGeneratedObservationConditioningProb();
 					resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
@@ -67,7 +70,7 @@ namespace networkReliability
 			}
 			else
 			{
-				for (std::vector<NetworkReliabilitySubObs>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
+				for (std::vector<::networkReliability::subObs::withResampling>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
 				{
 					int nUnfixed = j->getPotentiallyDeactivated().size();
 					int minCut = j->getMinCut();
@@ -102,10 +105,10 @@ namespace networkReliability
 
 			nextPotentiallyDisconnectedIndices.clear();
 			nextStepObservations.clear();
-			for(std::vector<NetworkReliabilitySubObs>::iterator j = output.observations.begin(); j != output.observations.end(); j++)
+			for(std::vector<::networkReliability::subObs::withResampling>::iterator j = output.observations.begin(); j != output.observations.end(); j++)
 			{
-				NetworkReliabilityObs newObs = j->getObservation(output.randomSource);
-				NetworkReliabilitySubObs sub = newObs.getSubObservation(input.thresholds[splittingLevel + 1]);
+				::networkReliability::obs::withResampling newObs = ::networkReliability::subObs::getObservation<::networkReliability::subObs::withResampling>::get(*j, output.randomSource);
+				::networkReliability::subObs::withResampling sub = ::networkReliability::obs::getSubObservation<::networkReliability::obs::withResampling>::get(newObs, input.thresholds[splittingLevel + 1]);
 				if(input.shouldOutputTree) output.tree.add(sub, splittingLevel+1, potentiallyDisconnectedIndices[std::distance(output.observations.begin(), j)], sub.getMinCut() < HIGH_CAPACITY);
 
 				if(sub.getMinCut() < HIGH_CAPACITY)

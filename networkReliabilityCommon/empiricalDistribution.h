@@ -12,7 +12,6 @@
 #include "binaryDataSet.h"
 namespace networkReliability
 {
-	class NetworkReliabilitySubObs;
 	class empiricalDistribution : protected binaryDataSet1, public boost::noncopyable
 	{
 	public:

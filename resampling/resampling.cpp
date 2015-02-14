@@ -1,8 +1,7 @@
 #include <boost/program_options.hpp>
 #include "Arguments.h"
-#include "NetworkReliabilityObs.h"
-#include "NetworkReliabilitySubObs.h"
-#include "NetworkReliabilitySubObsCollection.h"
+#include "obs/withResampling.h"
+#include "subObs/withResampling.h"
 #include <vector>
 #include "graphAlgorithms.h"
 #include <boost/random/bernoulli_distribution.hpp>
@@ -20,7 +19,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/math/distributions.hpp>
-#include "NetworkReliabilitySubObsTree.h"
+#include "NetworkReliabilityObsTree.h"
 #include "commonOptions.h"
 namespace networkReliability
 {
@@ -72,7 +71,6 @@ namespace networkReliability
 			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
 		}
-		context.setMinCut(true);
 		const std::size_t nEdges = context.getNEdges();
 
 		std::size_t n;
@@ -99,7 +97,7 @@ namespace networkReliability
 			return 0;
 		}
 		resamplingInputs.finalSplittingStep = resamplingInputs.thresholds.size()-1;
-		std::vector<NetworkReliabilitySubObs> observations;
+		std::vector<::networkReliability::subObs::withResampling> observations;
 
 		//working data for graph algorithms
 		std::vector<int> components;
@@ -119,7 +117,7 @@ namespace networkReliability
 		if (variableMap.count("outputConditionalDistribution") > 0)
 		{
 			empiricalDistribution outputDistributions(true, nEdges, context);
-			for(std::vector<NetworkReliabilitySubObs>::iterator i = observations.begin(); i != observations.end(); i++)
+			for(std::vector<::networkReliability::subObs::withResampling>::iterator i = observations.begin(); i != observations.end(); i++)
 			{
 				outputDistributions.add(i->getState(), i->getConditioningProb().convert_to<double>());
 			}

@@ -9,6 +9,7 @@ namespace networkReliability
 		ZoomGraphicsView(QGraphicsScene* scene);
 	protected:
 		void wheelEvent(QWheelEvent* event);
+		void keyPressEvent(QKeyEvent* event);
 	};
 }
 #endif

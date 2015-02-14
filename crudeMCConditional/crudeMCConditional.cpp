@@ -3,7 +3,6 @@
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include "graphAlgorithms.h"
-#include <boost/accumulators/statistics.hpp>
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/sum.hpp>
 #include <boost/random/random_number_generator.hpp>

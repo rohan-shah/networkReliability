@@ -39,7 +39,7 @@ namespace networkReliability
 		if(!reduced) highlightedReducedComponent = -1;
 		updateGraphics();
 	}
-	void subObservationVisualiserBase::updateReducedGraphData(const NetworkReliabilitySubObs& subObs)
+	void subObservationVisualiserBase::updateReducedGraphData(const NetworkReliabilityObs& subObs)
 	{
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
 		std::vector<boost::default_color_type> colorMap;
@@ -88,7 +88,7 @@ namespace networkReliability
 		unreducedPointsItem = new QGraphicsItemGroup(NULL);
 		constructUnreducedPoints();
 	}
-	void subObservationVisualiserBase::setObservation(const NetworkReliabilitySubObs& subObs)
+	void subObservationVisualiserBase::setObservation(const NetworkReliabilityObs& subObs)
 	{
 		highlightedReducedComponent = -1;
 		updateReducedGraphData(subObs);
@@ -117,7 +117,7 @@ namespace networkReliability
 			graphicsScene->addItem(unreducedLinesItem);
 		}
 	}
-	void subObservationVisualiserBase::constructGraphics(const NetworkReliabilitySubObs& subObs)
+	void subObservationVisualiserBase::constructGraphics(const NetworkReliabilityObs& subObs)
 	{
 		QList<QGraphicsItem*> allItems = graphicsScene->items();
 		for(QList<QGraphicsItem*>::iterator i = allItems.begin(); i != allItems.end(); i++) 
@@ -184,7 +184,7 @@ namespace networkReliability
 			}
 		}
 	}
-	void subObservationVisualiserBase::constructUnreducedLines(const NetworkReliabilitySubObs& subObs)
+	void subObservationVisualiserBase::constructUnreducedLines(const NetworkReliabilityObs& subObs)
 	{
 		assert(unreducedLinesItem);
 		const EdgeState* state = subObs.getState();
@@ -307,7 +307,7 @@ namespace networkReliability
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
 		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
-		NetworkReliabilitySubObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
+		NetworkReliabilityObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
 		boost::tie(currentReducedVertex, endReducedVertex) = boost::vertices(reducedGraphData.outputGraph);
 		for(;currentReducedVertex != endReducedVertex; currentReducedVertex++)
 		{
@@ -334,14 +334,14 @@ namespace networkReliability
 			}
 		}
 	}
-	void subObservationVisualiserBase::constructReducedLines(const NetworkReliabilitySubObs& subObs)
+	void subObservationVisualiserBase::constructReducedLines(const NetworkReliabilityObs& subObs)
 	{
 		assert(reducedLinesItem);
 		const Context::internalGraph& unreducedGraph = context.getGraph();
 		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
 
 		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
-		NetworkReliabilitySubObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
+		NetworkReliabilityObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
 		boost::tie(currentReducedVertex, endReducedVertex) = boost::vertices(reducedGraphData.outputGraph);
 		for(;currentReducedVertex != endReducedVertex; currentReducedVertex++)
 		{

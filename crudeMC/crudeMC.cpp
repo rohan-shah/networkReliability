@@ -3,9 +3,6 @@
 #include "Arguments.h"
 #include "ArgumentsMPFR.h"
 #include "graphAlgorithms.h"
-#include <boost/accumulators/statistics.hpp>
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/sum_kahan.hpp>
 namespace networkReliability
 {
 	int main(int argc, char **argv)
@@ -59,7 +56,6 @@ namespace networkReliability
 		{
 			return 0;
 		}
-		const std::size_t nEdges = context.getNEdges();
 
 		boost::mt19937 randomSource;
 		readSeed(variableMap, randomSource);
@@ -71,14 +67,7 @@ namespace networkReliability
 		const std::vector<int> interestVertices = context.getInterestVertices();
 
 		std::vector<boost::default_color_type> colorMap;
-		int splitting = 0;
-		if(variableMap.count("splitting") && variableMap["splitting"].as<int>() > 0)
-		{
-			splitting = variableMap["splitting"].as<int>();
-		}
 		int countDisconnected = 0;
-		std::vector<boost::accumulators::accumulator_set<int, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > > conditioningProbabilities(splitting + 1);
-		std::vector<boost::accumulators::accumulator_set<int, boost::accumulators::stats<boost::accumulators::tag::sum, boost::accumulators::tag::count> > > probabilities(splitting + 1);
 
 		for(std::size_t i = 0; i < n; i++)
 		{
@@ -87,62 +76,6 @@ namespace networkReliability
 			{
 				countDisconnected++;
 			}			
-			if(splitting > 0)
-			{
-				const EdgeState* obsState = obs.getState();
-				std::size_t nDeactivated = 0;
-				for(std::size_t k = 0; k < nEdges; k++)
-				{
-					if(obsState[k] & INOP_MASK) nDeactivated++;
-				}
-				//we need to iteratively update the bits that are fixed too. So we need a new state vector....
-				boost::shared_array<EdgeState> updatedObsState(new EdgeState[nEdges]);
-				memcpy(updatedObsState.get(), obsState, sizeof(EdgeState)*nEdges);
-
-				std::size_t nextMinEdges = context.getMinCutEdges();
-				for(int j = splitting; j >= 0; j--)
-				{
-					NetworkReliabilityObs obsWithFixed(context, updatedObsState, 0, 0);
-
-					NetworkReliabilitySubObs subObs = obsWithFixed.getSubObservation(j);
-					int subObsFixedInop = 0;
-					const EdgeState* subObsState = subObs.getState();
-					for(std::size_t k = 0; k < nEdges; k++)
-					{
-						if(subObsState[k] & FIXED_INOP) subObsFixedInop++;
-					}
-
-					if(nDeactivated < nextMinEdges)
-					{
-						conditioningProbabilities[j](0);
-						break;
-					}
-					else conditioningProbabilities[j](1);
-					nextMinEdges = subObsFixedInop + subObs.getMinCut();
-					if(isSingleComponent(context, subObs.getState(), components, stack, colorMap))
-					{
-						probabilities[j](0);
-						break;
-					}
-					else
-					{
-						probabilities[j](1);
-					}
-					//anything that's fixed in subObs stays fixed
-					for(std::size_t k = 0; k < nEdges; k++)
-					{
-						if(subObsState[k] & FIXED_MASK) updatedObsState[k] = subObsState[k];
-					}
-				}
-			}
-		}
-		if(splitting > 0)
-		{
-			for(int i = splitting; i >= 0; i--)
-			{
-				std::cout << "Step " << (splitting - i) << ", conditioning on event " << boost::accumulators::sum(conditioningProbabilities[i]) << " / " <<  boost::accumulators::count(conditioningProbabilities[i]) << " = " << (float)boost::accumulators::sum(conditioningProbabilities[i]) / (float)boost::accumulators::count(conditioningProbabilities[i]) << std::endl;
-				std::cout << "Step " << (splitting - i) << ", simulating event " << boost::accumulators::sum(probabilities[i]) << " / " <<  boost::accumulators::count(probabilities[i]) << " = " << (float)boost::accumulators::sum(probabilities[i]) / (float)boost::accumulators::count(probabilities[i]) << std::endl;
-			}
 		}
 		std::cout << "Estimated unreliability probability was " << countDisconnected << " / " << n << " = " << (float)countDisconnected / (float)n << std::endl;;
 

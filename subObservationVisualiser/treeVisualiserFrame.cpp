@@ -22,7 +22,7 @@ namespace networkReliability
 	private:
 		int vertexID;
 	};
-	treeVisualiserFrame::treeVisualiserFrame(const NetworkReliabilitySubObsTree& tree, float pointSize)
+	treeVisualiserFrame::treeVisualiserFrame(const NetworkReliabilityObsTree& tree, float pointSize)
 		:pointSize(pointSize), highlightItem(NULL)
 	{
 		graphicsScene = new QGraphicsScene();
@@ -34,8 +34,8 @@ namespace networkReliability
 		graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->installEventFilter(this);
 
-		const NetworkReliabilitySubObsTree::treeGraphType treeGraph = tree.getTreeGraph();
-		NetworkReliabilitySubObsTree::treeGraphType::vertex_iterator currentVertex, endVertex;
+		const NetworkReliabilityObsTree::treeGraphType treeGraph = tree.getTreeGraph();
+		NetworkReliabilityObsTree::treeGraphType::vertex_iterator currentVertex, endVertex;
 		boost::tie(currentVertex, endVertex) = boost::vertices(treeGraph);
 
 		QPen blackPen(QColor("black"));
@@ -63,7 +63,7 @@ namespace networkReliability
 		}
 
 		blackPen.setStyle(Qt::SolidLine);
-		NetworkReliabilitySubObsTree::treeGraphType::edge_iterator currentEdge, endEdge;
+		NetworkReliabilityObsTree::treeGraphType::edge_iterator currentEdge, endEdge;
 		boost::tie(currentEdge, endEdge) = boost::edges(treeGraph);
 		for(; currentEdge != endEdge; currentEdge++)
 		{

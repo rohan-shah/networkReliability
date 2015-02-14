@@ -3,7 +3,7 @@
 #include <QFrame>
 #include <QGraphicsView>
 #include <QGraphicsScene>
-#include "NetworkReliabilitySubObsTree.h"
+#include "NetworkReliabilityObsTree.h"
 #include <QHBoxLayout>
 #include <QGraphicsEllipseItem>
 namespace networkReliability
@@ -12,7 +12,7 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		treeVisualiserFrame(const NetworkReliabilitySubObsTree& tree, float pointSize);
+		treeVisualiserFrame(const NetworkReliabilityObsTree& tree, float pointSize);
 		void centreOn(double x, double y);
 		void highlightPosition(double x, double y);
 		bool eventFilter(QObject* object, QEvent *event);

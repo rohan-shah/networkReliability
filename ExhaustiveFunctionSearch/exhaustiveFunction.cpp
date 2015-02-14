@@ -11,6 +11,7 @@
 #include <dlfcn.h>
 #include "createFunctionBinary.h"
 #include <boost/ptr_container/ptr_vector.hpp>
+#include "Context.h"
 namespace networkReliability
 {
 	int main(int argc, char **argv)

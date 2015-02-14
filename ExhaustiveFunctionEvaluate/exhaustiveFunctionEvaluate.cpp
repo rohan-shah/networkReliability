@@ -6,6 +6,7 @@
 #include "ArgumentsMPFR.h"
 #include <iomanip>
 #include <fstream>
+#include "Context.h"
 namespace networkReliability
 {
 	struct functionData

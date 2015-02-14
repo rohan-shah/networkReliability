@@ -9,18 +9,18 @@
 #include <QGraphicsSceneMouseEvent>
 namespace networkReliability
 {
-	subObservationVisualiserSingle::subObservationVisualiserSingle(const NetworkReliabilitySubObsWithContext& subObsWithContext, float pointSize)
-		:subObsWithContext(subObsWithContext) 
+	subObservationVisualiserSingle::subObservationVisualiserSingle(const NetworkReliabilityObsWithContext& obsWithContext, float pointSize)
+		:obsWithContext(obsWithContext) 
 	{
 		statusBar = new subObservationStatusBar;
 		setStatusBar(statusBar);
 		
-		base = new subObservationVisualiserBase(subObsWithContext.getContext(), pointSize);
+		base = new subObservationVisualiserBase(obsWithContext.getContext(), pointSize);
 		base->installEventFilter(this);
 
 		setCentralWidget(base);
 		QObject::connect(base, &subObservationVisualiserBase::positionChanged, this, &subObservationVisualiserSingle::positionChanged);
-		base->setObservation(subObsWithContext.getSubObs());
+		base->setObservation(obsWithContext.getObs());
 	}
 	void subObservationVisualiserSingle::positionChanged(double x, double y)
 	{
