@@ -33,7 +33,7 @@ namespace networkReliability
 	{
 	public:
 		void add(const EdgeState* state, const std::size_t size);
-		void reserve(unsigned int nBits);
+		void reserve(std::size_t nBits);
 		binaryDataSet1& operator=(binaryDataSet1&&);
 		binaryDataSet1(binaryDataSet1&& other);
 	protected:
@@ -49,13 +49,13 @@ namespace networkReliability
 		{
 			ar >> *static_cast<binaryDataSet*>(this);
 		}
-		void expand(int index, std::vector<int>& output) const;
+		void expand(std::size_t index, std::vector<int>& output) const;
 	};
 	class binaryDataSet2 : public binaryDataSet
 	{
 	public:
 		void add(const EdgeState* state, const std::size_t size);
-		void reserve(unsigned int nStates);
+		void reserve(std::size_t nStates);
 		binaryDataSet2& operator=(binaryDataSet2&&);
 		binaryDataSet2(binaryDataSet2&& other);
 	protected:
@@ -71,7 +71,7 @@ namespace networkReliability
 		{
 			ar >> *static_cast<binaryDataSet*>(this);
 		}
-		void expand(int index, EdgeState* output, const std::size_t nEdges) const;
+		void expand(std::size_t index, EdgeState* output, const std::size_t nEdges) const;
 	};
 }
 #endif

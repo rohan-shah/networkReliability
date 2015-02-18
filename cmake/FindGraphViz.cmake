@@ -48,7 +48,7 @@ endif()
 if(NOT _GRAPHVIZ_ROOT)
   if(WIN32)
       find_program(DOT_TOOL dot)
-      get_filename_component(_GRAPHVIZ_ROOT ${DOT_TOOL} PATH)
+      get_filename_component(_GRAPHVIZ_ROOT "${DOT_TOOL}" PATH)
   endif()
 endif()
 

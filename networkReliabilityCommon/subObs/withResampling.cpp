@@ -31,7 +31,7 @@ namespace networkReliability
 				}
 				else if(state[i] & (UNFIXED_INOP | UNFIXED_OP))
 				{
-					couldBeDeactivated.push_back(i);
+					couldBeDeactivated.push_back((int)i);
 					capacityVector[2*i] = capacityVector[2*i + 1] = 1;
 				}
 				else 

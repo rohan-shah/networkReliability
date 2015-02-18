@@ -355,8 +355,8 @@ namespace networkReliability
 		const EdgeState* state = subObs.getState();
 		for(; currentEdge != lastEdge; currentEdge++)
 		{
-			int sourceVertex = boost::source(*currentEdge, unreducedGraph);
-			int targetVertex = boost::target(*currentEdge, unreducedGraph);
+			int sourceVertex = (int)boost::source(*currentEdge, unreducedGraph);
+			int targetVertex = (int)boost::target(*currentEdge, unreducedGraph);
 			if(stillPresentInReduced[reducedComponents[sourceVertex]] && reducedComponents[sourceVertex] == reducedComponents[targetVertex] && (state[boost::get(boost::edge_index, unreducedGraph, *currentEdge)] & OP_MASK))
 			{
 				Context::vertexPosition sourcePosition = vertexPositions[sourceVertex], targetPosition = vertexPositions[targetVertex];

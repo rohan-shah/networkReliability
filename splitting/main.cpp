@@ -144,8 +144,8 @@ namespace networkReliability
 		mpfr_class firstMomentSum = 0;
 		//If the usePMC flag is set, don't use splitting on the last step. Instead use PMC. 
 		int finalSplittingThresholdIndex;
-		if (usePMC) finalSplittingThresholdIndex = thresholds.size()-2;
-		else finalSplittingThresholdIndex = thresholds.size()-1;
+		if (usePMC) finalSplittingThresholdIndex = (int)(thresholds.size()-2);
+		else finalSplittingThresholdIndex = (int)(thresholds.size()-1);
 
 		//additional working data for getReducedGraph
 		std::vector<int> edgeCounts;
@@ -155,7 +155,7 @@ namespace networkReliability
 
 		//Work out the probability we initially condition on below by calling constructConditional
 		const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, nEdges, nEdges);
-		const mpfr_class initialConditioningProb = 1 - dist.getCumulativeProbability(context.getMinCutEdges() - 1);
+		const mpfr_class initialConditioningProb = 1 - dist.getCumulativeProbability((int)(context.getMinCutEdges() - 1));
 		for (std::size_t i = 0; i < n; i++)
 		{
 			::networkReliability::obs::basic currentObs = ::networkReliability::obs::basic::constructConditional(context, randomSource);

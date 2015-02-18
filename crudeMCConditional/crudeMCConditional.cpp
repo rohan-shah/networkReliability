@@ -102,7 +102,7 @@ namespace networkReliability
 		if (minimumFailedEdges <= context.getMinCutEdges())
 		{
 			TruncatedBinomialDistribution::TruncatedBinomialDistribution originalDistribution(nEdges, 0, nEdges, probability);
-			mpfr_class conditioningProb = originalDistribution.getCumulativeProbability(nEdges - minimumFailedEdges);
+			mpfr_class conditioningProb = originalDistribution.getCumulativeProbability((int)nEdges - (int)minimumFailedEdges);
 			mpfr_class estimate = (conditioningProb * (float)countDisconnected / (float)n);
 			mpfr_class variance = conditioningProb * conditioningProb * (float)countDisconnected * (float)(n - countDisconnected) / (float)(n*n*n);
 			std::cout << "Estimated unreliability probability was " << estimate << std::endl;

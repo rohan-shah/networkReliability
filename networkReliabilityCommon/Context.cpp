@@ -317,7 +317,7 @@ namespace networkReliability
 			}
 		}
 		boost::shared_ptr<std::vector<unsigned int> > edgeOrdering(new std::vector<unsigned int>(boost::num_edges(*graph)));
-		for(std::size_t i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = i;
+		for(std::size_t i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = (int)i;
 		return Context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
 	}
 	Context Context::completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability)
@@ -342,7 +342,7 @@ namespace networkReliability
 			}
 		}
 		boost::shared_ptr<std::vector<unsigned int> > edgeOrdering(new std::vector<unsigned int>(boost::num_edges(*graph)));
-		for(std::size_t i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = i;
+		for(std::size_t i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = (int)i;
 
 		return Context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
 	}
@@ -412,7 +412,7 @@ namespace networkReliability
 		}
 		if (allZero)
 		{
-			std::copy(boost::counting_iterator<unsigned int>(0), boost::counting_iterator<unsigned int>(nEdges), ordering->begin());
+			std::copy(boost::counting_iterator<unsigned int>(0), boost::counting_iterator<unsigned int>((unsigned int)nEdges), ordering->begin());
 		}
 		else
 		{

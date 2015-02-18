@@ -19,7 +19,7 @@ namespace networkReliability
 			::networkReliability::NetworkReliabilityObs::constructConditional(context, randomSource, state.get(), false);
 
 			const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& originalDist = context.getOpDistribution(0, nEdges, nEdges);
-			mpfr_class conditioningProb = originalDist.getCumulativeProbability(nEdges - minCutEdges);
+			mpfr_class conditioningProb = originalDist.getCumulativeProbability((int)(nEdges - minCutEdges));
 			return withImportanceResampling(context, state, (int)minCutEdges, conditioningProb);
 		}
 		withImportanceResampling::withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, int conditioningCount, mpfr_class conditioningProb)

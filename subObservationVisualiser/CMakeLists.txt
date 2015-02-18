@@ -1,4 +1,4 @@
-if(Qt5_FOUND AND GRAPHVIZ_FOUND)
+if(Qt5_FOUND)
 	qt5_wrap_cpp(subObservationVisualiser_MOC_SOURCES subObservationVisualiserBase.h subObservationVisualiserSingle.h subObservationVisualiserCollection.h subObservationStatusBar.h subObservationVisualiserTree.h treeVisualiserFrame.h)
 	add_executable(subObservationVisualiser subObservationVisualiserBase.cpp subObservationVisualiserBase.h subObservationVisualiserSingle.h subObservationVisualiserCollection.h subObservationVisualiserSingle.cpp subObservationVisualiserCollection.cpp main.cpp subObservationStatusBar.h subObservationStatusBar.cpp subObservationVisualiserTree.h subObservationVisualiserTree.cpp treeVisualiserFrame.h treeVisualiserFrame.cpp ${subObservationVisualiser_MOC_SOURCES})
 	target_link_libraries(subObservationVisualiser PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets ${GRAPHVIZ_LIBRARY})

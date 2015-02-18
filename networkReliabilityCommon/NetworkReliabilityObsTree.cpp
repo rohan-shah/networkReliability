@@ -1,5 +1,11 @@
 #include "NetworkReliabilityObsTree.h"
-#include <graphviz/gvc.h>
+#ifdef HAS_GRAPHVIZ
+	#ifdef _MSC_VER
+		#define WIN32_DLL
+	#endif
+	#include <graphviz/gvc.h>
+	#undef WIN32_DLL
+#endif
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -16,9 +22,10 @@ namespace networkReliability
 	{
 		ar >> *this;
 	}
-	void NetworkReliabilityObsTree::layout() const
+	bool NetworkReliabilityObsTree::layout() const
 	{
-		int totalVertices = 0;
+#ifdef HAS_GRAPHVIZ
+		std::size_t totalVertices = 0;
 		for(std::vector<NetworkReliabilityObsCollection>::const_iterator i = levelData.begin(); i != levelData.end(); i++)
 		{
 			totalVertices += i->getSampleSize();
@@ -28,15 +35,15 @@ namespace networkReliability
 
 		//Set vertex properties, and also add edges
 		treeGraphType::vertex_descriptor currentVertex = *(boost::vertices(*treeGraph).first);
-		std::size_t cumulativeVertices = -levelData[0].getSampleSize();
+		std::ptrdiff_t cumulativeVertices = -(std::ptrdiff_t)levelData[0].getSampleSize();
 		for(std::size_t currentLevel = 0; currentLevel < nLevels; currentLevel++)
 		{
 			std::size_t currentLevelSize = levelData[currentLevel].getSampleSize();
 			for(std::size_t currentLevelIndex = 0; currentLevelIndex < currentLevelSize; currentLevelIndex++)
 			{
 				(*treeGraph)[currentVertex].potentiallyDisconnected = potentiallyDisconnected[currentLevel][currentLevelIndex];
-				(*treeGraph)[currentVertex].level = currentLevel;
-				(*treeGraph)[currentVertex].index = currentLevelIndex;
+				(*treeGraph)[currentVertex].level = (int)currentLevel;
+				(*treeGraph)[currentVertex].index = (int)currentLevelIndex;
 				if(parentData[currentLevel][currentLevelIndex] >= 0)
 				{
 					boost::add_edge(cumulativeVertices + parentData[currentLevel][currentLevelIndex], currentVertex, *treeGraph);
@@ -69,10 +76,13 @@ namespace networkReliability
 		GVC_t* gvc = gvContext();
 			//Older versions of graphviz appear to use just a char*
 			Agraph_t* graphvizGraph = agmemread(ss.str().c_str());
-				gvLayout(gvc, graphvizGraph, "dot");
-					gvRender(gvc, graphvizGraph, "dot", NULL);
+				int graphVizResult = gvLayout(gvc, graphvizGraph, "dot");
+				if(graphVizResult == -1) return false;
+					graphVizResult = gvRender(gvc, graphvizGraph, "dot", NULL);
+					if(graphVizResult == -1) return false;
 				gvFreeLayout(gvc, graphvizGraph);
-				gvLayout(gvc, graphvizGraph, "dot");
+				graphVizResult = gvLayout(gvc, graphvizGraph, "dot");
+				if(graphVizResult == -1) return false;
 					char* laidOutDot;
 					unsigned int laidOutDotLength;
 					gvRenderData(gvc, graphvizGraph, "dot", &laidOutDot, &laidOutDotLength);
@@ -109,6 +119,10 @@ namespace networkReliability
 			agclose(graphvizGraph);
 		gvFreeContext(gvc);
 		perLevelVertexIdsFromGraph();
+		return true;
+#else 
+		return true;
+#endif
 	}
 	const std::vector<std::vector<int > >& NetworkReliabilityObsTree::getPerLevelVertexIds() const
 	{
@@ -127,7 +141,7 @@ namespace networkReliability
 		boost::tie(currentVertexIterator, endVertexIterator) = boost::vertices(*treeGraph);
 		for(; currentVertexIterator != endVertexIterator; currentVertexIterator++)
 		{
-			perLevelVertexIds[(*treeGraph)[*currentVertexIterator].level][(*treeGraph)[*currentVertexIterator].index] = *currentVertexIterator;
+			perLevelVertexIds[(*treeGraph)[*currentVertexIterator].level][(*treeGraph)[*currentVertexIterator].index] = (int)*currentVertexIterator;
 		}
 	}
 	const Context& NetworkReliabilityObsTree::getContext() const
@@ -147,7 +161,7 @@ namespace networkReliability
 			levelData.push_back(std::move(currentLevelData));
 		}
 	}
-	void NetworkReliabilityObsTree::reserve(unsigned int reservePerLevel)
+	void NetworkReliabilityObsTree::reserve(std::size_t reservePerLevel)
 	{
 		std::size_t nLevels = levelData.size();
 		for(std::size_t i = 0; i < nLevels; i++)
@@ -226,7 +240,20 @@ namespace networkReliability
 	}
 	const NetworkReliabilityObsTree::treeGraphType& NetworkReliabilityObsTree::getTreeGraph() const
 	{
-		if(!treeGraph) layout();
+		if(!treeGraph) 
+		{
+			//This returns true in the case of graphviz not available
+			bool result = layout();
+			if(!result)
+			{
+				//This path is taken if graphviz is available but the layout fails
+				throw std::runtime_error("Call to NetworkReliabilityObsTree::layout failed");
+			}
+		}
+		if(!treeGraph)
+		{
+			throw std::runtime_error("Call to NetworkReliabilityObsTree::getTreeGraph failed, possibly because graphviz was not available");
+		}
 		return *treeGraph;
 	}
 }

@@ -16,11 +16,11 @@ namespace networkReliability
 			}
 		}
 	}
-	void binaryDataSet1::reserve(unsigned int nBits)
+	void binaryDataSet1::reserve(std::size_t nBits)
 	{
 		data.reserve((nBits / sizeof(unsigned int))+1);
 	}
-	void binaryDataSet2::reserve(unsigned int nStates)
+	void binaryDataSet2::reserve(std::size_t nStates)
 	{
 		data.reserve((2*nStates / sizeof(unsigned int))+1);
 	}
@@ -81,7 +81,7 @@ namespace networkReliability
 			}
 		}
 	}
-	void binaryDataSet1::expand(int index, std::vector<int>& output) const 
+	void binaryDataSet1::expand(std::size_t index, std::vector<int>& output) const 
 	{
 		const std::size_t nEdges = output.size();
 		std::size_t initialBit = index*nEdges;
@@ -121,7 +121,7 @@ namespace networkReliability
 			nStoredBits--;
 		}
 	}
-	void binaryDataSet2::expand(int index, EdgeState* output, const std::size_t nEdges) const
+	void binaryDataSet2::expand(std::size_t index, EdgeState* output, const std::size_t nEdges) const
 	{
 		std::size_t initialBit = index*nEdges*2;
 		std::size_t initialInt = initialBit / (sizeof(unsigned int)*8);

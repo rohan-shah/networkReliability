@@ -96,7 +96,7 @@ namespace networkReliability
 			app.exec();
 			return 0;
 		}
-		catch(std::runtime_error& err)
+		catch(std::runtime_error&)
 		{
 		}
 		//If that doesn't work, try a subObservationCollection
@@ -116,7 +116,7 @@ namespace networkReliability
 			app.exec();
 			return 0;
 		}
-		catch(std::runtime_error& err)
+		catch(std::runtime_error&)
 		{}
 		//If that doesn't work, try a subObservationTree
 		try
@@ -125,6 +125,15 @@ namespace networkReliability
 			inputStream.seekg(0, std::ios::beg);
 			boost::archive::binary_iarchive archive(inputStream, boost::archive::no_codecvt);
 			NetworkReliabilityObsTree tree(archive);
+			try
+			{
+				const NetworkReliabilityObsTree::treeGraphType& treeGraph = tree.getTreeGraph();
+			}
+			catch(std::runtime_error& err)
+			{
+				std::cout << err.what() << std::endl;
+				return 0;
+			}
 			if(tree.nLevels() == 0 || tree.getSampleSize(0) == 0)
 			{
 				std::cout << "NetworkReliabilityObsTree was empty" << std::endl;
@@ -136,7 +145,7 @@ namespace networkReliability
 			return 0;
 
 		}
-		catch(std::runtime_error& err)
+		catch(std::runtime_error&)
 		{}
 		//If that doesn't work, try an empirical distribution and convert it
 		try
@@ -151,7 +160,7 @@ namespace networkReliability
 			app.exec();
 			return 0;
 		}
-		catch(std::runtime_error& err)
+		catch(std::runtime_error&)
 		{}
 		std::cout << "Unable to load object from file" << std::endl;
 		return -1;

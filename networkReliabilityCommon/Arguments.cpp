@@ -70,7 +70,7 @@ namespace networkReliability
 					message = "Specifying useSpatialDistances with 1 step would be equivalent to crude Monte Carlo";
 					return false;
 				}
-				int nStepsInt = floor(nSteps + 0.5);
+				int nStepsInt = (int)floor(nSteps + 0.5);
 				out.clear();
 				for(int currentStep = nStepsInt; currentStep > 0; currentStep--)
 				{
@@ -101,7 +101,7 @@ namespace networkReliability
 					message = "When specifying three inputs for useSpatialDistances, the number of steps must be at least 2";
 					return false;
 				}
-				int nStepsInt = round(nSteps + 0.5);
+				int nStepsInt = (int)floor(nSteps + 0.5);
 				out.clear();
 				for(int currentStep = nStepsInt; currentStep > 0; currentStep--)
 				{

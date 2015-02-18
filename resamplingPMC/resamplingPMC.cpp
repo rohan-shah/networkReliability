@@ -105,7 +105,7 @@ namespace networkReliability
 			std::cout << message << std::endl;
 			return 0;
 		}
-		resamplingInputs.finalSplittingStep = resamplingInputs.thresholds.size() - 2;
+		resamplingInputs.finalSplittingStep = (int)(resamplingInputs.thresholds.size() - 2);
 		std::vector<::networkReliability::subObs::withResampling> observations;
 
 		//working data for graph algorithms
@@ -182,8 +182,9 @@ returnEstimate:
 		if(resamplingInputs.shouldOutputTree)
 		{
 			std::cout << "Beginning tree layout....";
-			resamplingOutputs.tree.layout();
-			std::cout << "Done" << std::endl;
+			bool success = resamplingOutputs.tree.layout();
+			if(!success) std::cout << "Unable to lay out tree. Was graphviz support enabled? " << std::endl;
+			else std::cout << "Done" << std::endl;
 			try
 			{
 				std::ofstream outputStream(variableMap["outputTree"].as<std::string>().c_str(), std::ios_base::binary);

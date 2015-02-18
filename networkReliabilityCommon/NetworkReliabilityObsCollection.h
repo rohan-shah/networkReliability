@@ -24,7 +24,7 @@ namespace networkReliability
 		void expand(int count, boost::shared_array<EdgeState> state) const;
 		double getRadius() const;
 		std::size_t getSampleSize() const;
-		void reserve(unsigned int count);
+		void reserve(std::size_t count);
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const

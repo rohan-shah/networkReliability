@@ -45,7 +45,7 @@ namespace networkReliability
 			{
 				output.probabilities[0](1);
 				nextStepObservations.push_back(std::move(subObs));
-				nextPotentiallyDisconnectedIndices.push_back(i);
+				nextPotentiallyDisconnectedIndices.push_back((int)i);
 			}
 		}
 		if(nextStepObservations.size() == 0)
@@ -72,8 +72,8 @@ namespace networkReliability
 			{
 				for (std::vector<::networkReliability::subObs::withResampling>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
 				{
-					int nUnfixed = j->getPotentiallyDeactivated().size();
-					int minCut = j->getMinCut();
+					int nUnfixed = (int)j->getPotentiallyDeactivated().size();
+					int minCut = (int)j->getMinCut();
 					sum += j->getGeneratedObservationConditioningProb() / boost::math::binomial_coefficient<mpfr_class>(nUnfixed, minCut);
 					mpfr_class weight = j->getGeneratedObservationConditioningProb() / boost::math::binomial_coefficient<mpfr_class>(nUnfixed, minCut);
 					resamplingProbabilities.push_back(weight.convert_to<double>());
@@ -86,7 +86,7 @@ namespace networkReliability
 			{
 				for (std::size_t k = 0; k < input.n; k++)
 				{
-					int index = alias(output.randomSource);
+					int index = (int)alias(output.randomSource);
 					output.observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
 					potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
 				}
@@ -95,9 +95,9 @@ namespace networkReliability
 			{
 				for (std::size_t k = 0; k < input.n; k++)
 				{
-					int index = alias(output.randomSource);
-					int nUnfixed = nextStepObservations[index].getPotentiallyDeactivated().size();
-					int minCut = nextStepObservations[index].getMinCut();
+					int index = (int)alias(output.randomSource);
+					int nUnfixed = (int)nextStepObservations[index].getPotentiallyDeactivated().size();
+					int minCut = (int)nextStepObservations[index].getMinCut();
 					output.observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight * boost::math::binomial_coefficient<mpfr_class>(nUnfixed, minCut)));
 					potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
 				}
@@ -115,7 +115,7 @@ namespace networkReliability
 				{
 					nextStepObservations.push_back(std::move(sub));
 					output.probabilities[splittingLevel+1](newObs.getConditioningProb());
-					nextPotentiallyDisconnectedIndices.push_back(std::distance(output.observations.begin(), j));
+					nextPotentiallyDisconnectedIndices.push_back((int)std::distance(output.observations.begin(), j));
 				}
 			}
 			if(nextStepObservations.size() == 0)

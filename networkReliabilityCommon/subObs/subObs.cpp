@@ -111,7 +111,7 @@ namespace networkReliability
 				{
 					if(boost::get(boost::vertex_name, input.outputGraph, *current) == input.components[input.interestVertices[i]])
 					{
-						input.reducedInterestVertices[i] = *current;
+						input.reducedInterestVertices[i] = (int)*current;
 					}
 				}
 			}

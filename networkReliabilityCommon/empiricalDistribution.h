@@ -30,7 +30,7 @@ namespace networkReliability
 		void hintDataCount(std::size_t size);
 		void add(const EdgeState* state);
 		void add(const EdgeState* state, double weight);
-		void expand(int count, std::vector<int>& output) const;
+		void expand(std::size_t count, std::vector<int>& output) const;
 		std::size_t getNSamples() const;
 		std::size_t getNEdges() const;
 		bool isWeighted() const;

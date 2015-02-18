@@ -28,7 +28,7 @@ namespace networkReliability
 			{
 				if(state[i] & (UNFIXED_INOP | UNFIXED_OP))
 				{
-					couldBeDeactivated.push_back(i);
+					couldBeDeactivated.push_back((int)i);
 				}
 				else if(state[i] == FIXED_INOP)
 				{

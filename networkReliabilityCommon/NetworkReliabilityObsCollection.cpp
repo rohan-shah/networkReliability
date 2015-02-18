@@ -32,7 +32,7 @@ namespace networkReliability
 			static_cast<binaryDataSet2*>(this)->add(state.get(), nEdges);
 		}
 	}
-	void NetworkReliabilityObsCollection::reserve(unsigned int count)
+	void NetworkReliabilityObsCollection::reserve(std::size_t count)
 	{
 		const Context* currentContext;
 		if(externalContext) currentContext = externalContext;

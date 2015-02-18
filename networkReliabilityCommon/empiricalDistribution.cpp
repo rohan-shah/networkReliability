@@ -21,7 +21,7 @@ namespace networkReliability
 	{
 		return _isWeighted;
 	}
-	void empiricalDistribution::expand(int count, std::vector<int>& output) const
+	void empiricalDistribution::expand(std::size_t count, std::vector<int>& output) const
 	{
 		if(output.size() != nEdges) throw std::runtime_error("Wrong number of elements in vector passed to empiricalDistribution::expand");
 		binaryDataSet1::expand(count, output);

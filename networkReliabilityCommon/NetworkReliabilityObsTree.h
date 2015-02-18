@@ -38,7 +38,7 @@ namespace networkReliability
 		friend class boost::serialization::access;
 		//The levels go 0, 1, ..., nLevels - 1, with level 0 being the topmost level of the tree
 		NetworkReliabilityObsTree(Context const* externalContext, const std::vector<double>& thresholds);
-		void reserve(unsigned int reservePerLevel);
+		void reserve(std::size_t reservePerLevel);
 		NetworkReliabilityObsTree(boost::archive::binary_iarchive& ar);
 		NetworkReliabilityObsTree(boost::archive::text_iarchive& ar);
 		void add(const NetworkReliabilityObs& obs, unsigned int level, int parentIndex, bool potentiallyDisconnected);
@@ -47,7 +47,7 @@ namespace networkReliability
 		std::size_t getSampleSize(unsigned int level) const;
 		std::size_t nLevels() const;
 		const treeGraphType& getTreeGraph() const;
-		void layout() const;
+		bool layout() const;
 		const std::vector<std::vector<int > >& getPerLevelVertexIds() const;
 		const std::vector<double>& getThresholds() const;
 	private:
@@ -69,7 +69,17 @@ namespace networkReliability
 				ar << *i;
 			}
 			if(!treeGraph) layout();
-			ar << *treeGraph;
+			//Even after we try and lay it out, it might not be laid out due to no graphviz available. 
+			bool hasTree = treeGraph;
+			ar << hasTree;
+			if(hasTree)
+			{
+				ar << *treeGraph;
+			}
+			else
+			{
+				ar << parentData << potentiallyDisconnected;
+			}
 			typeString = "networkReliabilityObsTree_end";
 			ar << typeString;
 		}
@@ -92,9 +102,18 @@ namespace networkReliability
 				NetworkReliabilityObsCollection newCollection(ar);
 				levelData.push_back(std::move(newCollection));
 			}
-			treeGraph.reset(new treeGraphType());
-			ar >> *treeGraph;
-			vectorsFromGraph();
+			bool hasTree;
+			ar >> hasTree;
+			if(hasTree)
+			{
+				treeGraph.reset(new treeGraphType());
+				ar >> *treeGraph;
+				vectorsFromGraph();
+			}
+			else
+			{
+				ar >> parentData >> potentiallyDisconnected;
+			}
 			ar >> typeString;
 			if(typeString != "networkReliabilityObsTree_end")
 			{

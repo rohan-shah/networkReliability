@@ -47,7 +47,7 @@ namespace networkReliability
 			float x = treeGraph[*currentVertex].x;
 			float y = treeGraph[*currentVertex].y;
 			treeVisualiserVertex* vertexItem = new treeVisualiserVertex(x - pointSize/2, y - pointSize/2, pointSize, pointSize);
-			vertexItem->setVertexID(*currentVertex);
+			vertexItem->setVertexID((int)*currentVertex);
 			if(treeGraph[*currentVertex].potentiallyDisconnected)
 			{
 				vertexItem->setPen(blackPen);
@@ -67,8 +67,8 @@ namespace networkReliability
 		boost::tie(currentEdge, endEdge) = boost::edges(treeGraph);
 		for(; currentEdge != endEdge; currentEdge++)
 		{
-			int sourceVertex = boost::source(*currentEdge, treeGraph);
-			int targetVertex = boost::target(*currentEdge, treeGraph);
+			int sourceVertex = (int)boost::source(*currentEdge, treeGraph);
+			int targetVertex = (int)boost::target(*currentEdge, treeGraph);
 			float sourceX = treeGraph[sourceVertex].x;
 			float sourceY = treeGraph[sourceVertex].y;
 			float targetX = treeGraph[targetVertex].x;
