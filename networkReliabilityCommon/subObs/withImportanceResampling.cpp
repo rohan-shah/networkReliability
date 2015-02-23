@@ -165,7 +165,7 @@ namespace networkReliability
 			{
 				newState[permuted[i]] = UNFIXED_INOP;
 			}
-			for(int i = numberResamplingEdges; i < permuted.size(); i++)
+			for(int i = numberResamplingEdges; i < (int)permuted.size(); i++)
 			{
 				newState[permuted[i]] = FIXED_OP;
 			}
@@ -211,7 +211,8 @@ namespace networkReliability
 			mpfr_class usualDensity = boost::multiprecision::pow(operationalProbability, boundaryFixedOp) * boost::multiprecision::pow(inoperationalProbability, boundaryFixedInop);
 			//Finish calculating the usualDensity.
 			const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, unknownState.size(), unknownState.size());
-			for(int i = followingSubObsFixedInop; i < minAdditionalDeactivated+fixedInop; i++)
+			/* The unoptimised code*/
+			/*for(int i = followingSubObsFixedInop; i < minAdditionalDeactivated+fixedInop; i++)
 			{
 				mpfr_class lower = 0;
 				if(i - fixedInop > 0) lower = dist.getCumulativeProbability(i - fixedInop - 1);
@@ -232,6 +233,64 @@ namespace networkReliability
 				mpfr_class lower = 0;
 				if(i > 0) lower = dist.getCumulativeProbability(i - 1);
 				importanceDensity += weight * currentPart * (dist.getCumulativeProbability(i) - lower);
+			}*/
+			/* Optimised code */
+			mpfr_class lower = 0;
+			if(followingSubObsFixedInop < minAdditionalDeactivated+fixedInop)
+			{
+				int i = followingSubObsFixedInop;
+				double binomRatio = boost::math::binomial_coefficient<double>(followingSubObsUnknownState, i - followingSubObsFixedInop) / boost::math::binomial_coefficient<double>(unknownState.size(), i - fixedInop);
+				if(followingSubObsFixedInop - fixedInop > 0) lower = dist.getCumulativeProbability(i - fixedInop - 1);
+				mpfr_class upper = dist.getCumulativeProbability(i - fixedInop);
+				usualDensity -= (upper - lower)*binomRatio;
+				i++;
+				for(; i < minAdditionalDeactivated+fixedInop; i++)
+				{
+					lower = 0;
+					if(i - fixedInop > 0) lower = dist.getCumulativeProbability(i - fixedInop - 1);
+					upper = dist.getCumulativeProbability(i - fixedInop);
+					binomRatio *= (i - fixedInop) * (followingSubObsUnknownState - (i - followingSubObsFixedInop - 1))/(double)((unknownState.size() - (i - fixedInop - 1))*(i - followingSubObsFixedInop));
+					usualDensity -= (upper - lower) * binomRatio;
+				}
+			}
+			mpfr_class importanceDensity = 0;
+			if(std::max(minAdditionalDeactivated, boundaryFixedInop) < followingSubObsUnknownState + boundaryFixedInop + 1)
+			{
+				int i = std::max(minAdditionalDeactivated, boundaryFixedInop);
+				mpfr_class currentPart = 0;
+				int upperImportanceEdges = std::min(importanceResamplingInop + importanceResamplingUnknown, i - (boundaryFixedInop - importanceResamplingInop));
+				int lowerImportanceEdges = std::max(i - (followingSubObsUnknownState - importanceResamplingUnknown) - (boundaryFixedInop - importanceResamplingInop), importanceResamplingInop);
+				double weight = 1.0 / (std::min((int)importanceSamplingEdges.size(), i) - std::max(0, i - (int)(unknownState.size() - importanceSamplingEdges.size())) + 1);
+				std::vector<mpfr_class> binomialRatios(upperImportanceEdges + 1, std::numeric_limits<double>::quiet_NaN());
+				for(int j = lowerImportanceEdges; j < upperImportanceEdges + 1; j++)
+				{
+					binomialRatios[j] = ((mpfr_class)((boost::math::binomial_coefficient<mpfr_class>(importanceResamplingUnknown, j - importanceResamplingInop) / boost::math::binomial_coefficient<mpfr_class>(importanceSamplingEdges.size(), j)) * (boost::math::binomial_coefficient<mpfr_class>(followingSubObsUnknownState - importanceResamplingUnknown, i - j - (boundaryFixedInop - importanceResamplingInop))/boost::math::binomial_coefficient<mpfr_class>(unknownState.size()-importanceSamplingEdges.size(), i - j)))).convert_to<double>();
+					currentPart += binomialRatios[j];
+				}
+				lower = 0;
+				if(i > 0) lower = dist.getCumulativeProbability(i - 1);
+				importanceDensity += weight * currentPart * (dist.getCumulativeProbability(i) - lower);
+				i++;
+				for(; i < followingSubObsUnknownState + boundaryFixedInop + 1; i++)
+				{
+					currentPart = 0;
+					upperImportanceEdges = std::min(importanceResamplingInop + importanceResamplingUnknown, i - (boundaryFixedInop - importanceResamplingInop));
+					lowerImportanceEdges = std::max(i - (followingSubObsUnknownState - importanceResamplingUnknown) - (boundaryFixedInop - importanceResamplingInop), importanceResamplingInop);
+					weight = 1.0 / (std::min((int)importanceSamplingEdges.size(), i) - std::max(0, i - (int)(unknownState.size() - importanceSamplingEdges.size())) + 1);
+					for(int j = lowerImportanceEdges; j < upperImportanceEdges + 1; j++)
+					{
+						if(j < (int)binomialRatios.size() && binomialRatios[j] == binomialRatios[j]) binomialRatios[j] *= (i-j)*(followingSubObsUnknownState - importanceResamplingUnknown - (i - j - (boundaryFixedInop - importanceResamplingInop) - 1))/(double)((i - j - (boundaryFixedInop - importanceResamplingInop))*(unknownState.size()-importanceSamplingEdges.size() - (i - j - 1)));
+						else
+						{
+							if(j >= (int)binomialRatios.size()) binomialRatios.resize(j+1);
+							binomialRatios[j] = ((mpfr_class)((boost::math::binomial_coefficient<mpfr_class>(importanceResamplingUnknown, j - importanceResamplingInop) / boost::math::binomial_coefficient<mpfr_class>(importanceSamplingEdges.size(), j)) * (boost::math::binomial_coefficient<mpfr_class>(followingSubObsUnknownState - importanceResamplingUnknown, i - j - (boundaryFixedInop - importanceResamplingInop))/boost::math::binomial_coefficient<mpfr_class>(unknownState.size()-importanceSamplingEdges.size(), i - j)))).convert_to<double>();
+						}
+						currentPart += binomialRatios[j];
+					}
+					lower = 0;
+					if(i > 0) lower = dist.getCumulativeProbability(i - 1);
+					importanceDensity += weight * currentPart * (dist.getCumulativeProbability(i) - lower);
+				}
 			}
 			otherData.conditioningCount = generatedObservationConditioningCount;
 			otherData.conditioningProb = generatedObservationConditioningProb * usualDensity/importanceDensity;
