@@ -29,5 +29,6 @@ namespace networkReliability
 		{
 			scale(factor, factor);
 		}
+		else this->QGraphicsView::keyPressEvent(keyEvent);
 	}
 }

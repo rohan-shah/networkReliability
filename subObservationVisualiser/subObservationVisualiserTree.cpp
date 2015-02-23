@@ -150,19 +150,9 @@ namespace networkReliability
 				observationLeft();
 				return true;
 			}
-			else if(keyEvent->key() == Qt::Key_Right)
+			else if(keyEvent->key() == Qt::Key_Right && keyEvent->modifiers() & Qt::ShiftModifier)
 			{
 				observationRight();
-				return true;
-			}
-			else if(keyEvent->key() == Qt::Key_Up && keyEvent->modifiers() & Qt::ShiftModifier)
-			{
-				observationDown();
-				return true;
-			}
-			else if(keyEvent->key() == Qt::Key_Down && keyEvent->modifiers() & Qt::ShiftModifier)
-			{
-				observationUp();
 				return true;
 			}
 		}
