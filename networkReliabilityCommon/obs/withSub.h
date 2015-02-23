@@ -11,6 +11,7 @@ namespace networkReliability
 	class withSub : public ::networkReliability::NetworkReliabilityObs
 	{
 	public:
+		static void getSubObservation(double radius, EdgeState* newState, const Context& context, const EdgeState* oldEdgeStatesPtr);
 	protected:
 		withSub(Context const& context, boost::mt19937& randomSource);
 		withSub(Context const& context, boost::shared_array<EdgeState> state);

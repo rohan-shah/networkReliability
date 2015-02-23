@@ -28,9 +28,8 @@ namespace networkReliability
 			typedef ::networkReliability::obs::withImportanceResamplingConstructorType observationConstructorType;
 
 			int getFixedInopCount() const;
-			const std::vector<int>& getPotentiallyDeactivated() const;
+			const std::vector<int>& getUnknownStateEdges() const;
 			withImportanceResampling(withImportanceResampling&& other);
-			withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, double radius, int conditioningCount, mpfr_class conditiniongProb);
 			int getMinCut() const;
 			networkReliability::subObs::withImportanceResampling& operator=(withImportanceResampling&& other);
 			int getConditioningCount() const;
@@ -39,15 +38,20 @@ namespace networkReliability
 			const mpfr_class& getGeneratedObservationConditioningProb() const;
 			networkReliability::subObs::withImportanceResampling copyWithGeneratedObservationConditioningProb(const mpfr_class& conditioningProb) const;
 		private:
+			void initialise();
 			withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, double radius);
 			withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, double radius, ::networkReliability::subObs::withImportanceResamplingConstructorType&);
 			void getObservation(EdgeState* state, boost::mt19937& randomSource, observationConstructorType&) const;
 			int minCut;
-			std::vector<int> couldBeDeactivated;
+			std::vector<int> unknownState;
 			int conditioningCount;
 			int fixedInop;
 			mpfr_class conditioningProb, generatedObservationConditioningProb;
 			int generatedObservationConditioningCount;
+
+			double nextSmallerRadius;
+			std::vector<int> boundaryEdges;
+			std::vector<int> importanceSamplingEdges;
 		};
 	}
 }

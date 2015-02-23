@@ -25,6 +25,9 @@ namespace networkReliability
 		{
 			int conditioningCount;
 			mpfr_class conditioningProb;
+			double nextRadius;
+			std::vector<int> boundaryEdges;
+			std::vector<int> interiorEdges;
 		};
 		struct withResamplingConstructorType
 		{

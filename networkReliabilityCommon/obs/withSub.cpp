@@ -18,12 +18,14 @@ namespace networkReliability
 	}
 	void withSub::getSubObservation(double radius, EdgeState* newState) const
 	{
+		getSubObservation(radius, newState, context, state.get());
+	}
+	void withSub::getSubObservation(double radius, EdgeState* newState, const Context& context, const EdgeState* oldEdgeStatesPtr)
+	{
 		const Context::internalGraph& graph = context.getGraph();
 		std::size_t nEdges = boost::num_edges(graph);
-		
+	
 		std::fill(newState, newState + nEdges, FIXED_OP);
-		
-		const EdgeState* oldEdgeStatesPtr = state.get();
 		const double* edgeDistances = context.getEdgeDistances();
 
 		std::size_t sourceEdge = 0;

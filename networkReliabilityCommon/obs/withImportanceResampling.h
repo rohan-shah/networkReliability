@@ -36,7 +36,7 @@ namespace networkReliability
 			mpfr_class getConditioningProb() const;
 		private:
 			withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, ::networkReliability::obs::withImportanceResamplingConstructorType&);
-			void getSubObservation(EdgeState* newState, double radius, subObservationConstructorType& other) const;
+			void getSubObservation(EdgeState* newState, double radius, subObservationConstructorType& other, double nextSmallerRadius) const;
 			int conditioningCount;
 			mpfr_class conditioningProb;
 		};
