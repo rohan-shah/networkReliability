@@ -154,12 +154,13 @@ namespace networkReliability
 	struct withFlowFilter
 	{
 	public:
-		withFlowFilter(const Context::internalDirectedGraph& directedGraph, const std::vector<int>& edgeCapacityVector, const std::vector<int>& edgeResidualCapacityVector)
-			:directedGraph(&directedGraph), edgeCapacityVector(&edgeCapacityVector), edgeResidualCapacityVector(&edgeResidualCapacityVector)
+		withFlowFilter(const Context::internalDirectedGraph& directedGraph, const std::vector<int>& edgeCapacityVector, const std::vector<int>& edgeResidualCapacityVector, const EdgeState* state)
+			:directedGraph(&directedGraph), edgeCapacityVector(&edgeCapacityVector), edgeResidualCapacityVector(&edgeResidualCapacityVector), state(state)
 		{}
 		template <typename Edge> bool operator()(const Edge& e) const
 		{
 			int index = boost::get(boost::edge_index, *directedGraph, e);
+			if(state[index/2] == FIXED_INOP) return false;
 			int reverseIndex;
 			if(index % 2) reverseIndex = index-1;
 			else reverseIndex = index+1;
@@ -181,16 +182,18 @@ namespace networkReliability
 		const Context::internalDirectedGraph* directedGraph;
 		const std::vector<int>* edgeCapacityVector;
 		const std::vector<int>* edgeResidualCapacityVector;
+		const EdgeState* state;
 	};
 	struct againstFlowFilter
 	{
 	public:
-		againstFlowFilter(const Context::internalDirectedGraph& directedGraph, const std::vector<int>& edgeCapacityVector, const std::vector<int>& edgeResidualCapacityVector)
-			:directedGraph(&directedGraph), edgeCapacityVector(&edgeCapacityVector), edgeResidualCapacityVector(&edgeResidualCapacityVector)
+		againstFlowFilter(const Context::internalDirectedGraph& directedGraph, const std::vector<int>& edgeCapacityVector, const std::vector<int>& edgeResidualCapacityVector, const EdgeState* state)
+			:directedGraph(&directedGraph), edgeCapacityVector(&edgeCapacityVector), edgeResidualCapacityVector(&edgeResidualCapacityVector), state(state)
 		{}
 		template <typename Edge> bool operator()(const Edge& e) const
 		{
 			int index = boost::get(boost::edge_index, *directedGraph, e);
+			if(state[index/2] == FIXED_INOP) return false;
 			int reverseIndex;
 			if(index % 2) reverseIndex = index-1;
 			else reverseIndex = index+1;
@@ -211,6 +214,7 @@ namespace networkReliability
 		const Context::internalDirectedGraph* directedGraph;
 		const std::vector<int>* edgeCapacityVector;
 		const std::vector<int>* edgeResidualCapacityVector;
+		const EdgeState* state;
 
 	};
 	void identifyMinCutEdges(const std::vector<int>& edgeResidualCapacityVector, const std::vector<int>& capacityVector, const EdgeState* state, const Context::internalDirectedGraph& directedGraph, std::vector<boost::default_color_type>& colorVector, std::vector<bool>& edgesToConsider, std::vector<int>& outputEdges, int source, int sink)
@@ -222,12 +226,12 @@ namespace networkReliability
 
 		std::vector<identify_dfs_visitor::linkedListTerm> perVertex;
 
-		withFlowFilter withFlowFilterObj(directedGraph, capacityVector, edgeResidualCapacityVector);
+		withFlowFilter withFlowFilterObj(directedGraph, capacityVector, edgeResidualCapacityVector, state);
 		boost::filtered_graph<Context::internalDirectedGraph, withFlowFilter> withFlowFilteredGraph(directedGraph, withFlowFilterObj);
 		identify_dfs_visitor vis(edgeResidualCapacityVector, capacityVector, directedGraph, state, perVertex);
 		boost::depth_first_search(withFlowFilteredGraph, boost::visitor(vis).color_map(colorMap).root_vertex(source));
 
-		againstFlowFilter againstFlowFilterObj(directedGraph, capacityVector, edgeResidualCapacityVector);
+		againstFlowFilter againstFlowFilterObj(directedGraph, capacityVector, edgeResidualCapacityVector, state);
 		boost::filtered_graph<Context::internalDirectedGraph, againstFlowFilter> againstFlowFilteredGraph(directedGraph, againstFlowFilterObj);
 		boost::depth_first_search(againstFlowFilteredGraph, boost::visitor(vis).color_map(colorMap).root_vertex(sink));
 
