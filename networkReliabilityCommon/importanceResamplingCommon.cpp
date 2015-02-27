@@ -44,7 +44,7 @@ namespace networkReliability
 			}
 			else
 			{
-				output.probabilities[0](1);
+				output.probabilities[0](currentObs.getConditioningProb());
 				nextStepObservations.push_back(std::move(subObs));
 				nextPotentiallyDisconnectedIndices.push_back(i);
 			}

@@ -68,21 +68,12 @@ namespace networkReliability
 			{
 				generatedObservationConditioningProb = 0;
 			}
-			//Now get out the importance resampling edges, by looking at the residual flow
-			/*for(std::size_t i = 0; i < nEdges; i++)
+			std::vector<bool> unknownStateBools(nEdges, false);
+			for(std::size_t edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
 			{
-				if(state[i] == FIXED_INOP) 
-				{
-					capacityVector[2*i] = capacityVector[2*i + 1] = 1;
-				}
+				if(state[edgeCounter] & UNFIXED_MASK) unknownStateBools[edgeCounter] = true;
 			}
-			context.getMinCut(capacityVector);*/
-			std::vector<bool> boundaryEdgesBools(nEdges, false);
-			for(std::vector<int>::const_iterator fixedIterator = boundaryEdges.begin(); fixedIterator != boundaryEdges.end(); fixedIterator++)
-			{
-				boundaryEdgesBools[*fixedIterator] = true;
-			}
-			identifyMinCutEdges(context.edgeResidualCapacityVector, context.capacityVector, state.get(), context.getDirectedGraph(), context.colorVector, boundaryEdgesBools, importanceSamplingEdges, context.getInterestVertices()[0], context.getInterestVertices()[1]);
+			identifyMinCutEdges(context.edgeResidualCapacityVector, context.capacityVector, state.get(), context.getDirectedGraph(), context.colorVector, unknownStateBools, importanceSamplingEdges, context.getInterestVertices()[0], context.getInterestVertices()[1]);
 		}
 		int withImportanceResampling::getMinCut() const
 		{
@@ -176,12 +167,24 @@ namespace networkReliability
 			boost::random_shuffle(permuted, generator);
 			for(int i = 0; i < numberNonResamplingEdges; i++)
 			{
-				if(newState[*permuted.rbegin()] == UNFIXED_INOP || newState[*permuted.rbegin()] == FIXED_OP)
+				if(newState[*permuted.rbegin()] == UNFIXED_INOP)
 				{
+					i--;
+				}
+				else if(newState[*permuted.rbegin()] == FIXED_OP)
+				{
+					newState[*permuted.rbegin()] = UNFIXED_OP;
 					i--;
 				}
 				else newState[*permuted.rbegin()] = UNFIXED_INOP;
 				permuted.pop_back();
+			}
+			for(std::size_t i = 0; i < permuted.size(); i++)
+			{
+				if(newState[permuted[i]] == FIXED_OP)
+				{
+					newState[permuted[i]] = UNFIXED_OP;
+				}
 			}
 			boost::shared_array<EdgeState> followingSubObsState(new EdgeState[nEdges]);
 			::networkReliability::withSub::getSubObservation(nextSmallerRadius, followingSubObsState.get(), context, newState);
@@ -236,7 +239,7 @@ namespace networkReliability
 			}*/
 			/* Optimised code */
 			mpfr_class lower = 0;
-			if(followingSubObsFixedInop < minAdditionalDeactivated+fixedInop)
+			if(followingSubObsFixedInop < minAdditionalDeactivated+fixedInop && nextSmallerRadius > 0)
 			{
 				int i = followingSubObsFixedInop;
 				mpfr_class binomRatio = boost::math::binomial_coefficient<mpfr_class>(followingSubObsUnknownState, i - followingSubObsFixedInop) / boost::math::binomial_coefficient<mpfr_class>(unknownState.size(), i-fixedInop);
