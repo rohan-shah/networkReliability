@@ -9,6 +9,7 @@ namespace networkReliability
 		{
 			int conditioningCount;
 			mpfr_class conditioningProb;
+			mpfr_class resamplingProb;
 		};
 		struct withResamplingConstructorType
 		{
@@ -25,6 +26,7 @@ namespace networkReliability
 		{
 			int conditioningCount;
 			mpfr_class conditioningProb;
+			mpfr_class resamplingProb;
 			double nextRadius;
 			std::vector<int> boundaryEdges;
 			std::vector<int> interiorEdges;

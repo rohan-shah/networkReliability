@@ -86,7 +86,7 @@ namespace networkReliability
 				if(sub.getMinCut() < HIGH_CAPACITY)
 				{
 					nextStepObservations.push_back(std::move(sub));
-					output.probabilities[splittingLevel+1](newObs.getConditioningProb());
+					output.probabilities[splittingLevel+1](newObs.getConditioningProb()*newObs.getResamplingProb());
 					nextPotentiallyDisconnectedIndices.push_back(std::distance(output.observations.begin(), j));
 				}
 			}

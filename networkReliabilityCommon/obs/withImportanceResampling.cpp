@@ -8,7 +8,7 @@ namespace networkReliability
 	namespace obs
 	{
 		withImportanceResampling::withImportanceResampling(Context const& context, boost::mt19937& randomSource)
-			: ::networkReliability::withSub(context, randomSource), conditioningCount(0), conditioningProb(1) 
+			: ::networkReliability::withSub(context, randomSource), conditioningCount(0), conditioningProb(1), resamplingProb(1)
 		{}
 		withImportanceResampling withImportanceResampling::constructConditional(Context const& context, boost::mt19937& randomSource)
 		{
@@ -23,17 +23,18 @@ namespace networkReliability
 			return withImportanceResampling(context, state, (int)minCutEdges, conditioningProb);
 		}
 		withImportanceResampling::withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, int conditioningCount, mpfr_class conditioningProb)
-			:  ::networkReliability::withSub(context, state), conditioningCount(conditioningCount), conditioningProb(conditioningProb)
+			:  ::networkReliability::withSub(context, state), conditioningCount(conditioningCount), conditioningProb(conditioningProb), resamplingProb(1)
 		{}
 		withImportanceResampling& withImportanceResampling::operator=(withImportanceResampling&& other)
 		{
 			this->::networkReliability::withSub::operator=(static_cast<::networkReliability::withSub&&>(other));
 			conditioningCount = other.conditioningCount;
 			conditioningProb = other.conditioningProb;
+			resamplingProb = other.resamplingProb;
 			return *this;
 		}
 		withImportanceResampling::withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, ::networkReliability::obs::withImportanceResamplingConstructorType& other)
-			: ::networkReliability::withSub(context, state), conditioningCount(other.conditioningCount), conditioningProb(other.conditioningProb)
+			: ::networkReliability::withSub(context, state), conditioningCount(other.conditioningCount), conditioningProb(other.conditioningProb), resamplingProb(other.resamplingProb)
 		{
 		}
 		void withImportanceResampling::getSubObservation(EdgeState* newState, double radius, subObservationConstructorType& other, double nextSmallerRadius) const
@@ -41,6 +42,7 @@ namespace networkReliability
 			other.nextRadius = nextSmallerRadius;
 			other.conditioningCount = conditioningCount;
 			other.conditioningProb = conditioningProb;
+			other.resamplingProb = resamplingProb;
 
 			const Context::internalGraph& graph = context.getGraph();
 			std::size_t nEdges = boost::num_edges(graph);
@@ -107,7 +109,7 @@ namespace networkReliability
 			}
 		}
 		withImportanceResampling::withImportanceResampling(withImportanceResampling&& other)
-			: ::networkReliability::withSub(static_cast<withImportanceResampling&&>(other)), conditioningCount(other.conditioningCount), conditioningProb(other.conditioningProb)
+			: ::networkReliability::withSub(static_cast<withImportanceResampling&&>(other)), conditioningCount(other.conditioningCount), conditioningProb(other.conditioningProb), resamplingProb(other.resamplingProb)
 		{}
 		mpfr_class withImportanceResampling::getConditioningProb() const
 		{
@@ -116,6 +118,10 @@ namespace networkReliability
 		int withImportanceResampling::getConditioningCount() const
 		{
 			return conditioningCount;
+		}
+		const mpfr_class& withImportanceResampling::getResamplingProb() const
+		{
+			return resamplingProb;
 		}
 	}
 }

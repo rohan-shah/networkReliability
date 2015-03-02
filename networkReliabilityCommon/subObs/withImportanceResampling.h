@@ -37,6 +37,7 @@ namespace networkReliability
 			const mpfr_class& getConditioningProb() const;
 			const mpfr_class& getGeneratedObservationConditioningProb() const;
 			networkReliability::subObs::withImportanceResampling copyWithGeneratedObservationConditioningProb(const mpfr_class& conditioningProb) const;
+			const mpfr_class& getResamplingProb() const;
 		private:
 			void initialise();
 			withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, double radius);
@@ -52,6 +53,7 @@ namespace networkReliability
 			double nextSmallerRadius;
 			std::vector<int> boundaryEdges;
 			std::vector<int> importanceSamplingEdges;
+			mpfr_class resamplingProb;
 		};
 	}
 }

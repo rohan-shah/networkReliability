@@ -83,6 +83,10 @@ namespace networkReliability
 		{
 			return generatedObservationConditioningProb;
 		}
+		const mpfr_class& withImportanceResampling::getResamplingProb() const
+		{
+			return resamplingProb;
+		}
 		const mpfr_class& withImportanceResampling::getConditioningProb() const
 		{
 			return conditioningProb;
@@ -100,6 +104,7 @@ namespace networkReliability
 			nextSmallerRadius = other.nextSmallerRadius;
 			boundaryEdges.swap(other.boundaryEdges);
 			importanceSamplingEdges.swap(other.importanceSamplingEdges);
+			resamplingProb = other.resamplingProb;
 		}
 		withImportanceResampling& withImportanceResampling::operator=(withImportanceResampling&& other)
 		{
@@ -114,10 +119,11 @@ namespace networkReliability
 			nextSmallerRadius = other.nextSmallerRadius;
 			boundaryEdges.swap(other.boundaryEdges);
 			importanceSamplingEdges.swap(other.importanceSamplingEdges);
+			resamplingProb = other.resamplingProb;
 			return *this;
 		}
 		withImportanceResampling::withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, double radius, ::networkReliability::subObs::withImportanceResamplingConstructorType& other)
-			: ::networkReliability::subObs::subObs(context, state, radius), conditioningCount(other.conditioningCount), fixedInop(0), conditioningProb(other.conditioningProb), nextSmallerRadius(other.nextRadius)
+			: ::networkReliability::subObs::subObs(context, state, radius), conditioningCount(other.conditioningCount), fixedInop(0), conditioningProb(other.conditioningProb), nextSmallerRadius(other.nextRadius), resamplingProb(other.resamplingProb)
 		{
 			boundaryEdges.swap(other.boundaryEdges);
 			initialise();
@@ -130,6 +136,7 @@ namespace networkReliability
 			{
 				otherData.conditioningCount = conditioningCount;
 				otherData.conditioningProb = 1;
+				otherData.resamplingProb = resamplingProb;
 				return;
 			}
 			for(std::size_t i = 0; i < unknownState.size(); i++)
@@ -142,7 +149,7 @@ namespace networkReliability
 			std::size_t nDeactivated = distribution(randomSource);
 
 			int maximumNumberOfImportanceResamplingEdges = std::min(nDeactivated, importanceSamplingEdges.size());
-			int minimumNumberOfImportanceResamplingEdges = std::max((int)0, (int)(nDeactivated - (unknownState.size() - boundaryEdges.size()) - (boundaryEdges.size() - importanceSamplingEdges.size())));
+			int minimumNumberOfImportanceResamplingEdges = std::max((int)minAdditionalDeactivated, (int)(nDeactivated - (unknownState.size() - boundaryEdges.size()) - (boundaryEdges.size() - importanceSamplingEdges.size())));
 			boost::random::uniform_int_distribution<> resamplingCountDistribution(minimumNumberOfImportanceResamplingEdges, maximumNumberOfImportanceResamplingEdges);
 			int numberResamplingEdges = resamplingCountDistribution(randomSource);
 			//grab some scratch memory
@@ -302,7 +309,8 @@ namespace networkReliability
 				}
 			}
 			otherData.conditioningCount = generatedObservationConditioningCount;
-			otherData.conditioningProb = generatedObservationConditioningProb * usualDensity/importanceDensity;
+			otherData.conditioningProb = generatedObservationConditioningProb;
+			otherData.resamplingProb = resamplingProb * usualDensity/importanceDensity;
 		}
 		int withImportanceResampling::getConditioningCount() const
 		{
@@ -324,6 +332,7 @@ namespace networkReliability
 			copy.nextSmallerRadius = nextSmallerRadius;
 			copy.boundaryEdges = boundaryEdges;
 			copy.importanceSamplingEdges = importanceSamplingEdges;
+			copy.resamplingProb = resamplingProb;
 			return copy;
 		}
 		int withImportanceResampling::getFixedInopCount() const

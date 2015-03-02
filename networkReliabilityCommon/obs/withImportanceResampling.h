@@ -34,11 +34,13 @@ namespace networkReliability
 			static ::networkReliability::obs::withImportanceResampling constructConditional(Context const& context, boost::mt19937& randomSource);
 			int getConditioningCount() const;
 			mpfr_class getConditioningProb() const;
+			const mpfr_class& getResamplingProb() const;
 		private:
 			withImportanceResampling(Context const& context, boost::shared_array<EdgeState> state, ::networkReliability::obs::withImportanceResamplingConstructorType&);
 			void getSubObservation(EdgeState* newState, double radius, subObservationConstructorType& other, double nextSmallerRadius) const;
 			int conditioningCount;
 			mpfr_class conditioningProb;
+			mpfr_class resamplingProb;
 		};
 	}
 }
