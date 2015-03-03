@@ -149,7 +149,7 @@ namespace networkReliability
 			std::size_t nDeactivated = distribution(randomSource);
 
 			int maximumNumberOfImportanceResamplingEdges = std::min(nDeactivated, importanceSamplingEdges.size());
-			int minimumNumberOfImportanceResamplingEdges = std::max((int)minAdditionalDeactivated, (int)(nDeactivated - (unknownState.size() - boundaryEdges.size()) - (boundaryEdges.size() - importanceSamplingEdges.size())));
+			int minimumNumberOfImportanceResamplingEdges = std::max((int)0, (int)(nDeactivated - (unknownState.size() - boundaryEdges.size()) - (boundaryEdges.size() - importanceSamplingEdges.size())));
 			boost::random::uniform_int_distribution<> resamplingCountDistribution(minimumNumberOfImportanceResamplingEdges, maximumNumberOfImportanceResamplingEdges);
 			int numberResamplingEdges = resamplingCountDistribution(randomSource);
 			//grab some scratch memory
