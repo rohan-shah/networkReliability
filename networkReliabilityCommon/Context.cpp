@@ -95,6 +95,8 @@ namespace networkReliability
 
 		std::swap(nEdges, other.nEdges);
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
+		inoperationalProbabilityPowers.swap(other.inoperationalProbabilityPowers);
+		operationalProbabilityPowers.swap(other.operationalProbabilityPowers);
 		return *this;
 	}
 	Context::Context(Context&& other)
@@ -117,14 +119,29 @@ namespace networkReliability
 
 		std::swap(nEdges, other.nEdges);
 		std::swap(inoperationalProbabilityD, other.inoperationalProbabilityD);
+		inoperationalProbabilityPowers.swap(other.inoperationalProbabilityPowers);
+		operationalProbabilityPowers.swap(other.operationalProbabilityPowers);
 	}
 	Context::Context(boost::archive::binary_iarchive& ar)
 	{
 		ar >> *this;
+		constructPowers();
 	}
 	Context::Context(boost::archive::text_iarchive& ar)
 	{
 		ar >> *this;
+		constructPowers();
+	}
+	void Context::constructPowers()
+	{
+		operationalProbabilityPowers.resize(nEdges+1);
+		inoperationalProbabilityPowers.resize(nEdges+1);
+		mpfr_class inoperationalProbability = 1 - operationalProbability;
+		for(std::size_t i = 0; i < nEdges+1; i++)
+		{
+			operationalProbabilityPowers[i] = boost::multiprecision::pow(operationalProbability, i);
+			inoperationalProbabilityPowers[i] = boost::multiprecision::pow(inoperationalProbability, i);
+		}
 	}
 	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<unsigned int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances)
 		: interestVertices(interestVertices), vertexPositions(vertexPositions), operationalProbability(operationalProbability)
@@ -215,6 +232,7 @@ namespace networkReliability
 			}
 			minCutEdges = maxFlow;
 		}
+		constructPowers();
 	}
 	void Context::constructEdgeDistances()
 	{
@@ -631,5 +649,13 @@ namespace networkReliability
 	double Context::getInoperationalProbabilityD() const
 	{
 		return inoperationalProbabilityD;
+	}
+	const mpfr_class& Context::getOperationalProbabilityPower(int power) const
+	{
+		return operationalProbabilityPowers[power];
+	}
+	const mpfr_class& Context::getInoperationalProbabilityPower(int power) const
+	{
+		return inoperationalProbabilityPowers[power];
 	}
 }

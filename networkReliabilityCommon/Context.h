@@ -56,6 +56,8 @@ namespace networkReliability
 		int getMinCut(std::vector<int>& capacityVector) const;
 		static Context completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability);
 		double getInoperationalProbabilityD() const;
+		const mpfr_class& getOperationalProbabilityPower(int power) const;
+		const mpfr_class& getInoperationalProbabilityPower(int power) const;
 
 		//Temporary storage
 		mutable std::vector<int> edgeResidualCapacityVector;
@@ -157,6 +159,9 @@ namespace networkReliability
 		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allOpDistributions;
 		
 		std::size_t minCutEdges;
+		//Powers of the operational and inoperational probabilities
+		std::vector<mpfr_class> operationalProbabilityPowers, inoperationalProbabilityPowers;
+		void constructPowers();
 	};
 }
 namespace boost
