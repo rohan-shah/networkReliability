@@ -40,6 +40,7 @@ namespace boost {
     comp_type c_count((std::numeric_limits<comp_type>::max)());
     detail::components_recorder<ComponentMap> vis(c, c_count);
     depth_first_search_restricted(g, vis, color, stack, state);
+    if(c_count == (std::numeric_limits<comp_type>::max)()) return 0;
     return c_count + 1;
   }
 
