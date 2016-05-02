@@ -7,8 +7,8 @@
 #include "obs/getSubObservation.hpp"
 namespace networkReliability
 {
-	resamplingInput::resamplingInput(networkReliability::Context const& context, bool compensateInResampling)
-		:context(context), compensateInResampling(compensateInResampling)
+	resamplingInput::resamplingInput(networkReliability::Context const& context)
+		:context(context)
 	{}
 	resamplingOutput::resamplingOutput(std::vector<::networkReliability::subObs::withResampling>& observations, boost::mt19937& randomSource, const Context& context, const std::vector<double>& thresholds)
 		:observations(observations), randomSource(randomSource), tree(&context, thresholds)
@@ -60,47 +60,20 @@ namespace networkReliability
 			potentiallyDisconnectedIndices.clear();
 			resamplingProbabilities.clear();
 			mpfr_class sum = 0;
-			if(!input.compensateInResampling)
+			for (std::vector<::networkReliability::subObs::withResampling>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
 			{
-				for (std::vector<::networkReliability::subObs::withResampling>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
-				{
-					sum += j->getGeneratedObservationConditioningProb();
-					resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
-				}
-			}
-			else
-			{
-				for (std::vector<::networkReliability::subObs::withResampling>::iterator j = nextStepObservations.begin(); j != nextStepObservations.end(); j++)
-				{
-					int nUnfixed = (int)j->getPotentiallyDeactivated().size();
-					int minCut = (int)j->getMinCut();
-					sum += j->getGeneratedObservationConditioningProb() / boost::math::binomial_coefficient<mpfr_class>(nUnfixed, minCut);
-					mpfr_class weight = j->getGeneratedObservationConditioningProb() / boost::math::binomial_coefficient<mpfr_class>(nUnfixed, minCut);
-					resamplingProbabilities.push_back(weight.convert_to<double>());
-				}
+				sum += j->getGeneratedObservationConditioningProb();
+				resamplingProbabilities.push_back(j->getGeneratedObservationConditioningProb().convert_to<double>());
 			}
 			if(sum.convert_to<double>() == 0) throw std::runtime_error("Sum of importance weights was zero");
 			mpfr_class averageWeight = sum / input.n;
 			aliasMethod::aliasMethod alias(resamplingProbabilities, sum.convert_to<double>(), aliasMethodTemporary1, aliasMethodTemporary2, aliasMethodTemporary3);
-			if(!input.compensateInResampling)
+
+			for (std::size_t k = 0; k < input.n; k++)
 			{
-				for (std::size_t k = 0; k < input.n; k++)
-				{
-					int index = (int)alias(output.randomSource);
-					output.observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
-					potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
-				}
-			}
-			else
-			{
-				for (std::size_t k = 0; k < input.n; k++)
-				{
-					int index = (int)alias(output.randomSource);
-					int nUnfixed = (int)nextStepObservations[index].getPotentiallyDeactivated().size();
-					int minCut = (int)nextStepObservations[index].getMinCut();
-					output.observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight * boost::math::binomial_coefficient<mpfr_class>(nUnfixed, minCut)));
-					potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
-				}
+				int index = (int)alias(output.randomSource);
+				output.observations.push_back(nextStepObservations[index].copyWithGeneratedObservationConditioningProb(averageWeight));
+				potentiallyDisconnectedIndices.push_back(nextPotentiallyDisconnectedIndices[index]);
 			}
 
 			nextPotentiallyDisconnectedIndices.clear();

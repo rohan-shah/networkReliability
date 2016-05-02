@@ -13,13 +13,12 @@ namespace networkReliability
 	struct resamplingInput
 	{
 	public:
-		resamplingInput(const Context& context, bool compensateInResampling);
+		resamplingInput(const Context& context);
 		bool shouldOutputTree;
 		const Context& context;
 		std::vector<double> thresholds;
 		std::size_t n;
 		int finalSplittingStep;
-		bool compensateInResampling;
 	private:
 		resamplingInput();
 	};

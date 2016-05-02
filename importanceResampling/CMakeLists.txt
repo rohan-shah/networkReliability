@@ -1,8 +1,0 @@
-cmake_minimum_required(VERSION 3.1)
-find_package(aliasMethod REQUIRED)
-add_executable(importanceResampling importanceResampling.cpp)
-target_link_libraries(importanceResampling PUBLIC networkReliabilityCommon mpfr)
-target_compile_definitions(importanceResampling PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
-if(WIN32)
-	set_target_properties(importanceResampling PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/ PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/)
-endif()

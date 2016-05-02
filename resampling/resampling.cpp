@@ -20,7 +20,6 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/math/distributions.hpp>
 #include "NetworkReliabilityObsTree.h"
-#include "commonOptions.h"
 namespace networkReliability
 {
 	int main(int argc, char **argv)
@@ -38,7 +37,6 @@ namespace networkReliability
 			("outputTree", boost::program_options::value<std::string>(), "(path) File to output simulation tree to")
 			("useSpatialDistances", boost::program_options::value<std::vector<double> >()->multitoken(), "(float) Input spatial distances must consist of two or three numbers numbers; A maximum distance, an optional minimum distance and the number of steps to take.")
 			("help", "Display this message");
-		addCompensate(options);
 
 		boost::program_options::variables_map variableMap;
 		try
@@ -71,6 +69,12 @@ namespace networkReliability
 			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
 		}
+		const std::vector<int>& interestVertices = context.getInterestVertices();
+		if(interestVertices.size() > 2) 
+		{
+			std::cout << "Importance resampling can only be used for two-terminal network reliability" << std::endl;
+			return 0;
+		}
 		const std::size_t nEdges = context.getNEdges();
 
 		std::size_t n;
@@ -85,8 +89,7 @@ namespace networkReliability
 			randomSource.seed(variableMap["seed"].as<int>());
 		}
 
-		bool compensateResampling = variableMap["compensateResampling"].as<bool>();
-		resamplingInput resamplingInputs(context, compensateResampling);
+		resamplingInput resamplingInputs(context);
 		resamplingInputs.shouldOutputTree = variableMap.count("outputTree") > 0;
 		resamplingInputs.n = n;
 
