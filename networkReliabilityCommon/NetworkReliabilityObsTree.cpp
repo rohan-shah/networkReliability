@@ -75,7 +75,7 @@ namespace networkReliability
 		//Now have graphviz create a graph from that string
 		GVC_t* gvc = gvContext();
 			//Older versions of graphviz appear to use just a char*
-			Agraph_t* graphvizGraph = agmemread(ss.str().c_str());
+			Agraph_t* graphvizGraph = agmemread((char*)ss.str().c_str());
 				int graphVizResult = gvLayout(gvc, graphvizGraph, "dot");
 				if(graphVizResult == -1) return false;
 					graphVizResult = gvRender(gvc, graphvizGraph, "dot", NULL);
