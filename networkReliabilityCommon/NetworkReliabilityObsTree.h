@@ -70,7 +70,7 @@ namespace networkReliability
 			}
 			if(!treeGraph) layout();
 			//Even after we try and lay it out, it might not be laid out due to no graphviz available. 
-			bool hasTree = treeGraph;
+			bool hasTree = (treeGraph.get() != 0);
 			ar << hasTree;
 			if(hasTree)
 			{
