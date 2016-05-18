@@ -12,8 +12,8 @@ namespace networkReliability
 			public:
 				static typename T::observationType get(const T& input, boost::random::mt19937& randomSource)
 				{
-					const Context& context = input.getContext();
-					std::size_t nEdges = context.getNEdges();
+					const context& contextObj = input.getContext();
+					std::size_t nEdges = contextObj.getNEdges();
 					boost::shared_array<edgeState> state(new edgeState[nEdges]);
 					typename T::observationConstructorType otherData;
 					input.getObservation(state.get(), randomSource, otherData);

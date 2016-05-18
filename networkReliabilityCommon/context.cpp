@@ -15,14 +15,14 @@
 #include <boost/iterator/counting_iterator.hpp>
 namespace networkReliability
 {
-	namespace ContextImpl
+	namespace contextImpl
 	{
-		template<typename Key, Context::internalGraph::vertices_size_type Ret> class constant_property_map_vertices_size_type : public boost::put_get_helper<Context::internalGraph::vertices_size_type, constant_property_map_vertices_size_type<Key, Ret> > 
+		template<typename Key, context::internalGraph::vertices_size_type Ret> class constant_property_map_vertices_size_type : public boost::put_get_helper<context::internalGraph::vertices_size_type, constant_property_map_vertices_size_type<Key, Ret> > 
 		{
 		public:
 			typedef Key key_type;
-			typedef Context::internalGraph::vertices_size_type reference;
-			typedef Context::internalGraph::vertices_size_type value_type;
+			typedef context::internalGraph::vertices_size_type reference;
+			typedef context::internalGraph::vertices_size_type value_type;
 
 			typedef boost::readable_property_map_tag category;
 
@@ -75,7 +75,7 @@ namespace networkReliability
 			};
 		};
 	}
-	Context& Context::operator=(Context&& other)
+	context& context::operator=(context&& other)
 	{
 		graph.swap(other.graph);
 		interestVertices.swap(other.interestVertices);
@@ -99,7 +99,7 @@ namespace networkReliability
 		operationalProbabilityPowers.swap(other.operationalProbabilityPowers);
 		return *this;
 	}
-	Context::Context(Context&& other)
+	context::context(context&& other)
 	{
 		graph.swap(other.graph);
 		interestVertices.swap(other.interestVertices);
@@ -122,17 +122,17 @@ namespace networkReliability
 		inoperationalProbabilityPowers.swap(other.inoperationalProbabilityPowers);
 		operationalProbabilityPowers.swap(other.operationalProbabilityPowers);
 	}
-	Context::Context(boost::archive::binary_iarchive& ar)
+	context::context(boost::archive::binary_iarchive& ar)
 	{
 		ar >> *this;
 		constructPowers();
 	}
-	Context::Context(boost::archive::text_iarchive& ar)
+	context::context(boost::archive::text_iarchive& ar)
 	{
 		ar >> *this;
 		constructPowers();
 	}
-	void Context::constructPowers()
+	void context::constructPowers()
 	{
 		operationalProbabilityPowers.resize(nEdges+1);
 		inoperationalProbabilityPowers.resize(nEdges+1);
@@ -143,7 +143,7 @@ namespace networkReliability
 			inoperationalProbabilityPowers[i] = boost::multiprecision::pow(inoperationalProbability, i);
 		}
 	}
-	Context::Context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<unsigned int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances)
+	context::context(boost::shared_ptr<const inputGraph> unorderedGraph, boost::shared_ptr<const std::vector<unsigned int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances)
 		: interestVertices(interestVertices), vertexPositions(vertexPositions), operationalProbability(operationalProbability)
 	{
 		mpfr_class inoperationalProbability = (1 - operationalProbability);
@@ -200,7 +200,7 @@ namespace networkReliability
 		//are we looking at the all-terminal reliability problem?
 		if(interestVertices->size() == nVertices)
 		{
-			ContextImpl::constant_property_map_vertices_size_type<Context::internalGraph::edge_descriptor, 1L> edgeWeights;
+			contextImpl::constant_property_map_vertices_size_type<context::internalGraph::edge_descriptor, 1L> edgeWeights;
 
 			//BOOST_AUTO(parities, boost::make_one_bit_color_map(num_vertices(*graph), get(boost::vertex_index, *graph)));
 			minCutEdges = boost::stoer_wagner_min_cut(*graph, edgeWeights);//, boost::parity_map(parities));
@@ -208,7 +208,7 @@ namespace networkReliability
 		//or are we looking at the 2-terminal reliability problem?
 		else if(interestVertices->size() == 2)
 		{
-			typedef boost::property_map<Context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMap;
+			typedef boost::property_map<context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMap;
 			typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMap> edgeCapacityMap;
 
 			edgeIndexMap edgeIndices = boost::get(boost::edge_index, *directedGraph);
@@ -220,8 +220,8 @@ namespace networkReliability
 		else
 		{
 			std::vector<int> flowMatrix(nVertices*nVertices);
-			allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
-			allPointsMaxFlow::allPointsMaxFlow<Context::internalDirectedGraph, int>(flowMatrix, capacityVector, *directedGraph.get(), scratch);
+			allPointsMaxFlow::allPointsMaxFlowScratch<context::internalDirectedGraph, int> scratch;
+			allPointsMaxFlow::allPointsMaxFlow<context::internalDirectedGraph, int>(flowMatrix, capacityVector, *directedGraph.get(), scratch);
 			int maxFlow = std::numeric_limits<int>::max();
 			for(std::size_t i = 0; i < interestVertices->size(); i++)
 			{
@@ -234,18 +234,18 @@ namespace networkReliability
 		}
 		constructPowers();
 	}
-	void Context::constructEdgeDistances()
+	void context::constructEdgeDistances()
 	{
 		const std::size_t nEdges = boost::num_edges(*graph);
 		const std::size_t nVertices = boost::num_vertices(*graph);
 		boost::scoped_array<int> vertexDistances(new int[nVertices * nVertices]);
 		int* vertexDistancePtr = vertexDistances.get();
 
-		ContextImpl::twoDArray tmp;
+		contextImpl::twoDArray tmp;
 		tmp.base = vertexDistances.get();
 		tmp.dim = nVertices;
 
-		ContextImpl::constant_property_map_int<Context::inputGraph::edge_descriptor, 1> edgeWeights;
+		contextImpl::constant_property_map_int<context::inputGraph::edge_descriptor, 1> edgeWeights;
 		boost::johnson_all_pairs_shortest_paths(*graph, tmp, boost::weight_map(edgeWeights));
 		
 		
@@ -253,13 +253,13 @@ namespace networkReliability
 		double* edgeDistancePtr = edgeDistances.get();
 		memset(edgeDistancePtr, 0, sizeof(double)*nEdges*nEdges);
 
-		Context::internalGraph::edge_iterator currentFirst, end;
+		context::internalGraph::edge_iterator currentFirst, end;
 		boost::tie(currentFirst, end) = boost::edges(*graph);
 		while(currentFirst != end)
 		{
 			int firstIndex = boost::get(boost::edge_index, *graph, *currentFirst);
 
-			Context::internalGraph::edge_iterator currentSecond = currentFirst;
+			context::internalGraph::edge_iterator currentSecond = currentFirst;
 			currentSecond++;
 			while(currentSecond != end)
 			{
@@ -278,21 +278,21 @@ namespace networkReliability
 			currentFirst++;
 		}
 	}
-	Context::Context()
+	context::context()
 		: graph(), directedGraph(), vertexPositions(), nEdges(0)
 	{}
-	Context Context::emptyContext()
+	context context::emptyContext()
 	{
-		Context result;
+		context result;
 
-		boost::shared_ptr<Context::internalGraph> graph(new Context::internalGraph(2));
+		boost::shared_ptr<context::internalGraph> graph(new context::internalGraph(2));
 		boost::add_edge(0, 1, 0, *graph);
-		result.graph = boost::static_pointer_cast<const Context::internalGraph>(graph);
+		result.graph = boost::static_pointer_cast<const context::internalGraph>(graph);
 
-		boost::shared_ptr<Context::internalDirectedGraph> directedGraph(new Context::internalDirectedGraph(2));
+		boost::shared_ptr<context::internalDirectedGraph> directedGraph(new context::internalDirectedGraph(2));
 		boost::add_edge(0, 1, 0, *directedGraph);
 		boost::add_edge(1, 0, 1, *directedGraph);
-		result.directedGraph = boost::static_pointer_cast<const Context::internalDirectedGraph>(directedGraph);
+		result.directedGraph = boost::static_pointer_cast<const context::internalDirectedGraph>(directedGraph);
 
 		boost::shared_ptr<std::vector<int> > interestVertices(new std::vector<int>(2));
 		(*interestVertices)[0] = 0; (*interestVertices)[1] = 1;
@@ -321,10 +321,10 @@ namespace networkReliability
 
 		return result;
 	}
-	Context Context::gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpfr_class& operationalProbability)
+	context context::gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpfr_class& operationalProbability)
 	{
 		boost::shared_ptr<std::vector<vertexPosition> > vertexPositions(new std::vector<vertexPosition>(gridDimension * gridDimension));
-		boost::shared_ptr<Context::inputGraph> graph(new Context::inputGraph(gridDimension * gridDimension));
+		boost::shared_ptr<context::inputGraph> graph(new context::inputGraph(gridDimension * gridDimension));
 		for(int i = 0; i < gridDimension; i++)
 		{
 			for(int j = 0; j < gridDimension; j++)
@@ -336,16 +336,16 @@ namespace networkReliability
 		}
 		boost::shared_ptr<std::vector<unsigned int> > edgeOrdering(new std::vector<unsigned int>(boost::num_edges(*graph)));
 		for(std::size_t i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = (int)i;
-		return Context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
+		return context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
 	}
-	Context Context::completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability)
+	context context::completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability)
 	{
 		if(nInterestVertices < 2 || nInterestVertices > nVertices)
 		{
 			throw std::runtime_error("Internal error");
 		}
 		boost::shared_ptr<std::vector<vertexPosition> > vertexPositions(new std::vector<vertexPosition>(nVertices));
-		boost::shared_ptr<Context::inputGraph> graph(new Context::inputGraph(nVertices));
+		boost::shared_ptr<context::inputGraph> graph(new context::inputGraph(nVertices));
 
 		boost::shared_ptr<std::vector<int> > interestVertices(new std::vector<int>(nInterestVertices));
 		std::copy(boost::counting_iterator<int>(1), boost::counting_iterator<int>(nInterestVertices), (*interestVertices).begin());
@@ -362,32 +362,32 @@ namespace networkReliability
 		boost::shared_ptr<std::vector<unsigned int> > edgeOrdering(new std::vector<unsigned int>(boost::num_edges(*graph)));
 		for(std::size_t i = 0; i < edgeOrdering->size(); i++) (*edgeOrdering)[i] = (int)i;
 
-		return Context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
+		return context(graph, edgeOrdering, interestVertices, vertexPositions, operationalProbability);
 	}
-	const Context::internalGraph& Context::getGraph() const
+	const context::internalGraph& context::getGraph() const
 	{
 		return *graph;
 	}
-	const std::vector<int>& Context::getInterestVertices() const
+	const std::vector<int>& context::getInterestVertices() const
 	{
 		return *interestVertices;
 	}
-	const std::vector<Context::vertexPosition>& Context::getVertexPositions() const
+	const std::vector<context::vertexPosition>& context::getVertexPositions() const
 	{
 		return *vertexPositions;
 	}
-	Context Context::fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability, bool useSpatialDistances)
+	context context::fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability, bool useSpatialDistances)
 	{
 		std::ifstream input(path.c_str());
 		if(!input.is_open())
 		{
 			successful = false;
-			return Context();
+			return context();
 		}
 		boost::dynamic_properties properties;
 		boost::shared_ptr<inputGraph> graph(new inputGraph());
 
-		typedef boost::property_map<Context::inputGraph, boost::edge_index_t>::type edgeIndexMapType; 
+		typedef boost::property_map<context::inputGraph, boost::edge_index_t>::type edgeIndexMapType; 
 		edgeIndexMapType orderingProperty;
 		properties.property("order", orderingProperty);
 
@@ -403,7 +403,7 @@ namespace networkReliability
 		{
 			message = "Error parsing graphml file";
 			successful = false;
-			return Context();
+			return context();
 		}
 		const std::size_t nEdges = boost::num_edges(*graph);
 
@@ -418,7 +418,7 @@ namespace networkReliability
 		//In the process copy the values into a vector
 		bool allZero = true;
 		boost::shared_ptr<std::vector<unsigned int> > ordering(new std::vector<unsigned int>(boost::num_edges(*graph)));
-		Context::inputGraph::edge_iterator current, end;
+		context::inputGraph::edge_iterator current, end;
 		boost::tie(current, end) = boost::edges(*graph);
 		for (; current != end; current++)
 		{
@@ -444,13 +444,13 @@ namespace networkReliability
 				{
 					message = "Invalid order value specified";
 					successful = false;
-					return Context();
+					return context();
 				}
 				if (foundEdgeIndex[edgeIndex])
 				{
 					successful = false;
 					message = "Duplicate values in ordering";
-					return Context();
+					return context();
 				}
 				else foundEdgeIndex[edgeIndex] = true;
 				*outputIterator = edgeIndex;
@@ -465,14 +465,14 @@ namespace networkReliability
 		{
 			successful = false;
 			message = "Invalid vertex indices entered for input interestVertices";
-			return Context();
+			return context();
 		}
 		boost::shared_array<double> inputEdgeDistances;
 		if(useSpatialDistances)
 		{
 			inputEdgeDistances.reset(new double[nEdges*nEdges]);
 			memset(inputEdgeDistances.get(), 0, sizeof(double)*nEdges*nEdges);
-			Context::inputGraph::edge_iterator end, firstEdge, secondEdge;
+			context::inputGraph::edge_iterator end, firstEdge, secondEdge;
 
 			boost::tie(firstEdge, end) = boost::edges(*graph);
 			std::vector<vertexPosition> edgeCentres(nEdges);
@@ -504,20 +504,20 @@ namespace networkReliability
 				}
 			}
 		}
-		return Context(graph, ordering, interestVertices, vertexPositions, operationalProbability, inputEdgeDistances);
+		return context(graph, ordering, interestVertices, vertexPositions, operationalProbability, inputEdgeDistances);
 	}
-	const double* Context::getEdgeDistances() const
+	const double* context::getEdgeDistances() const
 	{
 		return edgeDistances.get();
 	}
-	const mpfr_class& Context::getOperationalProbability() const
+	const mpfr_class& context::getOperationalProbability() const
 	{
 		return operationalProbability;
 	}
-	Context::~Context()
+	context::~context()
 	{
 	}
-	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& Context::getOpDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
+	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& context::getOpDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
 	{
 		::TruncatedBinomialDistribution::TruncatedBinomialDistribution::key key;
 		key.firstAllowedValue = firstAllowedValue;
@@ -533,7 +533,7 @@ namespace networkReliability
 		}
 		else return searchIterator->second;
 	}
-	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& Context::getInopDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
+	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& context::getInopDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
 	{
 		::TruncatedBinomialDistribution::TruncatedBinomialDistribution::key key;
 		key.firstAllowedValue = firstAllowedValue;
@@ -549,11 +549,11 @@ namespace networkReliability
 		}
 		else return searchIterator->second;
 	}
-	std::size_t Context::getMinCutEdges() const
+	std::size_t context::getMinCutEdges() const
 	{
 		return minCutEdges;
 	}
-	void Context::constructDirectedGraph()
+	void context::constructDirectedGraph()
 	{
 		boost::shared_ptr<internalDirectedGraph> directedGraph(new internalDirectedGraph(boost::num_vertices(*graph)));
 		internalDirectedGraph& directedGraphRef = *directedGraph;
@@ -578,17 +578,17 @@ namespace networkReliability
 
 		this->directedGraph = boost::static_pointer_cast<const internalDirectedGraph>(directedGraph);
 	}
-	const Context::internalDirectedGraph& Context::getDirectedGraph() const
+	const context::internalDirectedGraph& context::getDirectedGraph() const
 	{
 		return *directedGraph;
 	}
-	int Context::getMinCut(std::vector<int>& capacityVector) const
+	int context::getMinCut(std::vector<int>& capacityVector) const
 	{
 		std::size_t nVertices = boost::num_vertices(*graph);
 		//Are we looking at the all-terminal reliability problem?
 		if(interestVertices->size() == nVertices)
 		{
-			ContextImpl::constant_property_map_vertices_size_type<Context::internalGraph::edge_descriptor, 1L> edgeWeights;
+			contextImpl::constant_property_map_vertices_size_type<context::internalGraph::edge_descriptor, 1L> edgeWeights;
 
 			//BOOST_AUTO(parities, boost::make_one_bit_color_map(num_vertices(*graph), get(boost::vertex_index, *graph)));
 			return (int)boost::stoer_wagner_min_cut(*graph, edgeWeights);//, boost::parity_map(parities));
@@ -601,7 +601,7 @@ namespace networkReliability
 			if(interestVertices->size() * (interestVertices->size() - 1) / 2 > nVertices - 1)
 			{
 				maxFlowResults.resize(nVertices * nVertices, std::numeric_limits<int>::max());
-				allPointsMaxFlow::allPointsMaxFlow<Context::internalDirectedGraph, int>(maxFlowResults, capacityVector, *directedGraph, scratch);
+				allPointsMaxFlow::allPointsMaxFlow<context::internalDirectedGraph, int>(maxFlowResults, capacityVector, *directedGraph, scratch);
 				int minimum = std::numeric_limits<int>::max();
 				for(std::size_t i = 0; i < nInterestVertices; i++)
 				{
@@ -616,10 +616,10 @@ namespace networkReliability
 			else
 			{
 				maxFlowResults.resize(nInterestVertices * nInterestVertices, std::numeric_limits<int>::max());
-				typedef boost::property_map<Context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMapType;
-				typedef boost::property_map<Context::internalDirectedGraph, boost::vertex_index_t>::const_type vertexIndexMapType;
+				typedef boost::property_map<context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMapType;
+				typedef boost::property_map<context::internalDirectedGraph, boost::vertex_index_t>::const_type vertexIndexMapType;
 				typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMapType> edgeCapacityMapType;
-				typedef boost::iterator_property_map<typename std::vector<Context::internalDirectedGraph::edge_descriptor>::iterator, vertexIndexMapType> vertexPredecessorMapType;
+				typedef boost::iterator_property_map<typename std::vector<context::internalDirectedGraph::edge_descriptor>::iterator, vertexIndexMapType> vertexPredecessorMapType;
 				typedef boost::iterator_property_map<typename std::vector<boost::default_color_type>::iterator, vertexIndexMapType> colorMapType;
 				typedef boost::iterator_property_map<typename std::vector<int>::iterator, vertexIndexMapType> distanceMapType;
 
@@ -642,19 +642,19 @@ namespace networkReliability
 			}
 		}
 	}
-	std::size_t Context::getNEdges() const
+	std::size_t context::getNEdges() const
 	{
 		return nEdges;
 	}
-	double Context::getInoperationalProbabilityD() const
+	double context::getInoperationalProbabilityD() const
 	{
 		return inoperationalProbabilityD;
 	}
-	const mpfr_class& Context::getOperationalProbabilityPower(int power) const
+	const mpfr_class& context::getOperationalProbabilityPower(int power) const
 	{
 		return operationalProbabilityPowers[power];
 	}
-	const mpfr_class& Context::getInoperationalProbabilityPower(int power) const
+	const mpfr_class& context::getInoperationalProbabilityPower(int power) const
 	{
 		return inoperationalProbabilityPowers[power];
 	}

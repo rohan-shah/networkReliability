@@ -5,11 +5,11 @@
 #include <boost/math/distributions/binomial.hpp>
 namespace networkReliability
 {
-	withSub::withSub(Context const& context, boost::mt19937& randomSource)
-		: ::networkReliability::NetworkReliabilityObs(context, randomSource)
+	withSub::withSub(context const& contextObj, boost::mt19937& randomSource)
+		: ::networkReliability::NetworkReliabilityObs(contextObj, randomSource)
 	{}
-	withSub::withSub(Context const& context, boost::shared_array<edgeState> state)
-		: ::networkReliability::NetworkReliabilityObs(context, state)
+	withSub::withSub(context const& contextObj, boost::shared_array<edgeState> state)
+		: ::networkReliability::NetworkReliabilityObs(contextObj, state)
 	{}
 	withSub& withSub::operator=(withSub&& other)
 	{
@@ -18,15 +18,15 @@ namespace networkReliability
 	}
 	void withSub::getSubObservation(double radius, edgeState* newState) const
 	{
-		getSubObservation(radius, newState, context, state.get());
+		getSubObservation(radius, newState, contextObj, state.get());
 	}
-	void withSub::getSubObservation(double radius, edgeState* newState, const Context& context, const edgeState* oldedgeStatesPtr)
+	void withSub::getSubObservation(double radius, edgeState* newState, const context& contextObj, const edgeState* oldedgeStatesPtr)
 	{
-		const Context::internalGraph& graph = context.getGraph();
+		const context::internalGraph& graph = contextObj.getGraph();
 		std::size_t nEdges = boost::num_edges(graph);
 	
 		std::fill(newState, newState + nEdges, FIXED_OP);
-		const double* edgeDistances = context.getEdgeDistances();
+		const double* edgeDistances = contextObj.getEdgeDistances();
 
 		std::size_t sourceEdge = 0;
 		while(sourceEdge < nEdges)

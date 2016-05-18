@@ -7,7 +7,7 @@ namespace networkReliability
 		out = mpfr_class(variableMap["opProbability"].as<std::string>());
 		return true;
 	}
-	bool readContext(boost::program_options::variables_map& variableMap, Context& out, const mpfr_class& probability)
+	bool readContext(boost::program_options::variables_map& variableMap, context& out, const mpfr_class& probability)
 	{
 		boost::shared_ptr<std::vector<int> > interestVertices;
 		if (variableMap.count("interestVertices") != 1)
@@ -43,7 +43,7 @@ namespace networkReliability
 			bool useSpatialDistances = variableMap.count("useSpatialDistances") > 0;
 			bool successful;
 			std::string message;
-			out = Context::fromFile(variableMap["graphFile"].as<std::string>(), successful, interestVertices, message, probability, useSpatialDistances);
+			out = context::fromFile(variableMap["graphFile"].as<std::string>(), successful, interestVertices, message, probability, useSpatialDistances);
 			if (!successful)
 			{
 				std::cout << "Error reading graphml file. " << message << ". Exiting..." << std::endl;
@@ -73,7 +73,7 @@ namespace networkReliability
 				std::cout << "Input 'interestVertices' must contain numbers between 0 and (nVertices - 1) inclusive" << std::endl;
 				return false;
 			}
-			out = Context::gridContext(gridDimension, interestVertices, probability);
+			out = context::gridContext(gridDimension, interestVertices, probability);
 		}
 		else if (variableMap.count("torusGraph") == 1)
 		{
@@ -103,7 +103,7 @@ namespace networkReliability
 				std::cout << "Argument `useSpatialDistances' is only valid with argument `graphFile'" << std::endl;
 				return false;
 			}
-			out = Context::completeContext(nVertices, minInterest, probability);
+			out = context::completeContext(nVertices, minInterest, probability);
 		}
 		return true;
 	}

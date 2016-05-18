@@ -12,22 +12,22 @@ namespace networkReliability
 		public:
 			static typename T::subObservationType get(const T& input, double radius)
 			{
-				const Context& context = input.getContext();
+				const context& contextObj = input.getContext();
 				typename T::subObservationConstructorType otherData;
-				boost::shared_array<edgeState> newState(new edgeState[context.getNEdges()]);
+				boost::shared_array<edgeState> newState(new edgeState[contextObj.getNEdges()]);
 				input.getSubObservation(newState.get(), radius, otherData);
 
-				typename T::subObservationType retVal(context, newState, radius, otherData);
+				typename T::subObservationType retVal(contextObj, newState, radius, otherData);
 				return retVal;
 			}
 			template<typename U> static typename T::subObservationType get(const T& input, double radius, const U& aux)
 			{
-				const Context& context = input.getContext();
+				const context& contextObj = input.getContext();
 				typename T::subObservationConstructorType otherData;
-				boost::shared_array<edgeState> newState(new edgeState[context.getNEdges()]);
+				boost::shared_array<edgeState> newState(new edgeState[contextObj.getNEdges()]);
 				input.getSubObservation(newState.get(), radius, otherData, aux);
 
-				typename T::subObservationType retVal(context, newState, radius, otherData);
+				typename T::subObservationType retVal(contextObj, newState, radius, otherData);
 				return retVal;
 			}
 		private:

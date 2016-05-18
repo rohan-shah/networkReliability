@@ -13,14 +13,14 @@ namespace networkReliability
 	{
 	public:
 		friend class boost::serialization::access;
-		NetworkReliabilityObsCollection(Context const* externalContext, double radius);
+		NetworkReliabilityObsCollection(context const* externalContext, double radius);
 		NetworkReliabilityObsCollection(boost::archive::binary_iarchive& ar);
 		NetworkReliabilityObsCollection(boost::archive::text_iarchive& ar);
 		NetworkReliabilityObsCollection(NetworkReliabilityObsCollection&& other);
 		NetworkReliabilityObsCollection& operator=(NetworkReliabilityObsCollection&& other);
 		NetworkReliabilityObsCollection(const empiricalDistribution& other);
 		void add(const NetworkReliabilityObs& subObs);
-		const Context& getContext() const;
+		const context& getContext() const;
 		void expand(int count, boost::shared_array<edgeState> state) const;
 		double getRadius() const;
 		std::size_t getSampleSize() const;
@@ -52,7 +52,7 @@ namespace networkReliability
 			}
 			ar >> sampleSize;
 			ar >> radius;
-			containedContext.reset(new Context(ar));
+			containedContext.reset(new context(ar));
 			ar >> *static_cast<binaryDataSet2*>(this);
 			ar >> typeString;
 			if(typeString != "networkReliabilityObsCollection_end")
@@ -61,8 +61,8 @@ namespace networkReliability
 			}
 		}
 		std::size_t sampleSize;
-		std::shared_ptr<Context> containedContext;
-		Context const* externalContext;
+		std::shared_ptr<context> containedContext;
+		context const* externalContext;
 		double radius;
 	};
 }

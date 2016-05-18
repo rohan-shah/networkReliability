@@ -26,16 +26,16 @@ namespace networkReliability
 
 			typedef ::networkReliability::subObs::withResampling subObservationType;
 			typedef ::networkReliability::subObs::withResamplingConstructorType subObservationConstructorType;
-			withResampling(Context const& context, boost::mt19937& randomSource);
-			withResampling(Context const& context, boost::shared_array<edgeState> state, int conditioningCount, mpfr_class conditioningProb);
+			withResampling(context const& contextObj, boost::mt19937& randomSource);
+			withResampling(context const& contextObj, boost::shared_array<edgeState> state, int conditioningCount, mpfr_class conditioningProb);
 			withResampling(withResampling&& other);
 			withResampling& operator=(withResampling&& other);
 			//construct an object that has some number of edges inoperative - The minimum number needed to disconnect the graph, in fact
-			static ::networkReliability::obs::withResampling constructConditional(Context const& context, boost::mt19937& randomSource);
+			static ::networkReliability::obs::withResampling constructConditional(context const& contextObj, boost::mt19937& randomSource);
 			int getConditioningCount() const;
 			const mpfr_class& getConditioningProb() const;
 		private:
-			withResampling(Context const& context, boost::shared_array<edgeState> state, ::networkReliability::obs::withResamplingConstructorType&);
+			withResampling(context const& contextObj, boost::shared_array<edgeState> state, ::networkReliability::obs::withResamplingConstructorType&);
 			void getSubObservation(edgeState* newState, double radius, subObservationConstructorType& other) const;
 			int conditioningCount;
 			mpfr_class conditioningProb;

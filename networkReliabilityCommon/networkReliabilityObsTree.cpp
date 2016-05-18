@@ -144,12 +144,12 @@ namespace networkReliability
 			perLevelVertexIds[(*treeGraph)[*currentVertexIterator].level][(*treeGraph)[*currentVertexIterator].index] = (int)*currentVertexIterator;
 		}
 	}
-	const Context& NetworkReliabilityObsTree::getContext() const
+	const context& NetworkReliabilityObsTree::getContext() const
 	{
 		if(externalContext) return *externalContext;
 		return *containedContext;
 	}
-	NetworkReliabilityObsTree::NetworkReliabilityObsTree(Context const* externalContext, const std::vector<double>& thresholds)
+	NetworkReliabilityObsTree::NetworkReliabilityObsTree(context const* externalContext, const std::vector<double>& thresholds)
 		:externalContext(externalContext), thresholds(thresholds)
 	{
 		std::size_t nLevels = thresholds.size();

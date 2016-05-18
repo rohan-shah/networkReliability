@@ -59,8 +59,8 @@ namespace networkReliability
 		}
 		inopProbability = 1 - opProbability;
 		double inopProbabilityD = inopProbability.convert_to<double>();
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, opProbability))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, opProbability))
 		{
 			return 0;
 		}
@@ -69,15 +69,15 @@ namespace networkReliability
 		bool outputConditionalDistribution = variableMap.count("outputConditionalDistribution") > 0;
 		bool relativeError = variableMap["relativeError"].as<bool>();
 		bool standardDeviation = variableMap["standardDeviation"].as<bool>();
-		const std::size_t nEdges = context.getNEdges();
+		const std::size_t nEdges = contextObj.getNEdges();
 		
-		empiricalDistribution dist(true, nEdges, context);
+		empiricalDistribution dist(true, nEdges, contextObj);
 		if(outputConditionalDistribution)
 		{
 			dist.hintDataCount(n);
 		}
 		bool optimiseMinCut = variableMap["optimiseMinCut"].as<bool>();
-		if(context.getInterestVertices().size() > 2 && optimiseMinCut)
+		if(contextObj.getInterestVertices().size() > 2 && optimiseMinCut)
 		{
 			std::cout << "Can only specify option optimiseMinCut with 2-terminal reliability" << std::endl;
 			return 0;
@@ -102,16 +102,16 @@ namespace networkReliability
 			cachedInopPowers[i] = boost::multiprecision::pow(inopProbability, i);
 		}
 		//Get out the vector that holds the flow
-		const std::vector<int>& residualCapacityVector = context.edgeResidualCapacityVector;
+		const std::vector<int>& residualCapacityVector = contextObj.edgeResidualCapacityVector;
 		//Cache the two mincut calculations that are the same every time - The first two. 
 		mpfr_class minCutUpProb, minCutDownProb;
 		std::fill(state.begin(), state.end(), 1);
 		state[0] = state[1] = 0;
-		int initialMinCutSizeDown = context.getMinCut(state);
+		int initialMinCutSizeDown = contextObj.getMinCut(state);
 		minCutDownProb = cachedInopPowers[initialMinCutSizeDown];
 
 		state[0] = state[1] = HIGH_CAPACITY;
-		int initialMinCutSizeUp = context.getMinCut(state);
+		int initialMinCutSizeUp = contextObj.getMinCut(state);
 		if(initialMinCutSizeUp >= HIGH_CAPACITY)
 		{
 			minCutUpProb = 0;
@@ -159,11 +159,11 @@ namespace networkReliability
 				for(edgeCounter = 1; edgeCounter < nEdges; edgeCounter++)
 				{
 					state[2*edgeCounter] = state[2*edgeCounter+1] = 0;
-					if(!canReuseMinCut || !optimiseMinCut) minCutSizeDown = context.getMinCut(state);
+					if(!canReuseMinCut || !optimiseMinCut) minCutSizeDown = contextObj.getMinCut(state);
 					minCutDownProb = cachedInopPowers[minCutSizeDown];
 
 					state[2*edgeCounter] = state[2*edgeCounter+1] = HIGH_CAPACITY;
-					if(!canReuseMinCut || !optimiseMinCut) minCutSizeUp = context.getMinCut(state);
+					if(!canReuseMinCut || !optimiseMinCut) minCutSizeUp = contextObj.getMinCut(state);
 					if(minCutSizeUp >= HIGH_CAPACITY)
 					{
 						minCutUpProb = 0;

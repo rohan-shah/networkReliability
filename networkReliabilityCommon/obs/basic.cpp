@@ -7,22 +7,22 @@ namespace networkReliability
 {
 	namespace obs
 	{
-		basic::basic(Context const& context, boost::shared_array<edgeState> state, ::networkReliability::obs::basicConstructorType&)
-			: ::networkReliability::withSub(context, state)
+		basic::basic(context const& contextObj, boost::shared_array<edgeState> state, ::networkReliability::obs::basicConstructorType&)
+			: ::networkReliability::withSub(contextObj, state)
 		{}
-		basic::basic(Context const& context, boost::mt19937& randomSource)
-			: ::networkReliability::withSub(context, randomSource)
+		basic::basic(context const& contextObj, boost::mt19937& randomSource)
+			: ::networkReliability::withSub(contextObj, randomSource)
 		{}
-		basic basic::constructConditional(Context const& context, boost::mt19937& randomSource)
+		basic basic::constructConditional(context const& contextObj, boost::mt19937& randomSource)
 		{
-			const std::size_t nEdges = context.getNEdges();
+			const std::size_t nEdges = contextObj.getNEdges();
 			boost::shared_array<edgeState> state(new edgeState[nEdges]);
-			NetworkReliabilityObs::constructConditional(context, randomSource, state.get(), false);
-			basic retVal(context, state);
+			NetworkReliabilityObs::constructConditional(contextObj, randomSource, state.get(), false);
+			basic retVal(contextObj, state);
 			return retVal;
 		}
-		basic::basic(Context const& context, boost::shared_array<edgeState> state)
-			: ::networkReliability::withSub(context, state)
+		basic::basic(context const& contextObj, boost::shared_array<edgeState> state)
+			: ::networkReliability::withSub(contextObj, state)
 		{}
 		basic& basic::operator=(basic&& other)
 		{

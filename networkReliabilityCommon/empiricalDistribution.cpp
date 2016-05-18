@@ -3,7 +3,7 @@
 #include <fstream>
 namespace networkReliability
 {
-	empiricalDistribution::empiricalDistribution(bool _isWeighted, std::size_t nEdges, const Context& context)
+	empiricalDistribution::empiricalDistribution(bool _isWeighted, std::size_t nEdges, const context& context)
 	:nEdges(nEdges), sampleSize(0), _isWeighted(_isWeighted), externalContext(&context)
 	{}
 	void empiricalDistribution::hintDataCount(std::size_t size)
@@ -57,7 +57,7 @@ namespace networkReliability
 		weights.swap(other.weights);
 		sampleSize = other.sampleSize;
 		externalContext = other.externalContext;
-		containedContext = other.containedContext;
+		containedContext = other.containedcontext;
 		return *this;
 	}
 	empiricalDistribution::empiricalDistribution(empiricalDistribution&& other)
@@ -67,7 +67,7 @@ namespace networkReliability
 		weights.swap(other.weights);
 		sampleSize = other.sampleSize;
 		externalContext = other.externalContext;
-		containedContext = other.containedContext;
+		containedContext = other.containedcontext;
 	}
 	empiricalDistribution::empiricalDistribution()
 	{}
@@ -79,7 +79,7 @@ namespace networkReliability
 	{
 		return nEdges;
 	}
-	const Context& empiricalDistribution::getContext() const
+	const context& empiricalDistribution::getContext() const
 	{
 		if(externalContext) return *externalContext;
 		return *containedContext.get();

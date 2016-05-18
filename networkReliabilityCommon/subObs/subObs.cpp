@@ -9,19 +9,19 @@ namespace networkReliability
 {
 	namespace subObs
 	{
-		subObs::subObs(Context const& context, boost::shared_array<edgeState> state, double radius)
-			: ::networkReliability::NetworkReliabilityObs(context, state), radius(radius)
+		subObs::subObs(context const& contextObj, boost::shared_array<edgeState> state, double radius)
+			: ::networkReliability::NetworkReliabilityObs(contextObj, state), radius(radius)
 		{
 		}
-		void subObs::getReducedGraph(Context::internalGraph& outputGraph, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
+		void subObs::getReducedGraph(context::internalGraph& outputGraph, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
 		{
-			int nComponents = countComponents(context, state.get(), components, stack, colorMap);
+			int nComponents = countComponents(contextObj, state.get(), components, stack, colorMap);
 			edgeCounts.clear();
 			edgeCounts.resize(nComponents * nComponents);
 
 			//determine the rates between all the different super-vertices
-			Context::internalGraph::edge_iterator current, end;
-			const Context::internalGraph& graph = context.getGraph();
+			context::internalGraph::edge_iterator current, end;
+			const context::internalGraph& graph = contextObj.getGraph();
 			boost::tie(current, end) = boost::edges(graph);
 			for (; current != end; current++)
 			{
@@ -32,7 +32,7 @@ namespace networkReliability
 					edgeCounts[components[current->m_source] + components[current->m_target] * nComponents]++;
 				}
 			}
-			outputGraph = Context::internalGraph(nComponents);
+			outputGraph = context::internalGraph(nComponents);
 			int edgeCounter = 0;
 			for (int i = 0; i < nComponents; i++)
 			{
@@ -52,13 +52,13 @@ namespace networkReliability
 		void subObs::getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const
 		{
 			input.nUnreducedEdges = 0;
-			int nComponents = countComponents(context, state.get(), input.components, input.stack, input.colorMap);
+			int nComponents = countComponents(contextObj, state.get(), input.components, input.stack, input.colorMap);
 			input.edgeCounts.clear();
 			input.edgeCounts.resize(nComponents * nComponents);
 
 			//determine the rates between all the different super-vertices
-			Context::internalGraph::edge_iterator currentBaseGraph, endBaseGraph;
-			const Context::internalGraph& graph = context.getGraph();
+			context::internalGraph::edge_iterator currentBaseGraph, endBaseGraph;
+			const context::internalGraph& graph = contextObj.getGraph();
 			boost::tie(currentBaseGraph, endBaseGraph) = boost::edges(graph);
 			for (; currentBaseGraph != endBaseGraph; currentBaseGraph++)
 			{
@@ -74,7 +74,7 @@ namespace networkReliability
 			input.outputGraph = reducedGraphWithProbabilities(nComponents);
 			//Put in operational / inoperational probabilities for every edge
 			int edgeCounter = 0;
-			const mpfr_class& opProbability = context.getOperationalProbability();
+			const mpfr_class& opProbability = contextObj.getOperationalProbability();
 			mpfr_class inopProbability = 1 - opProbability;
 			for (int i = 0; i < nComponents; i++)
 			{
@@ -125,7 +125,7 @@ namespace networkReliability
 			}
 		}
 		subObs::subObs(subObs&& other)
-			: ::networkReliability::NetworkReliabilityObs(other.context, other.state), radius(other.radius)
+			: ::networkReliability::NetworkReliabilityObs(other.contextObj, other.state), radius(other.radius)
 		{
 		}
 		subObs& subObs::operator=(subObs&& other)

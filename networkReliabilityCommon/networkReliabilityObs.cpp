@@ -7,24 +7,24 @@
 #include "seriesParallelReduction.hpp"
 namespace networkReliability
 {
-	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::archive::binary_iarchive& archive)
-		:context(context)
+	NetworkReliabilityObs::NetworkReliabilityObs(context const& contextObj, boost::archive::binary_iarchive& archive)
+		:contextObj(contextObj)
 	{
 		archive >> *this;
 	}
-	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::archive::text_iarchive& archive)
-		:context(context)
+	NetworkReliabilityObs::NetworkReliabilityObs(context const& contextObj, boost::archive::text_iarchive& archive)
+		:contextObj(contextObj)
 	{
 		archive >> *this;
 	}
-	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::mt19937& randomSource)
-		:context(context)
+	NetworkReliabilityObs::NetworkReliabilityObs(context const& contextObj, boost::mt19937& randomSource)
+		:contextObj(contextObj)
 	{
-		const Context::internalGraph& graph = context.getGraph();
+		const context::internalGraph& graph = contextObj.getGraph();
 		const std::size_t nEdges = boost::num_edges(graph);
 		boost::shared_array<edgeState> state(new edgeState[nEdges]);
 
-		boost::random::bernoulli_distribution<double> edgeDist(context.getOperationalProbability().convert_to<double>());
+		boost::random::bernoulli_distribution<double> edgeDist(contextObj.getOperationalProbability().convert_to<double>());
 
 		for(std::size_t i = 0; i < nEdges; i++)
 		{
@@ -36,12 +36,12 @@ namespace networkReliability
 		}
 		this->state = state;
 	}
-	void NetworkReliabilityObs::constructConditional(Context const& context, boost::mt19937& randomSource, edgeState* state, bool fixed)
+	void NetworkReliabilityObs::constructConditional(context const& contextObj, boost::mt19937& randomSource, edgeState* state, bool fixed)
 	{
-		const Context::internalGraph& graph = context.getGraph();
+		const context::internalGraph& graph = contextObj.getGraph();
 		const std::size_t nEdges = boost::num_edges(graph);
-		const std::size_t minCutEdges = context.getMinCutEdges();
-		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(minCutEdges, nEdges, nEdges);
+		const std::size_t minCutEdges = contextObj.getMinCutEdges();
+		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = contextObj.getInopDistribution(minCutEdges, nEdges, nEdges);
 
 		const std::size_t nRemovedEdges = dist(randomSource);
 		edgeState inopState;
@@ -66,8 +66,8 @@ namespace networkReliability
 			indices.pop_back();
 		}
 	}
-	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::shared_array<edgeState> state)
-		:context(context), state(state)
+	NetworkReliabilityObs::NetworkReliabilityObs(context const& contextObj, boost::shared_array<edgeState> state)
+		:contextObj(contextObj), state(state)
 	{}
 	const edgeState* NetworkReliabilityObs::getState() const
 	{
@@ -75,7 +75,7 @@ namespace networkReliability
 	}
 	NetworkReliabilityObs& NetworkReliabilityObs::operator=(const NetworkReliabilityObs& other)
 	{
-		if(&context != &other.context)
+		if(&contextObj != &other.contextObj)
 		{
 			throw std::runtime_error("Internal error");
 		}
@@ -83,21 +83,21 @@ namespace networkReliability
 		return *this;
 	}
 	NetworkReliabilityObs::NetworkReliabilityObs(NetworkReliabilityObs&& other)
-		:context(other.context), state(other.state)
+		:contextObj(other.contextObj), state(other.state)
 	{}
-	const Context& NetworkReliabilityObs::getContext() const
+	const context& NetworkReliabilityObs::getContext() const
 	{
-		return context;
+		return contextObj;
 	}
-	void NetworkReliabilityObs::getReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
+	void NetworkReliabilityObs::getReducedGraph(context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
 	{
-		int nComponents = countComponents(context, state.get(), components, stack, colorMap);
+		int nComponents = countComponents(contextObj, state.get(), components, stack, colorMap);
 		edgeCounts.clear();
 		edgeCounts.resize(nComponents * nComponents);
 
 		//determine the rates between all the different super-vertices
-		Context::internalGraph::edge_iterator current, end;
-		const Context::internalGraph& graph = context.getGraph();
+		context::internalGraph::edge_iterator current, end;
+		const context::internalGraph& graph = contextObj.getGraph();
 		boost::tie(current, end) = boost::edges(graph);
 		for (; current != end; current++)
 		{
@@ -108,7 +108,7 @@ namespace networkReliability
 				edgeCounts[components[current->m_source] + components[current->m_target] * nComponents]++;
 			}
 		}
-		outputGraph = Context::internalGraph(nComponents);
+		outputGraph = context::internalGraph(nComponents);
 		int edgeCounter = 0;
 		for (int i = 0; i < nComponents; i++)
 		{
@@ -128,13 +128,13 @@ namespace networkReliability
 	void NetworkReliabilityObs::getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const
 	{
 		input.nUnreducedEdges = 0;
-		int nComponents = countComponents(context, state.get(), input.components, input.stack, input.colorMap);
+		int nComponents = countComponents(contextObj, state.get(), input.components, input.stack, input.colorMap);
 		input.edgeCounts.clear();
 		input.edgeCounts.resize(nComponents * nComponents);
 
 		//determine the rates between all the different super-vertices
-		Context::internalGraph::edge_iterator currentBaseGraph, endBaseGraph;
-		const Context::internalGraph& graph = context.getGraph();
+		context::internalGraph::edge_iterator currentBaseGraph, endBaseGraph;
+		const context::internalGraph& graph = contextObj.getGraph();
 		boost::tie(currentBaseGraph, endBaseGraph) = boost::edges(graph);
 		for (; currentBaseGraph != endBaseGraph; currentBaseGraph++)
 		{
@@ -150,7 +150,7 @@ namespace networkReliability
 		input.outputGraph = reducedGraphWithProbabilities(nComponents);
 		//Put in operational / inoperational probabilities for every edge
 		int edgeCounter = 0;
-		const mpfr_class& opProbability = context.getOperationalProbability();
+		const mpfr_class& opProbability = contextObj.getOperationalProbability();
 		mpfr_class inopProbability = 1 - opProbability;
 		for (int i = 0; i < nComponents; i++)
 		{
@@ -210,9 +210,9 @@ namespace networkReliability
 	{
 		return *obs;
 	}
-	const Context& NetworkReliabilityObsWithContext::getContext() const
+	const context& NetworkReliabilityObsWithContext::getContext() const
 	{
-		if(context) return *context;
+		if(contextPtr) return *contextPtr;
 		return obs->getContext();
 	}
 

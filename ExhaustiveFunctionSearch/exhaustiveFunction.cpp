@@ -46,20 +46,20 @@ namespace networkReliability
 			return 0;
 		}
 
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, 0.5))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, 0.5))
 		{
 			return 0;
 		}
-		const std::size_t nEdges = context.getNEdges();
+		const std::size_t nEdges = contextObj.getNEdges();
 		if(nEdges > 36)
 		{
 			std::cout << "This program can be run with at most 36 edges" << std::endl;
 			return 0;
 		}
-		Context::internalGraph const& graph = context.getGraph();
+		context::internalGraph const& graph = contextObj.getGraph();
 		const std::size_t nVertices = boost::num_vertices(graph);
-		const std::vector<int> interestVertices = context.getInterestVertices();
+		const std::vector<int> interestVertices = contextObj.getInterestVertices();
 		
 		std::string message, function;
 		formulaDriver driver(nEdges);
@@ -144,7 +144,7 @@ namespace networkReliability
 			}
 
 			std::vector<int> privateConnectedComponents(nVertices);
-			boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+			boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 			std::vector<boost::default_color_type> colorMap;
 
 			std::vector<edgeState> edgeStates(nEdges);
@@ -166,7 +166,7 @@ namespace networkReliability
 						edgeStatePtr[edgeCounter] = UNFIXED_INOP;
 					}
 				}
-				bool currentGraphConnected = isSingleComponent(context, edgeStatePtr, privateConnectedComponents, stack, colorMap);
+				bool currentGraphConnected = isSingleComponent(contextObj, edgeStatePtr, privateConnectedComponents, stack, colorMap);
 				if(!currentGraphConnected)
 				{
 					for(std::size_t i = 0; i < nFunctions; i++)

@@ -55,12 +55,12 @@ namespace networkReliability
 			return 0;
 		}
 
-		Context context = Context::emptyContext();
-		if (!readContext(variableMap, context, probability))
+		context contextObj = context::emptyContext();
+		if (!readContext(variableMap, contextObj, probability))
 		{
 			return 0;
 		}
-		const std::size_t nEdges = context.getNEdges();
+		const std::size_t nEdges = contextObj.getNEdges();
 
 		boost::mt19937 randomSource;
 		readSeed(variableMap, randomSource);
@@ -68,7 +68,7 @@ namespace networkReliability
 		std::size_t minimumFailedEdges;
 		if (variableMap.count("minimumFailedEdges") == 0)
 		{
-			minimumFailedEdges = context.getMinCutEdges();
+			minimumFailedEdges = contextObj.getMinCutEdges();
 		}
 		else minimumFailedEdges = variableMap["minimumFailedEdges"].as<int>();
 		if (minimumFailedEdges < 0)
@@ -81,7 +81,7 @@ namespace networkReliability
 		TruncatedBinomialDistribution::TruncatedBinomialDistribution operationalEdgesDist(nEdges, 0, nEdges - minimumFailedEdges, probability);
 		boost::shared_array<edgeState> edgeStates(new edgeState[nEdges]);
 
-		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
 
@@ -93,13 +93,13 @@ namespace networkReliability
 			for (int j = 0; j < nOperational; j++) edgeStates[permutation[j]] = UNFIXED_OP;
 			for (std::size_t j = nOperational; j < nEdges; j++) edgeStates[permutation[j]] = UNFIXED_INOP;
 
-			if (!isSingleComponent(context, edgeStates.get(), components, stack, colorMap))
+			if (!isSingleComponent(contextObj, edgeStates.get(), components, stack, colorMap))
 			{
 				countDisconnected++;
 			}
 		}
 		std::cout << "Estimated conditional unreliability probability was " << countDisconnected << " / " << n << " = " << (float)countDisconnected / (float)n << std::endl;
-		if (minimumFailedEdges <= context.getMinCutEdges())
+		if (minimumFailedEdges <= contextObj.getMinCutEdges())
 		{
 			TruncatedBinomialDistribution::TruncatedBinomialDistribution originalDistribution(nEdges, 0, nEdges, probability);
 			mpfr_class conditioningProb = originalDistribution.getCumulativeProbability((int)nEdges - (int)minimumFailedEdges);

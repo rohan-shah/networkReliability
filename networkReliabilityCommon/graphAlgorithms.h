@@ -6,8 +6,8 @@
 namespace networkReliability
 {
 	typedef boost::color_traits<boost::default_color_type> Color;
-	int countComponents(Context const& context, const edgeState* state, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap);
-	bool isSingleComponent(Context const& context, const edgeState* state, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap);
-	void identifyMinCutEdges(const std::vector<int>& edgeResidualCapacityVector, const std::vector<int>& capacityVector, const edgeState* state, const Context::internalDirectedGraph& directedGraph, std::vector<boost::default_color_type>& colorVector, std::vector<bool>& edgesToConsider, std::vector<int>& outputEdges, int source, int sink);
+	int countComponents(context const& context, const edgeState* state, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap);
+	bool isSingleComponent(context const& context, const edgeState* state, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap);
+	void identifyMinCutEdges(const std::vector<int>& edgeResidualCapacityVector, const std::vector<int>& capacityVector, const edgeState* state, const context::internalDirectedGraph& directedGraph, std::vector<boost::default_color_type>& colorVector, std::vector<bool>& edgesToConsider, std::vector<int>& outputEdges, int source, int sink);
 }
 #endif

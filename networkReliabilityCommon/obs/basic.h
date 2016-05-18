@@ -25,14 +25,14 @@ namespace networkReliability
 			typedef ::networkReliability::subObs::basic subObservationType;
 			typedef ::networkReliability::subObs::basicConstructorType subObservationConstructorType;
 
-			basic(Context const& context, boost::mt19937& randomSource);
-			basic(Context const& context, boost::shared_array<edgeState> state);
+			basic(context const& contextObj, boost::mt19937& randomSource);
+			basic(context const& contextObj, boost::shared_array<edgeState> state);
 			basic(basic&& other);
 			basic& operator=(basic&& other);
-			static basic constructConditional(Context const& context, boost::mt19937& randomSource);
+			static basic constructConditional(context const& contextObj, boost::mt19937& randomSource);
 		private:
 			void getSubObservation(edgeState* newState, double radius, subObservationConstructorType& other) const;
-			basic(Context const& context, boost::shared_array<edgeState> state, ::networkReliability::obs::basicConstructorType&);
+			basic(context const& contextObj, boost::shared_array<edgeState> state, ::networkReliability::obs::basicConstructorType&);
 		};
 	}
 }

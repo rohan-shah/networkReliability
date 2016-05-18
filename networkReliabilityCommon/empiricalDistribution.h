@@ -26,7 +26,7 @@ namespace networkReliability
 		friend class boost::serialization::access;
 		empiricalDistribution(empiricalDistribution&& other);
 		empiricalDistribution& operator=(empiricalDistribution&& other);
-		empiricalDistribution(bool isWeighted, std::size_t nEdges, const Context& context);
+		empiricalDistribution(bool isWeighted, std::size_t nEdges, const context& context);
 		void hintDataCount(std::size_t size);
 		void add(const edgeState* state);
 		void add(const edgeState* state, double weight);
@@ -35,7 +35,7 @@ namespace networkReliability
 		std::size_t getNEdges() const;
 		bool isWeighted() const;
 		double getWeight(std::size_t index) const;
-		const Context& getContext() const;
+		const context& getContext() const;
 	private:
 		template<class Archive> void save(Archive & ar, const unsigned int version) const
 		{
@@ -75,7 +75,7 @@ namespace networkReliability
 			{
 				throw std::runtime_error("File did not start with correct type specifier");
 			}
-			containedContext.reset(new Context(ar));
+			containedContext.reset(new context(ar));
 			std::string weightString;
 			ar >> weightString;
 			if(weightString == "weighted")
@@ -137,8 +137,8 @@ namespace networkReliability
 		bool _isWeighted;
 		std::vector<double> weights;
 
-		std::shared_ptr<Context> containedContext;
-		Context const* externalContext;
+		std::shared_ptr<context> containedContext;
+		context const* externalContext;
 	};
 }
 #endif

@@ -31,12 +31,12 @@ namespace networkReliability
 			int getFixedInopCount() const;
 			const std::vector<int>& getPotentiallyDeactivated() const;
 			basic(basic&& other);
-			basic(Context const& context, boost::shared_array<edgeState> state, double radius);
+			basic(context const& contextObj, boost::shared_array<edgeState> state, double radius);
 			int getMinCut() const;
 			basic& operator=(basic&& other);
 		private:
 			void initialise();
-			basic(Context const& context, boost::shared_array<edgeState> state, double radius, ::networkReliability::subObs::basicConstructorType&);
+			basic(context const& contextObj, boost::shared_array<edgeState> state, double radius, ::networkReliability::subObs::basicConstructorType&);
 			void getObservation(edgeState* state, boost::mt19937& randomSource, observationConstructorType&) const;
 			bool potentiallyDisconnected;
 			int fixedInop;

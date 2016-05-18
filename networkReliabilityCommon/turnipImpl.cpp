@@ -5,12 +5,12 @@
 #include "computeConditionalProb.h"
 namespace networkReliability
 {
-	TurnipEqualRateInput::TurnipEqualRateInput(boost::mt19937& randomSource, const Context::internalGraph* graph, const std::vector<int>& interestVertices)
+	TurnipEqualRateInput::TurnipEqualRateInput(boost::mt19937& randomSource, const context::internalGraph* graph, const std::vector<int>& interestVertices)
 		:randomSource(randomSource), graph(graph), interestVertices(interestVertices), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false)
 	{}
 	void turnipEqualRate(TurnipEqualRateInput& input)
 	{
-		const Context::internalGraph& graph = *input.graph;
+		const context::internalGraph& graph = *input.graph;
 		const std::vector<int>& interestVertices = input.interestVertices;
 		const std::size_t nEdges = boost::num_edges(graph);
 		const std::size_t nVertices = boost::num_vertices(graph);
@@ -21,7 +21,7 @@ namespace networkReliability
 		if (input.edges.size() == 0)
 		{
 			input.edges.resize(nEdges);
-			Context::internalGraph::edge_iterator current, end;
+			context::internalGraph::edge_iterator current, end;
 			boost::tie(current, end) = boost::edges(graph);
 			for (; current != end; current++)
 			{

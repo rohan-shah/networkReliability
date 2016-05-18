@@ -72,8 +72,8 @@ namespace networkReliability
 			return 0;
 		}
 
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, opProbability))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, opProbability))
 		{
 			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
@@ -131,15 +131,15 @@ namespace networkReliability
 		std::vector<::networkReliability::subObs::basic> observations;
 		std::vector<::networkReliability::subObs::basic> nextStepObservations;
 
-		const std::vector<int>& interestVertices = context.getInterestVertices();
+		const std::vector<int>& interestVertices = contextObj.getInterestVertices();
 
 		//working data for algorithms
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
-		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 		double totalSamples = (double)n;
 		for (std::vector<float>::iterator k = splittingFactors.begin(); k != splittingFactors.end(); k++) totalSamples *= *k;
-		std::size_t nEdges = context.getNEdges();
+		std::size_t nEdges = contextObj.getNEdges();
 
 		mpfr_class firstMomentSum = 0;
 		//If the usePMC flag is set, don't use splitting on the last step. Instead use PMC. 
@@ -154,14 +154,14 @@ namespace networkReliability
 		turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
 
 		//Work out the probability we initially condition on below by calling constructConditional
-		const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(0, nEdges, nEdges);
-		const mpfr_class initialConditioningProb = 1 - dist.getCumulativeProbability((int)(context.getMinCutEdges() - 1));
+		const TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = contextObj.getInopDistribution(0, nEdges, nEdges);
+		const mpfr_class initialConditioningProb = 1 - dist.getCumulativeProbability((int)(contextObj.getMinCutEdges() - 1));
 		for (std::size_t i = 0; i < n; i++)
 		{
-			::networkReliability::obs::basic currentObs = ::networkReliability::obs::basic::constructConditional(context, randomSource);
+			::networkReliability::obs::basic currentObs = ::networkReliability::obs::basic::constructConditional(contextObj, randomSource);
 			::networkReliability::subObs::basic subObs = ::networkReliability::obs::getSubObservation<::networkReliability::obs::basic>::get(currentObs, thresholds[0]);
 
-			if (!isSingleComponent(context, subObs.getState(), components, stack, colorMap))
+			if (!isSingleComponent(contextObj, subObs.getState(), components, stack, colorMap))
 			{
 				observations.push_back(std::move(subObs));
 			}
@@ -177,7 +177,7 @@ namespace networkReliability
 				{
 					::networkReliability::obs::basic newObs = ::networkReliability::subObs::getObservation<::networkReliability::subObs::basic>::get(*j, randomSource);
 					::networkReliability::subObs::basic sub = ::networkReliability::obs::getSubObservation<::networkReliability::obs::basic>::get(newObs, thresholds[splittingLevel+1]);
-					if(!isSingleComponent(context, sub.getState(), components, stack, colorMap))
+					if(!isSingleComponent(contextObj, sub.getState(), components, stack, colorMap))
 					{
 						nextStepObservations.push_back(std::move(sub));
 					}
@@ -190,11 +190,11 @@ namespace networkReliability
 			boost::random::bernoulli_distribution<float> bernoulli(*splittingFactors.rbegin() - floor(*splittingFactors.rbegin()));
 			for (std::vector<::networkReliability::subObs::basic>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
-				Context::internalGraph reducedGraph;
+				context::internalGraph reducedGraph;
 				j->getReducedGraph(reducedGraph, edgeCounts, components, stack, colorMap);
 				turnipInput.n = (int)*splittingFactors.rbegin() + bernoulli(randomSource);
 				turnipInput.graph = &reducedGraph;
-				turnipInput.minimumInoperative = std::max(0, ((int)context.getMinCutEdges() - (int)j->getFixedInopCount()));
+				turnipInput.minimumInoperative = std::max(0, ((int)contextObj.getMinCutEdges() - (int)j->getFixedInopCount()));
 				const std::size_t nReducedVertices = boost::num_vertices(reducedGraph);
 				const std::size_t nReducedEdges = boost::num_edges(reducedGraph);
 				//If the graph is DEFINITELY disconnected, add a value of 1 and continue.
@@ -216,7 +216,7 @@ namespace networkReliability
 				turnipInput.edges.clear();
 				turnipInput.edges.resize(nReducedEdges);
 				turnipInput.edgeCounts.resize(nReducedEdges);
-				Context::internalGraph::edge_iterator current, end;
+				context::internalGraph::edge_iterator current, end;
 				boost::tie(current, end) = boost::edges(reducedGraph);
 				for (; current != end; current++)
 				{
@@ -245,7 +245,7 @@ namespace networkReliability
 			firstMomentSum = observations.size();
 			if (variableMap.count("outputConditionalDistribution") > 0)
 			{
-				empiricalDistribution empiricalDist(false, nEdges, context);
+				empiricalDistribution empiricalDist(false, nEdges, contextObj);
 				empiricalDist.hintDataCount(observations.size());
 				for (std::vector<::networkReliability::subObs::basic>::iterator j = observations.begin(); j != observations.end(); j++)
 				{

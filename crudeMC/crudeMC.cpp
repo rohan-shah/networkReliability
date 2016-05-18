@@ -51,8 +51,8 @@ namespace networkReliability
 			return 0;
 		}
 
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, probability))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, probability))
 		{
 			return 0;
 		}
@@ -60,19 +60,19 @@ namespace networkReliability
 		boost::mt19937 randomSource;
 		readSeed(variableMap, randomSource);
 
-		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 
 		std::vector<int> components;
 		std::vector<int> interestComponents;
-		const std::vector<int> interestVertices = context.getInterestVertices();
+		const std::vector<int> interestVertices = contextObj.getInterestVertices();
 
 		std::vector<boost::default_color_type> colorMap;
 		int countDisconnected = 0;
 
 		for(std::size_t i = 0; i < n; i++)
 		{
-			NetworkReliabilityObs obs(context, randomSource);
-			if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
+			NetworkReliabilityObs obs(contextObj, randomSource);
+			if(!isSingleComponent(contextObj, obs.getState(), components, stack, colorMap))
 			{
 				countDisconnected++;
 			}			

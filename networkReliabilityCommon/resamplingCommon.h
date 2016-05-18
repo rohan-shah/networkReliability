@@ -13,9 +13,9 @@ namespace networkReliability
 	struct resamplingInput
 	{
 	public:
-		resamplingInput(const Context& context);
+		resamplingInput(const context& contextObj);
 		bool shouldOutputTree;
-		const Context& context;
+		const context& contextObj;
 		std::vector<double> thresholds;
 		std::size_t n;
 		int finalSplittingStep;
@@ -25,7 +25,7 @@ namespace networkReliability
 	struct resamplingOutput
 	{
 	public:
-		resamplingOutput(std::vector<::networkReliability::subObs::withResampling>& observations, boost::mt19937& randomSource, const Context& context, const std::vector<double>& thresholds);
+		resamplingOutput(std::vector<::networkReliability::subObs::withResampling>& observations, boost::mt19937& randomSource, const context& contextObj, const std::vector<double>& thresholds);
 		std::vector<::networkReliability::subObs::withResampling>& observations;
 		boost::mt19937& randomSource;
 		bool zeroEstimate;

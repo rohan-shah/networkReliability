@@ -62,13 +62,13 @@ namespace networkReliability
 		}
 		mpfr_class inopProbability = 1 - opProbability;
 
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, opProbability))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, opProbability))
 		{
 			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
 		}
-		const std::vector<int>& interestVertices = context.getInterestVertices();
+		const std::vector<int>& interestVertices = contextObj.getInterestVertices();
 
 		if(interestVertices.size() > 2)
 		{
@@ -88,7 +88,7 @@ namespace networkReliability
 			randomSource.seed(variableMap["seed"].as<int>());
 		}
 
-		resamplingInput resamplingInputs(context);
+		resamplingInput resamplingInputs(contextObj);
 		resamplingInputs.shouldOutputTree = variableMap.count("outputTree") > 0;
 		resamplingInputs.n = n;
 
@@ -104,11 +104,11 @@ namespace networkReliability
 		//working data for graph algorithms
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
-		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 
 		mpfr_class estimate = 0;
 
-		resamplingOutput resamplingOutputs(observations, randomSource, context, resamplingInputs.thresholds);
+		resamplingOutput resamplingOutputs(observations, randomSource, contextObj, resamplingInputs.thresholds);
 		doResampling(resamplingInputs, resamplingOutputs);
 		if(resamplingOutputs.zeroEstimate) goto returnEstimate;
 		else
@@ -121,7 +121,7 @@ namespace networkReliability
 			//Similarly, this is used for the connected components of the reduced graph. 
 			boost::detail::depth_first_visit_restricted_impl_helper<::networkReliability::subObs::subObs::reducedGraphWithProbabilities>::stackType reducedGraphStack;
 			//Holds the subObservations that couldn't be completely enumerated
-			NetworkReliabilityObsCollection tooManyEdges(&context, *(resamplingInputs.thresholds.rbegin()+1));
+			NetworkReliabilityObsCollection tooManyEdges(&contextObj, *(resamplingInputs.thresholds.rbegin()+1));
 
 			int counter = 0;
 			for (std::vector<::networkReliability::subObs::withResampling>::iterator j = observations.begin(); j != observations.end(); j++, counter++)
@@ -181,7 +181,7 @@ namespace networkReliability
 						tooManyEdges.add(*j);
 						tooManyEdgesCount++;
 						::networkReliability::obs::withResampling obs = ::networkReliability::subObs::getObservation<::networkReliability::subObs::withResampling>::get(*j, randomSource);
-						if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
+						if(!isSingleComponent(contextObj, obs.getState(), components, stack, colorMap))
 						{
 							estimate += j->getGeneratedObservationConditioningProb();
 						}

@@ -15,7 +15,7 @@ namespace networkReliability
 		class subObs : public ::networkReliability::NetworkReliabilityObs
 		{
 		public:
-			void getReducedGraph(Context::internalGraph& outputGraph, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
+			void getReducedGraph(context::internalGraph& outputGraph, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
 			typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, int>, boost::property<boost::edge_index_t, int, boost::property<boost::edge_inop_probability_t, mpfr_class, boost::property<boost::edge_op_probability_t, mpfr_class> > > > reducedGraphWithProbabilities;
 			struct getReducedGraphNoSelfWithWeightsInput
 			{
@@ -27,7 +27,7 @@ namespace networkReliability
 				std::vector<int> edgeCounts;
 				std::size_t nUnreducedEdges;
 				std::vector<int> components;
-				boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+				boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 				std::vector<boost::default_color_type> colorMap;
 				const std::vector<int>& interestVertices;
 				std::vector<int> reducedInterestVertices;
@@ -36,7 +36,7 @@ namespace networkReliability
 			double getRadius() const;
 			subObs& operator=(subObs&&);
 		protected:
-			subObs(const Context& context, boost::shared_array<edgeState> state, double radius);
+			subObs(const context& contextObj, boost::shared_array<edgeState> state, double radius);
 			subObs(subObs&& other);
 			double radius;
 		};

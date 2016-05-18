@@ -65,13 +65,13 @@ namespace networkReliability
 		}
 		mpfr_class inopProbability = 1 - opProbability;
 
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, opProbability))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, opProbability))
 		{
 			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
 		}
-		const std::vector<int>& interestVertices = context.getInterestVertices();
+		const std::vector<int>& interestVertices = contextObj.getInterestVertices();
 
 		std::size_t nPMC = variableMap["nPMC"].as<std::size_t>();
 		if(nPMC == 0)
@@ -92,7 +92,7 @@ namespace networkReliability
 			randomSource.seed(variableMap["seed"].as<int>());
 		}
 
-		resamplingInput resamplingInputs(context);
+		resamplingInput resamplingInputs(contextObj);
 		resamplingInputs.shouldOutputTree = variableMap.count("outputTree") > 0;
 		resamplingInputs.n = n;
 
@@ -108,11 +108,11 @@ namespace networkReliability
 		//working data for graph algorithms
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
-		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 
 		mpfr_class estimate = 0;
 
-		resamplingOutput resamplingOutputs(observations, randomSource, context, resamplingInputs.thresholds);
+		resamplingOutput resamplingOutputs(observations, randomSource, contextObj, resamplingInputs.thresholds);
 		doResampling(resamplingInputs, resamplingOutputs);
 		if(resamplingOutputs.zeroEstimate) goto returnEstimate;
 		else
@@ -125,7 +125,7 @@ namespace networkReliability
 			turnipInput.exponentialRate = -boost::multiprecision::log(mpfr_class(1 - opProbability));
 			for (std::vector<::networkReliability::subObs::withResampling>::iterator j = observations.begin(); j != observations.end(); j++)
 			{
-				Context::internalGraph reducedGraph;
+				context::internalGraph reducedGraph;
 				turnipInput.minimumInoperative = j->getMinCut();
 				j->getReducedGraph(reducedGraph, edgeCounts, components, stack, colorMap);
 				turnipInput.n = (int)nPMC;
@@ -151,7 +151,7 @@ namespace networkReliability
 				turnipInput.edges.clear();
 				turnipInput.edges.resize(nReducedEdges);
 				turnipInput.edgeCounts.resize(nReducedEdges);
-				Context::internalGraph::edge_iterator current, end;
+				context::internalGraph::edge_iterator current, end;
 				boost::tie(current, end) = boost::edges(reducedGraph);
 				for (; current != end; current++)
 				{

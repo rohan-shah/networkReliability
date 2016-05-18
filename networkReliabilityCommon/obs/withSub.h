@@ -11,10 +11,10 @@ namespace networkReliability
 	class withSub : public ::networkReliability::NetworkReliabilityObs
 	{
 	public:
-		static void getSubObservation(double radius, edgeState* newState, const Context& context, const edgeState* oldEdgeStatesPtr);
+		static void getSubObservation(double radius, edgeState* newState, const context& contextObj, const edgeState* oldEdgeStatesPtr);
 	protected:
-		withSub(Context const& context, boost::mt19937& randomSource);
-		withSub(Context const& context, boost::shared_array<edgeState> state);
+		withSub(context const& contextObj, boost::mt19937& randomSource);
+		withSub(context const& contextObj, boost::shared_array<edgeState> state);
 		withSub(withSub&& other);
 		withSub& operator=(withSub&& other);
 		void getSubObservation(double radius, edgeState* outputState) const;

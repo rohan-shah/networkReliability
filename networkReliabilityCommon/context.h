@@ -18,11 +18,11 @@
 #define HIGH_CAPACITY 100000
 namespace networkReliability
 {
-	class Context : private boost::noncopyable
+	class context : private boost::noncopyable
 	{
 	public:
-		Context(boost::archive::binary_iarchive& ar);
-		Context(boost::archive::text_iarchive& ar);
+		context(boost::archive::binary_iarchive& ar);
+		context(boost::archive::text_iarchive& ar);
 		friend class boost::serialization::access;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_index_t, int> > inputGraph;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_index_t, int> > internalGraph;
@@ -34,15 +34,15 @@ namespace networkReliability
 		> internalDirectedGraph;
 		typedef std::pair<float, float> vertexPosition;
 
-		Context(boost::shared_ptr<const inputGraph> graph, boost::shared_ptr<const std::vector<unsigned int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances = boost::shared_array<double>());
+		context(boost::shared_ptr<const inputGraph> graph, boost::shared_ptr<const std::vector<unsigned int> > edgeOrdering, boost::shared_ptr<const std::vector<int> > interestVertices, boost::shared_ptr<std::vector<vertexPosition> > vertexPositions, const mpfr_class& operationalProbability, boost::shared_array<double> inputEdgeDistances = boost::shared_array<double>());
 
-		Context& operator=(Context&& other);
-		Context(Context&& other);
-		~Context();
+		context& operator=(context&& other);
+		context(context&& other);
+		~context();
 		
-		static Context gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpfr_class& operationalProbability);
-		static Context fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability, bool useSpatialDistances);
-		static Context emptyContext();
+		static context gridContext(int gridDimension, boost::shared_ptr<const std::vector<int> > interestVertices, const mpfr_class& operationalProbability);
+		static context fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability, bool useSpatialDistances);
+		static context emptyContext();
 		const internalGraph& getGraph() const;
 		const internalDirectedGraph& getDirectedGraph() const;
 		const double* getEdgeDistances() const;
@@ -54,7 +54,7 @@ namespace networkReliability
 		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getOpDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
 		std::size_t getMinCutEdges() const;
 		int getMinCut(std::vector<int>& capacityVector) const;
-		static Context completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability);
+		static context completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability);
 		double getInoperationalProbabilityD() const;
 		const mpfr_class& getOperationalProbabilityPower(int power) const;
 		const mpfr_class& getInoperationalProbabilityPower(int power) const;
@@ -65,10 +65,10 @@ namespace networkReliability
 		mutable std::vector<internalDirectedGraph::edge_descriptor> vertexPredecessorVector;
 		mutable std::vector<boost::default_color_type> colorVector;
 		mutable std::vector<int> distanceVector;
-		mutable boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType depthFirstStack;
+		mutable boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType depthFirstStack;
 		//More temporary storage
 		mutable std::vector<int> maxFlowResults;
-		mutable allPointsMaxFlow::allPointsMaxFlowScratch<Context::internalDirectedGraph, int> scratch;
+		mutable allPointsMaxFlow::allPointsMaxFlowScratch<context::internalDirectedGraph, int> scratch;
 
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -142,7 +142,7 @@ namespace networkReliability
 			colorVector.resize(2*nEdges);
 			distanceVector.resize(2*nEdges);
 		}
-		Context();
+		context();
 		void constructEdgeDistances();
 		void constructDirectedGraph();
 		boost::shared_ptr<const internalGraph> graph;
@@ -171,7 +171,7 @@ namespace boost
 		struct customStruct
 		{};
 	}
-	template<> struct property_map<const networkReliability::Context::internalDirectedGraph, edge_capacity_t>
+	template<> struct property_map<const networkReliability::context::internalDirectedGraph, edge_capacity_t>
 	{
 		typedef networkReliabilityImpl::customStruct const_type;
 	};

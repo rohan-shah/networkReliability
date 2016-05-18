@@ -7,11 +7,11 @@
 #include "obs/getSubObservation.hpp"
 namespace networkReliability
 {
-	resamplingInput::resamplingInput(networkReliability::Context const& context)
-		:context(context)
+	resamplingInput::resamplingInput(networkReliability::context const& contextObj)
+		:contextObj(contextObj)
 	{}
-	resamplingOutput::resamplingOutput(std::vector<::networkReliability::subObs::withResampling>& observations, boost::mt19937& randomSource, const Context& context, const std::vector<double>& thresholds)
-		:observations(observations), randomSource(randomSource), tree(&context, thresholds)
+	resamplingOutput::resamplingOutput(std::vector<::networkReliability::subObs::withResampling>& observations, boost::mt19937& randomSource, const context& contextObj, const std::vector<double>& thresholds)
+		:observations(observations), randomSource(randomSource), tree(&contextObj, thresholds)
 	{
 		boost::accumulators::accumulator_set<mpfr_class, boost::accumulators::stats<boost::accumulators::tag::sum> > zeroInitialisedAccumulator(boost::parameter::keyword<boost::accumulators::tag::sample>::get() = 0);
 		probabilities.resize(thresholds.size(), zeroInitialisedAccumulator);
@@ -33,7 +33,7 @@ namespace networkReliability
 
 		for (std::size_t i = 0; i < input.n; i++)
 		{
-			::networkReliability::obs::withResampling currentObs = ::networkReliability::obs::withResampling::constructConditional(input.context, output.randomSource);
+			::networkReliability::obs::withResampling currentObs = ::networkReliability::obs::withResampling::constructConditional(input.contextObj, output.randomSource);
 			::networkReliability::subObs::withResampling subObs = ::networkReliability::obs::getSubObservation<::networkReliability::obs::withResampling>::get(currentObs, input.thresholds[0]);
 
 			if(input.shouldOutputTree) output.tree.add(subObs, 0, -1, subObs.getMinCut() < HIGH_CAPACITY);

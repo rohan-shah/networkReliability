@@ -37,12 +37,12 @@ namespace networkReliability
 		typedef boost::adjacency_list< > laidOutBoostGraph;
 		friend class boost::serialization::access;
 		//The levels go 0, 1, ..., nLevels - 1, with level 0 being the topmost level of the tree
-		NetworkReliabilityObsTree(Context const* externalContext, const std::vector<double>& thresholds);
+		NetworkReliabilityObsTree(context const* externalContext, const std::vector<double>& thresholds);
 		void reserve(std::size_t reservePerLevel);
 		NetworkReliabilityObsTree(boost::archive::binary_iarchive& ar);
 		NetworkReliabilityObsTree(boost::archive::text_iarchive& ar);
 		void add(const NetworkReliabilityObs& obs, unsigned int level, int parentIndex, bool potentiallyDisconnected);
-		const Context& getContext() const;
+		const context& getContext() const;
 		void expand(boost::shared_array<edgeState> state, unsigned int level, unsigned int index) const;
 		std::size_t getSampleSize(unsigned int level) const;
 		std::size_t nLevels() const;
@@ -94,7 +94,7 @@ namespace networkReliability
 				throw std::runtime_error("Incorrect type specifier");
 			}
 			ar >> thresholds;
-			containedContext.reset(new Context(ar));
+			containedContext.reset(new context(ar));
 			std::size_t levelDataSize;
 			ar >> levelDataSize;
 			for(std::size_t counter = 0; counter < levelDataSize; counter++)
@@ -140,8 +140,8 @@ namespace networkReliability
 		std::vector<std::vector<int> > parentData;
 		std::vector<std::vector<bool> > potentiallyDisconnected;
 		mutable std::vector<std::vector<int> > perLevelVertexIds;
-		std::shared_ptr<Context> containedContext;
-		Context const* externalContext;
+		std::shared_ptr<context> containedContext;
+		context const* externalContext;
 		std::vector<double> thresholds;
 		mutable std::shared_ptr<treeGraphType> treeGraph;
 	};

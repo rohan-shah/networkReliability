@@ -63,19 +63,19 @@ namespace networkReliability
 		}
 		mpfr_class inopProbability = 1 - opProbability;
 
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, opProbability))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, opProbability))
 		{
 			std::cout << "Unable to construct context object" << std::endl;
 			return 0;
 		}
-		const std::vector<int>& interestVertices = context.getInterestVertices();
+		const std::vector<int>& interestVertices = contextObj.getInterestVertices();
 		if(interestVertices.size() > 2) 
 		{
 			std::cout << "Importance resampling can only be used for two-terminal network reliability" << std::endl;
 			return 0;
 		}
-		const std::size_t nEdges = context.getNEdges();
+		const std::size_t nEdges = contextObj.getNEdges();
 
 		std::size_t n;
 		if(!readN(variableMap, n))
@@ -89,7 +89,7 @@ namespace networkReliability
 			randomSource.seed(variableMap["seed"].as<int>());
 		}
 
-		resamplingInput resamplingInputs(context);
+		resamplingInput resamplingInputs(contextObj);
 		resamplingInputs.shouldOutputTree = variableMap.count("outputTree") > 0;
 		resamplingInputs.n = n;
 
@@ -105,11 +105,11 @@ namespace networkReliability
 		//working data for graph algorithms
 		std::vector<int> components;
 		std::vector<boost::default_color_type> colorMap;
-		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 
 		mpfr_class estimate = 0;
 
-		resamplingOutput resamplingOutputs(observations, randomSource, context, resamplingInputs.thresholds);
+		resamplingOutput resamplingOutputs(observations, randomSource, contextObj, resamplingInputs.thresholds);
 		doResampling(resamplingInputs, resamplingOutputs);
 		if(resamplingOutputs.zeroEstimate)
 		{
@@ -119,7 +119,7 @@ namespace networkReliability
 		estimate = (boost::accumulators::sum(resamplingOutputs.probabilities[resamplingInputs.finalSplittingStep]) / n);
 		if (variableMap.count("outputConditionalDistribution") > 0)
 		{
-			empiricalDistribution outputDistributions(true, nEdges, context);
+			empiricalDistribution outputDistributions(true, nEdges, contextObj);
 			for(std::vector<::networkReliability::subObs::withResampling>::iterator i = observations.begin(); i != observations.end(); i++)
 			{
 				outputDistributions.add(i->getState(), i->getConditioningProb().convert_to<double>());

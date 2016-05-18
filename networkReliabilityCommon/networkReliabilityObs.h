@@ -26,16 +26,16 @@ namespace networkReliability
 	{
 	public:
 		friend class boost::serialization::access;
-		NetworkReliabilityObs(Context const& context, boost::mt19937& randomSource);
-		NetworkReliabilityObs(Context const& context, boost::shared_array<edgeState> state);
-		NetworkReliabilityObs(Context const& context, boost::archive::binary_iarchive& archive);
-		NetworkReliabilityObs(Context const& context, boost::archive::text_iarchive& archive);
+		NetworkReliabilityObs(context const& contextObj, boost::mt19937& randomSource);
+		NetworkReliabilityObs(context const& contextObj, boost::shared_array<edgeState> state);
+		NetworkReliabilityObs(context const& contextObj, boost::archive::binary_iarchive& archive);
+		NetworkReliabilityObs(context const& contextObj, boost::archive::text_iarchive& archive);
 		NetworkReliabilityObs(NetworkReliabilityObs&& other);
 		const edgeState* getState() const;
 		NetworkReliabilityObs& operator=(const NetworkReliabilityObs& other);
-		const Context& getContext() const;
+		const context& getContext() const;
 		//The reduced graph code
-		void getReducedGraph(Context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
+		void getReducedGraph(context::internalGraph& outputGraph, int& minimumInoperative, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, int>, boost::property<boost::edge_index_t, int, boost::property<boost::edge_inop_probability_t, mpfr_class, boost::property<boost::edge_op_probability_t, mpfr_class> > > > reducedGraphWithProbabilities;
 		struct getReducedGraphNoSelfWithWeightsInput
 		{
@@ -47,7 +47,7 @@ namespace networkReliability
 			std::vector<int> edgeCounts;
 			std::size_t nUnreducedEdges;
 			std::vector<int> components;
-			boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+			boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 			std::vector<boost::default_color_type> colorMap;
 			const std::vector<int>& interestVertices;
 			std::vector<int> reducedInterestVertices;
@@ -55,8 +55,8 @@ namespace networkReliability
 		void getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const;
 
 	protected:
-		static void constructConditional(Context const& context, boost::mt19937& randomSource, edgeState* state, bool fixed);
-		Context const& context;
+		static void constructConditional(context const& contextObj, boost::mt19937& randomSource, edgeState* state, bool fixed);
+		context const& contextObj;
 		boost::shared_array<edgeState> state;
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -64,7 +64,7 @@ namespace networkReliability
 		{
 			std::string typeString = "networkReliabilityObs";
 			ar << typeString;
-			ar << boost::serialization::make_array(state.get(), context.getNEdges());
+			ar << boost::serialization::make_array(state.get(), contextObj.getNEdges());
 			typeString = "networkReliabilityObs_end";
 			ar << typeString;
 		}
@@ -76,8 +76,8 @@ namespace networkReliability
 			{
 				throw std::runtime_error("Incorrect type specifier");
 			}
-			state.reset(new edgeState[context.getNEdges()]);
-			ar >> boost::serialization::make_array(state.get(), context.getNEdges());
+			state.reset(new edgeState[contextObj.getNEdges()]);
+			ar >> boost::serialization::make_array(state.get(), contextObj.getNEdges());
 			ar >> typeString;
 			if(typeString != "networkReliabilityObs_end")
 			{
@@ -99,7 +99,7 @@ namespace networkReliability
 		NetworkReliabilityObsWithContext(NetworkReliabilityObs& obs);
 		friend class boost::serialization::access;
 		const NetworkReliabilityObs& getObs() const;
-		const Context& getContext() const;
+		const context& getContext() const;
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const
@@ -119,15 +119,15 @@ namespace networkReliability
 			{
 				throw std::runtime_error("Incorrect type specifier");
 			}
-			context.reset(new Context(ar));
-			obs.reset(new NetworkReliabilityObs(*context.get(), ar));
+			contextPtr.reset(new context(ar));
+			obs.reset(new NetworkReliabilityObs(*contextPtr.get(), ar));
 			ar >> typeString;
 			if(typeString != "networkReliabilityObsWithContext_end")
 			{
 				throw std::runtime_error("Incorrect type specifier");
 			}
 		}
-		boost::shared_ptr<const Context> context;
+		boost::shared_ptr<const context> contextPtr;
 		boost::shared_ptr<NetworkReliabilityObs> obs;
 	};
 

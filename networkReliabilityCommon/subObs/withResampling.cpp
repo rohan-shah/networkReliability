@@ -8,15 +8,15 @@ namespace networkReliability
 {
 	namespace subObs
 	{
-		withResampling::withResampling(Context const& context, boost::shared_array<edgeState> state, double radius, int conditioningCount, mpfr_class conditioningProb)
-		: ::networkReliability::subObs::subObs(context, state, radius), conditioningCount(conditioningCount), fixedInop(0), conditioningProb(conditioningProb)
+		withResampling::withResampling(context const& contextObj, boost::shared_array<edgeState> state, double radius, int conditioningCount, mpfr_class conditioningProb)
+		: ::networkReliability::subObs::subObs(contextObj, state, radius), conditioningCount(conditioningCount), fixedInop(0), conditioningProb(conditioningProb)
 		{
 			initialise();
 		}
 		void withResampling::initialise()
 		{
-			const std::size_t nEdges = context.getNEdges();
-			std::vector<int>& capacityVector = context.capacityVector;
+			const std::size_t nEdges = contextObj.getNEdges();
+			std::vector<int>& capacityVector = contextObj.capacityVector;
 			int couldBeDeactivatedCounter = 0;
 			for(std::size_t i = 0; i < nEdges; i++)
 			{
@@ -41,7 +41,7 @@ namespace networkReliability
 				}
 			}
 
-			minCut = context.getMinCut(capacityVector);
+			minCut = contextObj.getMinCut(capacityVector);
 			if(minCut >= HIGH_CAPACITY)
 			{}
 			else
@@ -52,12 +52,12 @@ namespace networkReliability
 				{
 					if(conditioningCount > fixedInop)
 					{
-						const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = context.getInopDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
+						const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& relevantDistribution = contextObj.getInopDistribution(conditioningCount - fixedInop, couldBeDeactivated.size(), couldBeDeactivated.size());
 						newConditioningProb = 1 - relevantDistribution.getCumulativeProbability(minCut - conditioningCount + fixedInop - 1);
 					}
 					else
 					{
-						boost::math::binomial_distribution<mpfr_class> relevantBinomial((double)couldBeDeactivated.size(), context.getInoperationalProbabilityD());
+						boost::math::binomial_distribution<mpfr_class> relevantBinomial((double)couldBeDeactivated.size(), contextObj.getInoperationalProbabilityD());
 						newConditioningProb = boost::math::cdf(boost::math::complement(relevantBinomial, minCut - 1));
 					}
 				}
@@ -102,7 +102,7 @@ namespace networkReliability
 		}
 		void withResampling::getObservation(edgeState* newState, boost::mt19937& randomSource, observationConstructorType& otherData) const
 		{
-			const std::size_t nEdges = context.getNEdges();
+			const std::size_t nEdges = contextObj.getNEdges();
 			memcpy(newState, state.get(), sizeof(edgeState)*nEdges);
 			if(radius == 0)
 			{
@@ -110,7 +110,7 @@ namespace networkReliability
 				otherData.conditioningProb = 1;
 				return;
 			}
-			const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& distribution = context.getInopDistribution(std::max(minCut, conditioningCount - fixedInop), couldBeDeactivated.size(), couldBeDeactivated.size());
+			const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& distribution = contextObj.getInopDistribution(std::max(minCut, conditioningCount - fixedInop), couldBeDeactivated.size(), couldBeDeactivated.size());
 			std::size_t nDeactivated = distribution(randomSource);
 
 			for(std::size_t i = 0; i < couldBeDeactivated.size(); i++)
@@ -133,14 +133,14 @@ namespace networkReliability
 		{
 			return conditioningCount;
 		}
-		withResampling::withResampling(Context const& context, boost::shared_array<edgeState> state, double radius)
-			: ::networkReliability::subObs::subObs(context, state, radius)
+		withResampling::withResampling(context const& contextObj, boost::shared_array<edgeState> state, double radius)
+			: ::networkReliability::subObs::subObs(contextObj, state, radius)
 		{
 			//This is only called in copyWithGeneratedObservationConditioningProb, so don't initialise anything else
 		}
 		withResampling withResampling::copyWithGeneratedObservationConditioningProb(const mpfr_class& newGeneratedObservationConditioningProb) const
 		{
-			withResampling copy(context, state, radius);
+			withResampling copy(contextObj, state, radius);
 			copy.conditioningProb = conditioningProb;
 			copy.generatedObservationConditioningProb = newGeneratedObservationConditioningProb;
 			copy.minCut = minCut;
@@ -158,8 +158,8 @@ namespace networkReliability
 		{
 			return couldBeDeactivated;
 		}
-		withResampling::withResampling(Context const& context, boost::shared_array<edgeState> state, double radius, ::networkReliability::subObs::withResamplingConstructorType& other)
-			: ::networkReliability::subObs::subObs(context, state, radius), conditioningCount(other.conditioningCount), fixedInop(0), conditioningProb(other.conditioningProb)
+		withResampling::withResampling(context const& contextObj, boost::shared_array<edgeState> state, double radius, ::networkReliability::subObs::withResamplingConstructorType& other)
+			: ::networkReliability::subObs::subObs(contextObj, state, radius), conditioningCount(other.conditioningCount), fixedInop(0), conditioningProb(other.conditioningProb)
 		{
 			initialise();
 		}
