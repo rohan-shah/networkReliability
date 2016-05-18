@@ -1,6 +1,6 @@
 #include <boost/program_options.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
 #include <fstream>
 #include "formulaDriver.h"
 #include "empiricalDistribution.h"

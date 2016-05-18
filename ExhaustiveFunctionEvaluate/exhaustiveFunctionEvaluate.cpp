@@ -2,11 +2,11 @@
 #include <boost/tokenizer.hpp>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
 #include <iomanip>
 #include <fstream>
-#include "Context.h"
+#include "context.h"
 namespace networkReliability
 {
 	struct functionData

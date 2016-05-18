@@ -1,6 +1,6 @@
 #include <boost/program_options.hpp>
-#include "Arguments.h"
-#include "NetworkReliabilityObs.h"
+#include "arguments.h"
+#include "networkReliabilityObs.h"
 #include "obs/basic.h"
 #include "subObs/basic.h"
 #include <vector>
@@ -10,7 +10,7 @@
 #include <boost/accumulators/statistics/sum.hpp>
 #include <boost/random/bernoulli_distribution.hpp>
 #include "includeMPFR.h"
-#include "ArgumentsMPFR.h"
+#include "argumentsMPFR.h"
 #include "conditionalPMC.h"
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/math/special_functions.hpp>

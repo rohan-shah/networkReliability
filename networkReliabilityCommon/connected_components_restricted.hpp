@@ -12,7 +12,7 @@
 #define BOOST_GRAPH_CONNECTED_COMPONENTS_RESTRICTED_HPP
 
 #include <boost/config.hpp>
-#include "EdgeState.h"
+#include "edgeState.h"
 #include "depth_first_search_restricted.hpp"
 #include <boost/graph/properties.hpp>
 #include <boost/graph/graph_concepts.hpp>
@@ -26,7 +26,7 @@ namespace boost {
   template <class Graph, class ComponentMap, class ColorMap>
   inline typename property_traits<ComponentMap>::value_type
   connected_components_restricted(const Graph& g, ComponentMap c, ColorMap color, typename detail::depth_first_visit_restricted_impl_helper<Graph>::stackType& stack,
-						const networkReliability::EdgeState* state
+						const networkReliability::edgeState* state
                        BOOST_GRAPH_ENABLE_IF_MODELS_PARM(Graph, vertex_list_graph_tag))
   {
     if (num_vertices(g) == 0) return 0;

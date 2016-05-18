@@ -3,8 +3,8 @@
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
 #include <boost/filesystem.hpp>
 #include <locale>
 #include <boost/math/distributions.hpp>

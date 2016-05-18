@@ -1,6 +1,6 @@
 #ifndef BINARY_DATASET_HEADER_GUARD
 #define BINARY_DATASET_HEADER_GUARD
-#include "EdgeState.h"
+#include "edgeState.h"
 #include <vector>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/access.hpp>
@@ -32,7 +32,7 @@ namespace networkReliability
 	class binaryDataSet1 : public binaryDataSet
 	{
 	public:
-		void add(const EdgeState* state, const std::size_t size);
+		void add(const edgeState* state, const std::size_t size);
 		void reserve(std::size_t nBits);
 		binaryDataSet1& operator=(binaryDataSet1&&);
 		binaryDataSet1(binaryDataSet1&& other);
@@ -54,7 +54,7 @@ namespace networkReliability
 	class binaryDataSet2 : public binaryDataSet
 	{
 	public:
-		void add(const EdgeState* state, const std::size_t size);
+		void add(const edgeState* state, const std::size_t size);
 		void reserve(std::size_t nStates);
 		binaryDataSet2& operator=(binaryDataSet2&&);
 		binaryDataSet2(binaryDataSet2&& other);
@@ -71,7 +71,7 @@ namespace networkReliability
 		{
 			ar >> *static_cast<binaryDataSet*>(this);
 		}
-		void expand(std::size_t index, EdgeState* output, const std::size_t nEdges) const;
+		void expand(std::size_t index, edgeState* output, const std::size_t nEdges) const;
 	};
 }
 #endif

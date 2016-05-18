@@ -1,4 +1,4 @@
-#include "NetworkReliabilityObsTree.h"
+#include "networkReliabilityObsTree.h"
 #ifdef HAS_GRAPHVIZ
 	#ifdef _MSC_VER
 		#define WIN32_DLL
@@ -179,7 +179,7 @@ namespace networkReliability
 	{
 		return levelData[level].getSampleSize();
 	}
-	void NetworkReliabilityObsTree::expand(boost::shared_array<EdgeState> state, unsigned int level, unsigned int index) const
+	void NetworkReliabilityObsTree::expand(boost::shared_array<edgeState> state, unsigned int level, unsigned int index) const
 	{
 		if(level >= levelData.size())
 		{

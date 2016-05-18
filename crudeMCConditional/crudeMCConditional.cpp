@@ -1,7 +1,7 @@
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 #include <boost/program_options.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
 #include "graphAlgorithms.h"
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/sum.hpp>
@@ -79,7 +79,7 @@ namespace networkReliability
 		std::vector<int> permutation(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges));
 		boost::random_number_generator<boost::mt19937> generator(randomSource);
 		TruncatedBinomialDistribution::TruncatedBinomialDistribution operationalEdgesDist(nEdges, 0, nEdges - minimumFailedEdges, probability);
-		boost::shared_array<EdgeState> edgeStates(new EdgeState[nEdges]);
+		boost::shared_array<edgeState> edgeStates(new edgeState[nEdges]);
 
 		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
 		std::vector<int> components;

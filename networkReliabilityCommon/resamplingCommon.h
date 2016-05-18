@@ -1,9 +1,9 @@
 #ifndef RESAMPLING_COMMON_HEADER_GUARD
 #define RESAMPLING_COMMON_HEADER_GUARD
 #include <vector>
-#include "Context.h"
+#include "context.h"
 #include <boost/random/mersenne_twister.hpp>
-#include "NetworkReliabilityObsTree.h"
+#include "networkReliabilityObsTree.h"
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/sum.hpp>
 #include <boost/accumulators/statistics/stats.hpp>

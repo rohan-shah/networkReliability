@@ -1,12 +1,12 @@
 #include <boost/program_options.hpp>
-#include "Arguments.h"
+#include "arguments.h"
 #include "obs/withResampling.h"
 #include "subObs/withResampling.h"
 #include <vector>
 #include "graphAlgorithms.h"
 #include <boost/random/bernoulli_distribution.hpp>
 #include "includeMPFR.h"
-#include "ArgumentsMPFR.h"
+#include "argumentsMPFR.h"
 #include "conditionalPMC.h"
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/math/special_functions.hpp>
@@ -19,7 +19,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/math/distributions.hpp>
-#include "NetworkReliabilityObsTree.h"
+#include "networkReliabilityObsTree.h"
 namespace networkReliability
 {
 	int main(int argc, char **argv)

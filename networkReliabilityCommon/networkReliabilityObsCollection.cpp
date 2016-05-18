@@ -1,4 +1,4 @@
-#include "NetworkReliabilityObsCollection.h"
+#include "networkReliabilityObsCollection.h"
 namespace networkReliability
 {
 	NetworkReliabilityObsCollection::NetworkReliabilityObsCollection(Context const* externalContext, double radius)
@@ -20,7 +20,7 @@ namespace networkReliability
 		externalContext = &other.getContext();
 		std::size_t nEdges = externalContext->getNEdges();
 		std::vector<int> vectorStates(nEdges);
-		boost::scoped_array<EdgeState> state(new EdgeState[nEdges]);
+		boost::scoped_array<edgeState> state(new edgeState[nEdges]);
 		for(std::size_t i = 0; i < sampleSize; i++)
 		{
 			other.expand(i, vectorStates);
@@ -39,7 +39,7 @@ namespace networkReliability
 		else currentContext = &*containedContext;
 		binaryDataSet2::reserve(count * currentContext->getNEdges());
 	}
-	void NetworkReliabilityObsCollection::expand(int count, boost::shared_array<EdgeState> state) const
+	void NetworkReliabilityObsCollection::expand(int count, boost::shared_array<edgeState> state) const
 	{
 		const Context* currentContext;
 		if(externalContext) currentContext = externalContext;
@@ -57,7 +57,7 @@ namespace networkReliability
 
 		if(&(obsContext.getGraph()) != &(currentContext->getGraph()) || &(obsContext.getDirectedGraph()) != &(currentContext->getDirectedGraph()) || obsContext.getEdgeDistances() != currentContext->getEdgeDistances() || &(obsContext.getOperationalProbability()) != &(currentContext->getOperationalProbability()) || obsContext.getNEdges() != currentContext->getNEdges())
 		{
-			throw std::runtime_error("observation object added to NetworkReliabilityObsCollection had wrong Context object");
+			throw std::runtime_error("observation object added to networkReliabilityObsCollection.had wrong Context object");
 		}
 		static_cast<binaryDataSet2*>(this)->add(obs.getState(), obs.getContext().getNEdges());
 		sampleSize++;

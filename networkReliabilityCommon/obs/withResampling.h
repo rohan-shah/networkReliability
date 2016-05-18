@@ -1,7 +1,7 @@
 #ifndef NETWORK_RELIABILITY_OBS_WITH_RESAMPLING_HEADER_GUARD
 #define NETWORK_RELIABILITY_OBS_WITH_RESAMPLING_HEADER_GUARD
-#include "Context.h"
-#include "EdgeState.h"
+#include "context.h"
+#include "edgeState.h"
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/shared_array.hpp>
 #include "obs/withSub.h"
@@ -27,7 +27,7 @@ namespace networkReliability
 			typedef ::networkReliability::subObs::withResampling subObservationType;
 			typedef ::networkReliability::subObs::withResamplingConstructorType subObservationConstructorType;
 			withResampling(Context const& context, boost::mt19937& randomSource);
-			withResampling(Context const& context, boost::shared_array<EdgeState> state, int conditioningCount, mpfr_class conditioningProb);
+			withResampling(Context const& context, boost::shared_array<edgeState> state, int conditioningCount, mpfr_class conditioningProb);
 			withResampling(withResampling&& other);
 			withResampling& operator=(withResampling&& other);
 			//construct an object that has some number of edges inoperative - The minimum number needed to disconnect the graph, in fact
@@ -35,8 +35,8 @@ namespace networkReliability
 			int getConditioningCount() const;
 			const mpfr_class& getConditioningProb() const;
 		private:
-			withResampling(Context const& context, boost::shared_array<EdgeState> state, ::networkReliability::obs::withResamplingConstructorType&);
-			void getSubObservation(EdgeState* newState, double radius, subObservationConstructorType& other) const;
+			withResampling(Context const& context, boost::shared_array<edgeState> state, ::networkReliability::obs::withResamplingConstructorType&);
+			void getSubObservation(edgeState* newState, double radius, subObservationConstructorType& other) const;
 			int conditioningCount;
 			mpfr_class conditioningProb;
 		};

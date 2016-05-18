@@ -9,7 +9,7 @@ namespace networkReliability
 {
 	namespace subObs
 	{
-		subObs::subObs(Context const& context, boost::shared_array<EdgeState> state, double radius)
+		subObs::subObs(Context const& context, boost::shared_array<edgeState> state, double radius)
 			: ::networkReliability::NetworkReliabilityObs(context, state), radius(radius)
 		{
 		}

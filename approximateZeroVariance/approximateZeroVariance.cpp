@@ -1,8 +1,8 @@
-#include "Context.h"
+#include "context.h"
 #include <boost/program_options.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
-#include "EdgeState.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
+#include "edgeState.h"
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/uniform_01.hpp>
 #include "empiricalDistribution.h"
@@ -89,7 +89,7 @@ namespace networkReliability
 		//Vector used for mincut calculations
 		std::vector<int> state(2*nEdges);
 		//Similar vector of states, used to output the conditional distribution
-		std::vector<EdgeState> outputStates(nEdges);
+		std::vector<edgeState> outputStates(nEdges);
 		//Sum over all the n simulations
 		mpfr_class firstMoment = 0, secondMoment = 0;
 		//likelihood ratio of current term

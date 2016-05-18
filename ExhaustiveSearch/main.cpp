@@ -1,7 +1,7 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
 #include "graphAlgorithms.h"
 #include <boost/graph/adjacency_matrix.hpp>
 #include <iomanip>
@@ -74,8 +74,8 @@ namespace networkReliability
 			boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
 			std::vector<boost::default_color_type> colorMap;
 
-			std::vector<EdgeState> edgeStates(nEdges);
-			EdgeState* edgeStatePtr = &(edgeStates[0]);
+			std::vector<edgeState> edgeStates(nEdges);
+			edgeState* edgeStatePtr = &(edgeStates[0]);
 
 			#pragma omp for
 			for(counterType state = 0; state < maximumState; state++)

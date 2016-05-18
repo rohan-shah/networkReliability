@@ -1,13 +1,13 @@
 #ifndef NETWORK_RELIABILITY_SUB_OBS_SUB_OBS_ROOT_HEADER_GUARD
 #define NETWORK_RELIABILITY_SUB_OBS_SUB_OBS_ROOT_HEADER_GUARD
 #include <boost/random/mersenne_twister.hpp>
-#include "Context.h"
+#include "context.h"
 #include "serializeGMP.hpp"
-#include "EdgeState.h"
+#include "edgeState.h"
 #include <boost/shared_array.hpp>
 #include "includeMPFR.h"
 #include "graphAlgorithms.h"
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 namespace networkReliability
 {
 	namespace subObs
@@ -36,7 +36,7 @@ namespace networkReliability
 			double getRadius() const;
 			subObs& operator=(subObs&&);
 		protected:
-			subObs(const Context& context, boost::shared_array<EdgeState> state, double radius);
+			subObs(const Context& context, boost::shared_array<edgeState> state, double radius);
 			subObs(subObs&& other);
 			double radius;
 		};

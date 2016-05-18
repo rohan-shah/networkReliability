@@ -31,7 +31,7 @@ namespace networkReliability
 		if(!_isWeighted) throw std::runtime_error("Trying to get weight of unweighted empirical distribution");
 		return weights[index];
 	}
-	void empiricalDistribution::add(const EdgeState* state)
+	void empiricalDistribution::add(const edgeState* state)
 	{
 		if(_isWeighted)
 		{
@@ -40,7 +40,7 @@ namespace networkReliability
 		binaryDataSet1::add(state, nEdges);
 		sampleSize++;
 	}
-	void empiricalDistribution::add(const EdgeState* state, double weight)
+	void empiricalDistribution::add(const edgeState* state, double weight)
 	{
 		if(!_isWeighted)
 		{

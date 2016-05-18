@@ -1,4 +1,4 @@
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 #include <boost/random/bernoulli_distribution.hpp>
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
@@ -22,7 +22,7 @@ namespace networkReliability
 	{
 		const Context::internalGraph& graph = context.getGraph();
 		const std::size_t nEdges = boost::num_edges(graph);
-		boost::shared_array<EdgeState> state(new EdgeState[nEdges]);
+		boost::shared_array<edgeState> state(new edgeState[nEdges]);
 
 		boost::random::bernoulli_distribution<double> edgeDist(context.getOperationalProbability().convert_to<double>());
 
@@ -36,7 +36,7 @@ namespace networkReliability
 		}
 		this->state = state;
 	}
-	void NetworkReliabilityObs::constructConditional(Context const& context, boost::mt19937& randomSource, EdgeState* state, bool fixed)
+	void NetworkReliabilityObs::constructConditional(Context const& context, boost::mt19937& randomSource, edgeState* state, bool fixed)
 	{
 		const Context::internalGraph& graph = context.getGraph();
 		const std::size_t nEdges = boost::num_edges(graph);
@@ -44,7 +44,7 @@ namespace networkReliability
 		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = context.getInopDistribution(minCutEdges, nEdges, nEdges);
 
 		const std::size_t nRemovedEdges = dist(randomSource);
-		EdgeState inopState;
+		edgeState inopState;
 		if(fixed) 
 		{
 			std::fill(state, state + nEdges, FIXED_OP);
@@ -66,10 +66,10 @@ namespace networkReliability
 			indices.pop_back();
 		}
 	}
-	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::shared_array<EdgeState> state)
+	NetworkReliabilityObs::NetworkReliabilityObs(Context const& context, boost::shared_array<edgeState> state)
 		:context(context), state(state)
 	{}
-	const EdgeState* NetworkReliabilityObs::getState() const
+	const edgeState* NetworkReliabilityObs::getState() const
 	{
 		return state.get();
 	}
@@ -202,8 +202,8 @@ namespace networkReliability
 	}
 	NetworkReliabilityObsWithContext::NetworkReliabilityObsWithContext(NetworkReliabilityObs& inputObs)
 	{
-		boost::shared_array<EdgeState> copiedState(new EdgeState[inputObs.getContext().getNEdges()]);
-		memcpy(copiedState.get(), inputObs.getState(), sizeof(EdgeState) * inputObs.getContext().getNEdges());
+		boost::shared_array<edgeState> copiedState(new edgeState[inputObs.getContext().getNEdges()]);
+		memcpy(copiedState.get(), inputObs.getState(), sizeof(edgeState) * inputObs.getContext().getNEdges());
 		obs.reset(new NetworkReliabilityObs(inputObs.getContext(), copiedState));
 	}
 	const NetworkReliabilityObs& NetworkReliabilityObsWithContext::getObs() const

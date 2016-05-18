@@ -2,7 +2,7 @@
 #define ARGUMENTS_HEADER_GUARD
 #include <boost/program_options.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include "Context.h"
+#include "context.h"
 #ifdef HAS_BISON_AND_FLEX
 	#include "formulaDriver.h"
 #endif

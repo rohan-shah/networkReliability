@@ -1,7 +1,7 @@
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 #include <boost/program_options.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
 #include "graphAlgorithms.h"
 namespace networkReliability
 {

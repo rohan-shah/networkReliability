@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "includeMPFR.h"
 #include <vector>
-#include "Context.h"
+#include "context.h"
 namespace networkReliability
 {
 	struct TurnipEqualRateInput

@@ -8,7 +8,7 @@ namespace networkReliability
 {
 	namespace subObs
 	{
-		withResampling::withResampling(Context const& context, boost::shared_array<EdgeState> state, double radius, int conditioningCount, mpfr_class conditioningProb)
+		withResampling::withResampling(Context const& context, boost::shared_array<edgeState> state, double radius, int conditioningCount, mpfr_class conditioningProb)
 		: ::networkReliability::subObs::subObs(context, state, radius), conditioningCount(conditioningCount), fixedInop(0), conditioningProb(conditioningProb)
 		{
 			initialise();
@@ -100,10 +100,10 @@ namespace networkReliability
 			generatedObservationConditioningProb = other.generatedObservationConditioningProb;
 			return *this;
 		}
-		void withResampling::getObservation(EdgeState* newState, boost::mt19937& randomSource, observationConstructorType& otherData) const
+		void withResampling::getObservation(edgeState* newState, boost::mt19937& randomSource, observationConstructorType& otherData) const
 		{
 			const std::size_t nEdges = context.getNEdges();
-			memcpy(newState, state.get(), sizeof(EdgeState)*nEdges);
+			memcpy(newState, state.get(), sizeof(edgeState)*nEdges);
 			if(radius == 0)
 			{
 				otherData.conditioningCount = conditioningCount;
@@ -133,7 +133,7 @@ namespace networkReliability
 		{
 			return conditioningCount;
 		}
-		withResampling::withResampling(Context const& context, boost::shared_array<EdgeState> state, double radius)
+		withResampling::withResampling(Context const& context, boost::shared_array<edgeState> state, double radius)
 			: ::networkReliability::subObs::subObs(context, state, radius)
 		{
 			//This is only called in copyWithGeneratedObservationConditioningProb, so don't initialise anything else
@@ -158,7 +158,7 @@ namespace networkReliability
 		{
 			return couldBeDeactivated;
 		}
-		withResampling::withResampling(Context const& context, boost::shared_array<EdgeState> state, double radius, ::networkReliability::subObs::withResamplingConstructorType& other)
+		withResampling::withResampling(Context const& context, boost::shared_array<edgeState> state, double radius, ::networkReliability::subObs::withResamplingConstructorType& other)
 			: ::networkReliability::subObs::subObs(context, state, radius), conditioningCount(other.conditioningCount), fixedInop(0), conditioningProb(other.conditioningProb)
 		{
 			initialise();

@@ -1,7 +1,7 @@
 #ifndef OBS_GET_SUB_OBSERVATION_HEADER_GUARD
 #define OBS_GET_SUB_OBSERVATION_HEADER_GUARD
-#include "EdgeState.h"
-#include "Context.h"
+#include "edgeState.h"
+#include "context.h"
 #include <boost/noncopyable.hpp>
 namespace networkReliability
 {
@@ -14,7 +14,7 @@ namespace networkReliability
 			{
 				const Context& context = input.getContext();
 				typename T::subObservationConstructorType otherData;
-				boost::shared_array<EdgeState> newState(new EdgeState[context.getNEdges()]);
+				boost::shared_array<edgeState> newState(new edgeState[context.getNEdges()]);
 				input.getSubObservation(newState.get(), radius, otherData);
 
 				typename T::subObservationType retVal(context, newState, radius, otherData);
@@ -24,7 +24,7 @@ namespace networkReliability
 			{
 				const Context& context = input.getContext();
 				typename T::subObservationConstructorType otherData;
-				boost::shared_array<EdgeState> newState(new EdgeState[context.getNEdges()]);
+				boost::shared_array<edgeState> newState(new edgeState[context.getNEdges()]);
 				input.getSubObservation(newState.get(), radius, otherData, aux);
 
 				typename T::subObservationType retVal(context, newState, radius, otherData);

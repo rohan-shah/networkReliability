@@ -16,18 +16,18 @@ namespace networkReliability
 			const Context::internalGraph& graph = context.getGraph();
 			const std::size_t nEdges = boost::num_edges(graph);
 			const std::size_t minCutEdges = context.getMinCutEdges();
-			boost::shared_array<EdgeState> state(new EdgeState[nEdges]);
+			boost::shared_array<edgeState> state(new edgeState[nEdges]);
 			::networkReliability::NetworkReliabilityObs::constructConditional(context, randomSource, state.get(), false);
 
 			const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& originalDist = context.getOpDistribution(0, nEdges, nEdges);
 			mpfr_class conditioningProb = originalDist.getCumulativeProbability((int)nEdges - (int)minCutEdges);
 			return withResampling(context, state, (int)minCutEdges, conditioningProb);
 		}
-		withResampling::withResampling(Context const& context, boost::shared_array<EdgeState> state, ::networkReliability::obs::withResamplingConstructorType& other)
+		withResampling::withResampling(Context const& context, boost::shared_array<edgeState> state, ::networkReliability::obs::withResamplingConstructorType& other)
 			: ::networkReliability::withSub(context, state), conditioningCount(other.conditioningCount), conditioningProb(other.conditioningProb)
 		{
 		}
-		withResampling::withResampling(Context const& context, boost::shared_array<EdgeState> state, int conditioningCount, mpfr_class conditioningProb)
+		withResampling::withResampling(Context const& context, boost::shared_array<edgeState> state, int conditioningCount, mpfr_class conditioningProb)
 			: ::networkReliability::withSub(context, state), conditioningCount(conditioningCount), conditioningProb(conditioningProb)
 		{}
 		withResampling& withResampling::operator=(withResampling&& other)
@@ -44,7 +44,7 @@ namespace networkReliability
 		{
 			return conditioningProb;
 		}
-		void withResampling::getSubObservation(EdgeState* newStates, double radius, subObservationConstructorType& otherData) const
+		void withResampling::getSubObservation(edgeState* newStates, double radius, subObservationConstructorType& otherData) const
 		{
 			::networkReliability::withSub::getSubObservation(radius, newStates);
 			otherData.conditioningCount = conditioningCount;

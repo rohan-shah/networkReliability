@@ -1,7 +1,7 @@
 #ifndef NETWORK_RELIABILITY_OBS_TREE_HEADER_GUARD
 #define NETWORK_RELIABILITY_OBS_TREE_HEADER_GUARD
-#include "NetworkReliabilityObsCollection.h"
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObsCollection.h"
+#include "networkReliabilityObs.h"
 #include <stdexcept>
 #include "binaryDataSet.h"
 #include <boost/serialization/access.hpp>
@@ -43,7 +43,7 @@ namespace networkReliability
 		NetworkReliabilityObsTree(boost::archive::text_iarchive& ar);
 		void add(const NetworkReliabilityObs& obs, unsigned int level, int parentIndex, bool potentiallyDisconnected);
 		const Context& getContext() const;
-		void expand(boost::shared_array<EdgeState> state, unsigned int level, unsigned int index) const;
+		void expand(boost::shared_array<edgeState> state, unsigned int level, unsigned int index) const;
 		std::size_t getSampleSize(unsigned int level) const;
 		std::size_t nLevels() const;
 		const treeGraphType& getTreeGraph() const;

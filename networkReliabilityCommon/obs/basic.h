@@ -1,7 +1,7 @@
 #ifndef NETWORK_REALIABILITY_OBS_BASIC_HEADER_GUARD
 #define NETWORK_REALIABILITY_OBS_BASIC_HEADER_GUARD
-#include "Context.h"
-#include "EdgeState.h"
+#include "context.h"
+#include "edgeState.h"
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/shared_array.hpp>
 #include "obs/withSub.h"
@@ -26,13 +26,13 @@ namespace networkReliability
 			typedef ::networkReliability::subObs::basicConstructorType subObservationConstructorType;
 
 			basic(Context const& context, boost::mt19937& randomSource);
-			basic(Context const& context, boost::shared_array<EdgeState> state);
+			basic(Context const& context, boost::shared_array<edgeState> state);
 			basic(basic&& other);
 			basic& operator=(basic&& other);
 			static basic constructConditional(Context const& context, boost::mt19937& randomSource);
 		private:
-			void getSubObservation(EdgeState* newState, double radius, subObservationConstructorType& other) const;
-			basic(Context const& context, boost::shared_array<EdgeState> state, ::networkReliability::obs::basicConstructorType&);
+			void getSubObservation(edgeState* newState, double radius, subObservationConstructorType& other) const;
+			basic(Context const& context, boost::shared_array<edgeState> state, ::networkReliability::obs::basicConstructorType&);
 		};
 	}
 }

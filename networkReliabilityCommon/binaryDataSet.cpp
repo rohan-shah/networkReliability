@@ -2,7 +2,7 @@
 #include <stdexcept>
 namespace networkReliability
 {
-	void binaryDataSet1::add(const EdgeState* state, const std::size_t size)
+	void binaryDataSet1::add(const edgeState* state, const std::size_t size)
 	{
 		for(std::size_t k = 0; k < size; k++)
 		{
@@ -31,11 +31,11 @@ namespace networkReliability
 		data.swap(other.data);
 	}
 	//A version more suitable for being saved to disk
-	enum SavedEdgeState
+	enum savedEdgeState
 	{
 		FIXED_OP_SAVED = 0, FIXED_INOP_SAVED = 1, UNFIXED_OP_SAVED = 2, UNFIXED_INOP_SAVED = 3
 	};
-	inline EdgeState savedToStandard(SavedEdgeState saved)
+	inline edgeState savedToStandard(savedEdgeState saved)
 	{
 		switch(saved)
 		{
@@ -50,7 +50,7 @@ namespace networkReliability
 		}
 		throw std::runtime_error("Internal error");
 	}
-	inline SavedEdgeState standardToSaved(EdgeState state)
+	inline savedEdgeState standardToSaved(edgeState state)
 	{
 		switch(state)
 		{
@@ -67,7 +67,7 @@ namespace networkReliability
 		}
 		throw std::runtime_error("Internal error");
 	}
-	void binaryDataSet2::add(const EdgeState* state, const std::size_t size)
+	void binaryDataSet2::add(const edgeState* state, const std::size_t size)
 	{
 		for(std::size_t k = 0; k < size; k++)
 		{
@@ -121,7 +121,7 @@ namespace networkReliability
 			nStoredBits--;
 		}
 	}
-	void binaryDataSet2::expand(std::size_t index, EdgeState* output, const std::size_t nEdges) const
+	void binaryDataSet2::expand(std::size_t index, edgeState* output, const std::size_t nEdges) const
 	{
 		std::size_t initialBit = index*nEdges*2;
 		std::size_t initialInt = initialBit / (sizeof(unsigned int)*8);
@@ -151,7 +151,7 @@ namespace networkReliability
 					nStoredBits = sizeof(unsigned int)*8;
 				}
 			}
-			output[edgeCounter] = savedToStandard((SavedEdgeState)((storedBits & (3u << (sizeof(unsigned int)*8-2))) >> (sizeof(unsigned int)*8-2)));
+			output[edgeCounter] = savedToStandard((savedEdgeState)((storedBits & (3u << (sizeof(unsigned int)*8-2))) >> (sizeof(unsigned int)*8-2)));
 			storedBits<<=2;
 			nStoredBits-=2;
 		}

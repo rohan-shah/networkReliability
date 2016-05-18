@@ -1,13 +1,13 @@
 #include <boost/program_options.hpp>
-#include "Arguments.h"
+#include "arguments.h"
 #include "subObs/withResampling.h"
 #include "obs/withResampling.h"
-#include "NetworkReliabilityObsCollection.h"
+#include "networkReliabilityObsCollection.h"
 #include <vector>
 #include "graphAlgorithms.h"
 #include <boost/random/bernoulli_distribution.hpp>
 #include "includeMPFR.h"
-#include "ArgumentsMPFR.h"
+#include "argumentsMPFR.h"
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/math/special_functions.hpp>
 #include <fstream>
@@ -18,7 +18,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/math/distributions.hpp>
-#include "NetworkReliabilityObsTree.h"
+#include "networkReliabilityObsTree.h"
 #include "resamplingCommon.h"
 namespace networkReliability
 {
@@ -114,7 +114,7 @@ namespace networkReliability
 		else
 		{
 			int tooManyEdgesCount = 0;
-			std::vector<EdgeState> edgeStates;
+			std::vector<edgeState> edgeStates;
 			::networkReliability::subObs::subObs::getReducedGraphNoSelfWithWeightsInput reducedGraphInput(interestVertices);
 			//This is used to check the connected components of the reduced graph (not used in the call to getReducedGraphNoSelfWithWeights
 			std::vector<int> components2;
@@ -139,7 +139,7 @@ namespace networkReliability
 					colorMap.resize(nReducedVertices);
 					int reducedVertex1 = reducedGraphInput.reducedInterestVertices[0];
 					int reducedVertex2 = reducedGraphInput.reducedInterestVertices[1];
-					EdgeState* edgeStatePtr = &(edgeStates[0]);
+					edgeState* edgeStatePtr = &(edgeStates[0]);
 					//Exhaustive enumeration is only really going to be feasible if the number of edges in the reduced graph is small. 
 					if(nReducedEdges < 20)
 					{

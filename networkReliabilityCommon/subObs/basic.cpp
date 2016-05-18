@@ -9,7 +9,7 @@ namespace networkReliability
 {
 	namespace subObs
 	{
-		basic::basic(Context const& context, boost::shared_array<EdgeState> state, double radius)
+		basic::basic(Context const& context, boost::shared_array<edgeState> state, double radius)
 			: ::networkReliability::subObs::subObs(context, state, radius), fixedInop(0)
 		{
 		}
@@ -51,11 +51,11 @@ namespace networkReliability
 			couldBeDeactivated.swap(other.couldBeDeactivated);
 			return *this;
 		}
-		void basic::getObservation(EdgeState* newState, boost::mt19937& randomSource, observationConstructorType& otherData) const
+		void basic::getObservation(edgeState* newState, boost::mt19937& randomSource, observationConstructorType& otherData) const
 		{
 			const std::size_t nEdges = context.getNEdges();
 			const std::size_t minCut = context.getMinCutEdges();
-			memcpy(newState, state.get(), sizeof(EdgeState)*nEdges);
+			memcpy(newState, state.get(), sizeof(edgeState)*nEdges);
 			if(radius == 0)
 			{
 				return;
@@ -77,7 +77,7 @@ namespace networkReliability
 				indices.pop_back();
 			}
 		}
-		basic::basic(Context const& context, boost::shared_array<EdgeState> state, double radius, ::networkReliability::subObs::basicConstructorType&)
+		basic::basic(Context const& context, boost::shared_array<edgeState> state, double radius, ::networkReliability::subObs::basicConstructorType&)
 			: ::networkReliability::subObs::subObs(context, state, radius), fixedInop(0)
 		{
 			initialise();

@@ -1,9 +1,9 @@
 #ifndef NETWORK_RELIABILITY_SUB_OBS_BASIC_HEADER_GUARD
 #define NETWORK_RELIABILITY_SUB_OBS_BASIC_HEADER_GUARD
 #include <boost/random/mersenne_twister.hpp>
-#include "Context.h"
+#include "context.h"
 #include "serializeGMP.hpp"
-#include "EdgeState.h"
+#include "edgeState.h"
 #include <boost/shared_array.hpp>
 #include "includeMPFR.h"
 #include "graphAlgorithms.h"
@@ -31,13 +31,13 @@ namespace networkReliability
 			int getFixedInopCount() const;
 			const std::vector<int>& getPotentiallyDeactivated() const;
 			basic(basic&& other);
-			basic(Context const& context, boost::shared_array<EdgeState> state, double radius);
+			basic(Context const& context, boost::shared_array<edgeState> state, double radius);
 			int getMinCut() const;
 			basic& operator=(basic&& other);
 		private:
 			void initialise();
-			basic(Context const& context, boost::shared_array<EdgeState> state, double radius, ::networkReliability::subObs::basicConstructorType&);
-			void getObservation(EdgeState* state, boost::mt19937& randomSource, observationConstructorType&) const;
+			basic(Context const& context, boost::shared_array<edgeState> state, double radius, ::networkReliability::subObs::basicConstructorType&);
+			void getObservation(edgeState* state, boost::mt19937& randomSource, observationConstructorType&) const;
 			bool potentiallyDisconnected;
 			int fixedInop;
 			std::vector<int> couldBeDeactivated;

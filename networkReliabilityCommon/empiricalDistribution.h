@@ -1,8 +1,8 @@
 #ifndef EMPIRICAL_DISTRIBUTION_HEADER_GUARD
 #define EMPIRICAL_DISTRIBUTION_HEADER_GUARD
 #include <boost/noncopyable.hpp>
-#include "Context.h"
-#include "EdgeState.h"
+#include "context.h"
+#include "edgeState.h"
 #include <string>
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/vector.hpp>
@@ -28,8 +28,8 @@ namespace networkReliability
 		empiricalDistribution& operator=(empiricalDistribution&& other);
 		empiricalDistribution(bool isWeighted, std::size_t nEdges, const Context& context);
 		void hintDataCount(std::size_t size);
-		void add(const EdgeState* state);
-		void add(const EdgeState* state, double weight);
+		void add(const edgeState* state);
+		void add(const edgeState* state, double weight);
 		void expand(std::size_t count, std::vector<int>& output) const;
 		std::size_t getNSamples() const;
 		std::size_t getNEdges() const;

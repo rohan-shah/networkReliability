@@ -1,4 +1,4 @@
-#include "Arguments.h"
+#include "arguments.h"
 #include <boost/iterator/counting_iterator.hpp>
 #include <fstream>
 #include <boost/algorithm/string.hpp>

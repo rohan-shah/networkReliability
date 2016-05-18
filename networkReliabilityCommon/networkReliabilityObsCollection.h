@@ -1,7 +1,7 @@
 #ifndef NETWORK_RELIABILITY_SUBOBS_COLLECTION_HEADER_GUARD
 #define NETWORK_RELIABILITY_SUBOBS_COLLECTION_HEADER_GUARD
 #include "empiricalDistribution.h"
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 #include "binaryDataSet.h"
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/split_member.hpp>
@@ -21,7 +21,7 @@ namespace networkReliability
 		NetworkReliabilityObsCollection(const empiricalDistribution& other);
 		void add(const NetworkReliabilityObs& subObs);
 		const Context& getContext() const;
-		void expand(int count, boost::shared_array<EdgeState> state) const;
+		void expand(int count, boost::shared_array<edgeState> state) const;
 		double getRadius() const;
 		std::size_t getSampleSize() const;
 		void reserve(std::size_t count);

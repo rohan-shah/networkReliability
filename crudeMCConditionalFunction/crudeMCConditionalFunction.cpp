@@ -1,7 +1,7 @@
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 #include <boost/program_options.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
 #include "graphAlgorithms.h"
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/accumulators.hpp>
@@ -90,7 +90,7 @@ namespace networkReliability
 			NetworkReliabilityObs obs(context, randomSource);
 			if(!isSingleComponent(context, obs.getState(), components, stack, colorMap))
 			{
-				const EdgeState* state = obs.getState();
+				const edgeState* state = obs.getState();
 				countDisconnected++;
 				for(std::size_t functionCounter = 0; functionCounter < nFunctions; functionCounter++)
 				{

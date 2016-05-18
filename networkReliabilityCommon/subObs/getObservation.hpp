@@ -1,8 +1,8 @@
 #ifndef NETWORK_RELIABILITY_GET_OBSERVATION_HEADER_GUARD
 #define NETWORK_RELIABILITY_GET_OBSERVATION_HEADER_GUARD
 #include <boost/noncopyable.hpp>
-#include "Context.h"
-#include "EdgeState.h"
+#include "context.h"
+#include "edgeState.h"
 namespace networkReliability
 {
 	namespace subObs
@@ -14,7 +14,7 @@ namespace networkReliability
 				{
 					const Context& context = input.getContext();
 					std::size_t nEdges = context.getNEdges();
-					boost::shared_array<EdgeState> state(new EdgeState[nEdges]);
+					boost::shared_array<edgeState> state(new edgeState[nEdges]);
 					typename T::observationConstructorType otherData;
 					input.getObservation(state.get(), randomSource, otherData);
 					typename T::observationType returnVal(input.getContext(), state, otherData);

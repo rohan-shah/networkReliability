@@ -1,4 +1,4 @@
-#include "Context.h"
+#include "context.h"
 #include "serializeGMP.hpp"
 #include <boost/graph/graphml.hpp>
 #include <fstream>

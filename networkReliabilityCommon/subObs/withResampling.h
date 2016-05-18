@@ -1,9 +1,9 @@
 #ifndef NETWORK_RELIABILITY_SUB_OBS_WITH_RESAMPLING_HEADER_GUARD
 #define NETWORK_RELIABILITY_SUB_OBS_WITH_RESAMPLING_HEADER_GUARD
 #include <boost/random/mersenne_twister.hpp>
-#include "Context.h"
+#include "context.h"
 #include "serializeGMP.hpp"
-#include "EdgeState.h"
+#include "edgeState.h"
 #include <boost/shared_array.hpp>
 #include "includeMPFR.h"
 #include "graphAlgorithms.h"
@@ -30,7 +30,7 @@ namespace networkReliability
 			int getFixedInopCount() const;
 			const std::vector<int>& getPotentiallyDeactivated() const;
 			withResampling(withResampling&& other);
-			withResampling(Context const& context, boost::shared_array<EdgeState> state, double radius, int conditioningCount, mpfr_class conditiniongProb);
+			withResampling(Context const& context, boost::shared_array<edgeState> state, double radius, int conditioningCount, mpfr_class conditiniongProb);
 			int getMinCut() const;
 			networkReliability::subObs::withResampling& operator=(withResampling&& other);
 			int getConditioningCount() const;
@@ -39,10 +39,10 @@ namespace networkReliability
 			const mpfr_class& getGeneratedObservationConditioningProb() const;
 			networkReliability::subObs::withResampling copyWithGeneratedObservationConditioningProb(const mpfr_class& conditioningProb) const;
 		private:
-			withResampling(Context const& context, boost::shared_array<EdgeState> state, double radius, ::networkReliability::subObs::withResamplingConstructorType&);
-			withResampling(Context const& context, boost::shared_array<EdgeState> state, double radius);
+			withResampling(Context const& context, boost::shared_array<edgeState> state, double radius, ::networkReliability::subObs::withResamplingConstructorType&);
+			withResampling(Context const& context, boost::shared_array<edgeState> state, double radius);
 			void initialise();
-			void getObservation(EdgeState* state, boost::mt19937& randomSource, observationConstructorType&) const;
+			void getObservation(edgeState* state, boost::mt19937& randomSource, observationConstructorType&) const;
 			int minCut;
 			std::vector<int> couldBeDeactivated;
 			int conditioningCount;

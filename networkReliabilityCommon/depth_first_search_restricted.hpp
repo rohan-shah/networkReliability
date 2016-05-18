@@ -13,7 +13,7 @@
 #ifndef BOOST_GRAPH_RECURSIVE_DFS_RESTRICTED_HPP
 #define BOOST_GRAPH_RECURSIVE_DFS_RESTRICTED_HPP
 
-#include "EdgeState.h"
+#include "edgeState.h"
 #include <boost/graph/depth_first_search.hpp>
 
 namespace boost {
@@ -32,7 +32,7 @@ namespace boost {
        typename graph_traits<IncidenceGraph>::vertex_descriptor u,
        DFSVisitor& vis,
        ColorMap color, typename depth_first_visit_restricted_impl_helper<IncidenceGraph>::stackType& stack, 
-	   const networkReliability::EdgeState* state, TerminatorFunc func = TerminatorFunc())
+	   const networkReliability::edgeState* state, TerminatorFunc func = TerminatorFunc())
     {
       BOOST_CONCEPT_ASSERT(( IncidenceGraphConcept<IncidenceGraph> ));
       BOOST_CONCEPT_ASSERT(( DFSVisitorConcept<DFSVisitor, IncidenceGraph> ));
@@ -103,7 +103,7 @@ namespace boost {
   template <class VertexListGraph, class DFSVisitor, class ColorMap>
   void
   depth_first_search_restricted(const VertexListGraph& g, DFSVisitor vis, ColorMap color, typename detail::depth_first_visit_restricted_impl_helper<VertexListGraph>::stackType& stack,
-                     const networkReliability::EdgeState* state)
+                     const networkReliability::edgeState* state)
   {
 		typedef typename graph_traits<VertexListGraph>::vertex_descriptor Vertex;
 		BOOST_CONCEPT_ASSERT(( DFSVisitorConcept<DFSVisitor, VertexListGraph> ));

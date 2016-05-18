@@ -1,7 +1,7 @@
 #ifndef NETWORK_RELIABILITY_OBS_HEADER_GUARD
 #define NETWORK_RELIABILITY_OBS_HEADER_GUARD
-#include "Context.h"
-#include "EdgeState.h"
+#include "context.h"
+#include "edgeState.h"
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/noncopyable.hpp>
@@ -27,11 +27,11 @@ namespace networkReliability
 	public:
 		friend class boost::serialization::access;
 		NetworkReliabilityObs(Context const& context, boost::mt19937& randomSource);
-		NetworkReliabilityObs(Context const& context, boost::shared_array<EdgeState> state);
+		NetworkReliabilityObs(Context const& context, boost::shared_array<edgeState> state);
 		NetworkReliabilityObs(Context const& context, boost::archive::binary_iarchive& archive);
 		NetworkReliabilityObs(Context const& context, boost::archive::text_iarchive& archive);
 		NetworkReliabilityObs(NetworkReliabilityObs&& other);
-		const EdgeState* getState() const;
+		const edgeState* getState() const;
 		NetworkReliabilityObs& operator=(const NetworkReliabilityObs& other);
 		const Context& getContext() const;
 		//The reduced graph code
@@ -55,9 +55,9 @@ namespace networkReliability
 		void getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const;
 
 	protected:
-		static void constructConditional(Context const& context, boost::mt19937& randomSource, EdgeState* state, bool fixed);
+		static void constructConditional(Context const& context, boost::mt19937& randomSource, edgeState* state, bool fixed);
 		Context const& context;
-		boost::shared_array<EdgeState> state;
+		boost::shared_array<edgeState> state;
 	private:
 		BOOST_SERIALIZATION_SPLIT_MEMBER()
 		template<class Archive> void save(Archive& ar, const unsigned int version) const
@@ -76,7 +76,7 @@ namespace networkReliability
 			{
 				throw std::runtime_error("Incorrect type specifier");
 			}
-			state.reset(new EdgeState[context.getNEdges()]);
+			state.reset(new edgeState[context.getNEdges()]);
 			ar >> boost::serialization::make_array(state.get(), context.getNEdges());
 			ar >> typeString;
 			if(typeString != "networkReliabilityObs_end")

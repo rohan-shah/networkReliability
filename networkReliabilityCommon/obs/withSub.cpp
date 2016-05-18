@@ -8,7 +8,7 @@ namespace networkReliability
 	withSub::withSub(Context const& context, boost::mt19937& randomSource)
 		: ::networkReliability::NetworkReliabilityObs(context, randomSource)
 	{}
-	withSub::withSub(Context const& context, boost::shared_array<EdgeState> state)
+	withSub::withSub(Context const& context, boost::shared_array<edgeState> state)
 		: ::networkReliability::NetworkReliabilityObs(context, state)
 	{}
 	withSub& withSub::operator=(withSub&& other)
@@ -16,11 +16,11 @@ namespace networkReliability
 		*static_cast<::networkReliability::NetworkReliabilityObs*>(this) = static_cast<::networkReliability::NetworkReliabilityObs&&>(other);
 		return *this;
 	}
-	void withSub::getSubObservation(double radius, EdgeState* newState) const
+	void withSub::getSubObservation(double radius, edgeState* newState) const
 	{
 		getSubObservation(radius, newState, context, state.get());
 	}
-	void withSub::getSubObservation(double radius, EdgeState* newState, const Context& context, const EdgeState* oldEdgeStatesPtr)
+	void withSub::getSubObservation(double radius, edgeState* newState, const Context& context, const edgeState* oldedgeStatesPtr)
 	{
 		const Context::internalGraph& graph = context.getGraph();
 		std::size_t nEdges = boost::num_edges(graph);
@@ -32,7 +32,7 @@ namespace networkReliability
 		while(sourceEdge < nEdges)
 		{
 			//is this vertex marked as on, for one reason or another? If so continue from here
-			if((oldEdgeStatesPtr[sourceEdge] & INOP_MASK) > 0 && newState[sourceEdge] == FIXED_OP)
+			if((oldedgeStatesPtr[sourceEdge] & INOP_MASK) > 0 && newState[sourceEdge] == FIXED_OP)
 			{
 				newState[sourceEdge] = FIXED_INOP;
 
@@ -47,7 +47,7 @@ namespace networkReliability
 				sourceEdge++;
 				while(sourceEdge < nEdges) 
 				{
-					EdgeState previousState = oldEdgeStatesPtr[sourceEdge];
+					edgeState previousState = oldedgeStatesPtr[sourceEdge];
 					if(edgeDistances[copiedSourceEdge + nEdges * sourceEdge] <= radius)
 					{
 						if(previousState & FIXED_MASK) newState[sourceEdge] = previousState;
