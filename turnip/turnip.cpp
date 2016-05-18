@@ -1,14 +1,14 @@
 #include <boost/program_options.hpp>
 #include "computeConditionalProb.h"
-#include "Arguments.h"
+#include "arguments.h"
 #include "includeMPFR.h"
-#include "ArgumentsMPFR.h"
+#include "argumentsMPFR.h"
 #include <boost/iterator/counting_iterator.hpp>
 #include <algorithm>
-#include "Context.h"
+#include "context.h"
 #include <boost/random/exponential_distribution.hpp>
 #include <boost/random/random_number_generator.hpp>
-#include "Turnip.h"
+#include "turnipImpl.h"
 namespace networkReliability
 {
 	int main(int argc, char **argv)
@@ -56,8 +56,8 @@ namespace networkReliability
 			std::cout << "Error parsing numeric argument opProbability" << std::endl;
 		}
 		double opProbabilityD = opProbability.convert_to<double>();
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, opProbabilityD))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, opProbabilityD))
 		{
 			return 0;
 		}
@@ -65,9 +65,9 @@ namespace networkReliability
 		boost::mt19937 randomSource;
 		readSeed(variableMap, randomSource);
 
-		const Context::internalGraph& graph = context.getGraph();
+		const context::internalGraph& graph = contextObj.getGraph();
 	
-		TurnipEqualRateInput input(randomSource, &graph, context.getInterestVertices());
+		turnipEqualRateInput input(randomSource, &graph, contextObj.getInterestVertices());
 		//set up exponential rates
 		input.exponentialRate = -boost::multiprecision::log(1 - opProbability);
 		input.n = n;

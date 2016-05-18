@@ -7,9 +7,9 @@
 #include "context.h"
 namespace networkReliability
 {
-	struct TurnipEqualRateInput
+	struct turnipEqualRateInput
 	{
-		TurnipEqualRateInput(boost::mt19937& randomSource, const context::internalGraph* graph, const std::vector<int>& interestVertices);
+		turnipEqualRateInput(boost::mt19937& randomSource, const context::internalGraph* graph, const std::vector<int>& interestVertices);
 		boost::mt19937& randomSource;
 		mpfr_class exponentialRate;
 		const context::internalGraph* graph;
@@ -19,6 +19,6 @@ namespace networkReliability
 		mpfr_class estimateFirstMoment, estimateSecondMoment;
 		bool warnedStability;
 	};
-	void turnipEqualRate(TurnipEqualRateInput& input);
+	void turnipEqualRate(turnipEqualRateInput& input);
 }
 #endif

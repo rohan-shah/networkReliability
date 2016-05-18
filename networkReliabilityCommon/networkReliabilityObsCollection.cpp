@@ -68,17 +68,17 @@ namespace networkReliability
 	}
 	const context& NetworkReliabilityObsCollection::getContext() const
 	{
-		if(containedContext) return *containedcontext.get();
+		if(containedContext) return *containedContext.get();
 		if(externalContext) return *externalContext;
 		throw std::runtime_error("Invalid state for NetworkReliabilityObsCollection");
 	}
 	NetworkReliabilityObsCollection::NetworkReliabilityObsCollection(NetworkReliabilityObsCollection&& other)
-		:binaryDataSet2(std::move(other)), sampleSize(other.sampleSize), containedContext(other.containedcontext), externalContext(other.externalContext), radius(other.radius)
+		:binaryDataSet2(std::move(other)), sampleSize(other.sampleSize), containedContext(other.containedContext), externalContext(other.externalContext), radius(other.radius)
 	{}
 	NetworkReliabilityObsCollection& NetworkReliabilityObsCollection::operator=(NetworkReliabilityObsCollection&& other)
 	{
 		sampleSize = other.sampleSize;
-		containedContext = other.containedcontext;
+		containedContext = other.containedContext;
 		externalContext = other.externalContext;
 		radius = other.radius;
 		*static_cast<binaryDataSet2*>(this) = std::move(static_cast<binaryDataSet2&&>(other));

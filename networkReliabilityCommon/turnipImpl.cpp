@@ -5,10 +5,10 @@
 #include "computeConditionalProb.h"
 namespace networkReliability
 {
-	TurnipEqualRateInput::TurnipEqualRateInput(boost::mt19937& randomSource, const context::internalGraph* graph, const std::vector<int>& interestVertices)
+	turnipEqualRateInput::turnipEqualRateInput(boost::mt19937& randomSource, const context::internalGraph* graph, const std::vector<int>& interestVertices)
 		:randomSource(randomSource), graph(graph), interestVertices(interestVertices), n(0), estimateFirstMoment(0), estimateSecondMoment(0), warnedStability(false)
 	{}
-	void turnipEqualRate(TurnipEqualRateInput& input)
+	void turnipEqualRate(turnipEqualRateInput& input)
 	{
 		const context::internalGraph& graph = *input.graph;
 		const std::vector<int>& interestVertices = input.interestVertices;

@@ -57,7 +57,7 @@ namespace networkReliability
 		weights.swap(other.weights);
 		sampleSize = other.sampleSize;
 		externalContext = other.externalContext;
-		containedContext = other.containedcontext;
+		containedContext = other.containedContext;
 		return *this;
 	}
 	empiricalDistribution::empiricalDistribution(empiricalDistribution&& other)
@@ -67,7 +67,7 @@ namespace networkReliability
 		weights.swap(other.weights);
 		sampleSize = other.sampleSize;
 		externalContext = other.externalContext;
-		containedContext = other.containedcontext;
+		containedContext = other.containedContext;
 	}
 	empiricalDistribution::empiricalDistribution()
 	{}
