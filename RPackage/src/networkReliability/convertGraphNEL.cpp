@@ -2,7 +2,7 @@
 #include "context.h"
 namespace networkReliability
 {
-	void convertGraphNEL(SEXP graph_sexp, Context::inputGraph& graphRef)
+	void convertGraphNEL(SEXP graph_sexp, context::inputGraph& graphRef)
 	{
 		Rcpp::S4 graph_s4;
 		try
@@ -69,7 +69,7 @@ namespace networkReliability
 		}
 		Rcpp::CharacterVector edges_list_names = Rcpp::as<Rcpp::CharacterVector>(edges_list.attr("names"));
 
-		graphRef =  Context::inputGraph(nVertices);
+		graphRef =  context::inputGraph(nVertices);
 		for(int i = 0; i < edges_list.size(); i++)
 		{
 			int nodeIndex = std::distance(nodeNames.begin(), std::find(nodeNames.begin(), nodeNames.end(), edges_list_names(i)));

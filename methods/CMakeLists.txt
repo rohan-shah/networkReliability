@@ -4,7 +4,7 @@ set(HeaderFiles crudeMCImpl.h)
 
 add_library(methods STATIC ${CppFiles} ${HeaderFiles})
 target_link_libraries(methods PUBLIC networkReliabilityCommon) 
-
+target_include_directories(methods PUBLIC ${PROJECT_SOURCE_DIR}/methods)
 if(WIN32)
 	set_target_properties(methods PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/ PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/)
 endif()

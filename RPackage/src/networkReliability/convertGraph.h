@@ -8,9 +8,9 @@ namespace networkReliability
 	{
 		IGRAPH, GRAPHNEL, GRAPHAM
 	};
-	void convertGraph(SEXP graph_sexp, Context::inputGraph& graphRef, R_GRAPH_TYPE graphType);
-	void convertGraphIGraph(SEXP graph_sexp, Context::inputGraph& graphRef);
-	void convertGraphAM(SEXP graph_sexp, Context::inputGraph& graphRef);
-	void convertGraphNEL(SEXP graph_sexp, Context::inputGraph& graphRef);
+	void convertGraph(SEXP graph_sexp, context::inputGraph& graphRef, R_GRAPH_TYPE graphType);
+	void convertGraphIGraph(SEXP graph_sexp, context::inputGraph& graphRef);
+	void convertGraphAM(SEXP graph_sexp, context::inputGraph& graphRef);
+	void convertGraphNEL(SEXP graph_sexp, context::inputGraph& graphRef);
 }
 #endif

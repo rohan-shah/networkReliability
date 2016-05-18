@@ -2,7 +2,7 @@
 #include "context.h"
 namespace networkReliability
 {
-	void convertGraphIGraph(SEXP graph_sexp, Context::inputGraph& graphRef)
+	void convertGraphIGraph(SEXP graph_sexp, context::inputGraph& graphRef)
 	{
 		//Convert graph object
 		Rcpp::List graph;
@@ -28,7 +28,7 @@ namespace networkReliability
 		}
 
 		//Construct graph
-		graphRef = Context::inputGraph(nVertices);
+		graphRef = context::inputGraph(nVertices);
 		for(int i = 0; i < edgesVertex1.size(); i++)
 		{
 			boost::add_edge(edgesVertex1(i), edgesVertex2(i), graphRef);

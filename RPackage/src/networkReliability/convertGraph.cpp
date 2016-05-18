@@ -1,7 +1,7 @@
 #include "convertGraph.h"
-namespace multistateTurnip
+namespace networkReliability
 {
-	void convertGraph(SEXP graph_sexp, Context::inputGraph& graphRef, R_GRAPH_TYPE graphType)
+	void convertGraph(SEXP graph_sexp, context::inputGraph& graphRef, R_GRAPH_TYPE graphType)
 	{
 		if(graphType == IGRAPH)
 		{

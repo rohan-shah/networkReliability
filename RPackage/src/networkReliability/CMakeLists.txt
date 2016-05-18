@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles)
-set(HeaderFiles)
+set(CppFiles convertGraph.h)
+set(HeaderFiles convertGraphAM.cpp convertGraph.cpp convertGraphIGraph.cpp convertGraphNEL.cpp register.cpp crudeMC.cpp)
 add_library(networkReliabilityRPackage SHARED ${CppFiles} ${HeaderFiles})
-target_link_libraries(networkReliabilityRPackage PUBLIC networkReliabilityCommon Rcpp)
+target_link_libraries(networkReliabilityRPackage PUBLIC networkReliabilityCommon Rcpp methods)
 set_target_properties(networkReliabilityRPackage PROPERTIES OUTPUT_NAME "networkReliability")
 target_compile_definitions(networkReliabilityRPackage PRIVATE CUSTOM_STATIC_RCPP)
 

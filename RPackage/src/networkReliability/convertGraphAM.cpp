@@ -2,7 +2,7 @@
 #include "context.h"
 namespace networkReliability
 {
-	void convertGraphAM(SEXP graph_sexp, Context::inputGraph& graphRef)
+	void convertGraphAM(SEXP graph_sexp, context::inputGraph& graphRef)
 	{
 		Rcpp::S4 graph_s4;
 		try
@@ -44,7 +44,7 @@ namespace networkReliability
 			throw std::runtime_error("Slot adjMat of input graph must be a square matrix");
 		}
 
-		graphRef = Context::inputGraph(nVertices);
+		graphRef = context::inputGraph(nVertices);
 		for(int i = 0; i < nVertices; i++)
 		{
 			for(int j = 0; j < nVertices; j++)
