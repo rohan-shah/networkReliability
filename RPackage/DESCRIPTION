@@ -1,0 +1,21 @@
+Package: multiStateFlowReliability
+Type: Package
+Title: Monte Carlo methods for the multi capacity network-flow reliability problem
+Version: 0.1
+Date: 2015-05-14
+Author: Rohan Shah
+Maintainer: Rohan Shah <cran@bookshah.com>
+Description: Monte Carlo methods for the multi capacity network-flow reliability problem
+License: GPL v3
+LazyData: No
+Suggests: graph, igraph
+Depends: Rmpfr
+Collate:
+	'classes.R'
+	'turnip.R'
+	'pmc.R'
+	'crudeMC.R'
+	'onLoad.R'
+	'generalisedSplittingFixedEffort.R'
+	'generalisedSplittingFixedFactors.R'
+	'Rcpp_exceptions.R'
