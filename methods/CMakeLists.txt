@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles crudeMCImpl.cpp)
-set(HeaderFiles crudeMCImpl.h)
+set(CppFiles crudeMCImpl.cpp approximateZeroVarianceImpl.cpp)
+set(HeaderFiles crudeMCImpl.h approximateZeroVarianceImpl.h)
 
 add_library(methods STATIC ${CppFiles} ${HeaderFiles})
 target_link_libraries(methods PUBLIC networkReliabilityCommon) 
