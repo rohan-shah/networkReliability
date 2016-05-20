@@ -10,12 +10,7 @@ namespace networkReliability
 		{
 			throw std::runtime_error("Input n must be positive");
 		}
-		double probability = args.probability;
-		if(probability <= 0 || probability >= 1)
-		{
-			throw std::runtime_error("Input probability must be in (0, 1)");
-		}
-
+		
 		const context& contextObj = args.contextObj;
 		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 

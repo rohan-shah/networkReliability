@@ -14,21 +14,21 @@ namespace networkReliability
 		struct orderByFirst
 		{
 		public:
-			bool operator()(::networkReliability::Context::vertexPosition const& first, ::networkReliability::Context::vertexPosition const& second) const
+			bool operator()(::networkReliability::context::vertexPosition const& first, ::networkReliability::context::vertexPosition const& second) const
 			{
 				return first.first < second.first;
 			}
 		};
 		struct orderBySecond
 		{
-			bool operator()(::networkReliability::Context::vertexPosition const& first, ::networkReliability::Context::vertexPosition const& second) const
+			bool operator()(::networkReliability::context::vertexPosition const& first, ::networkReliability::context::vertexPosition const& second) const
 			{
 				return first.second < second.second;
 			}
 		};
 	}
-	observationVisualiser::observationVisualiser(Context const& context, boost::mt19937& randomSource, float pointSize)
-		:obs(context, randomSource), context(context), randomSource(randomSource), pointSize(pointSize)
+	observationVisualiser::observationVisualiser(context const& contextObj, boost::mt19937& randomSource, float pointSize)
+		:obs(contextObj, randomSource), contextObj(contextObj), randomSource(randomSource), pointSize(pointSize)
 	{
 		graphicsScene = new QGraphicsScene();
 		graphicsScene->installEventFilter(this);
@@ -54,7 +54,7 @@ namespace networkReliability
 		statusFrame->setLayout(statusLayout);
 		setStatusBar(statusBar);
 
-		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 		observationVisualiserImpl::orderByFirst xOrder;
 		observationVisualiserImpl::orderBySecond yOrder;
 		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), xOrder)->first - pointSize;
@@ -77,11 +77,11 @@ namespace networkReliability
 		const EdgeState* state = obs.getState();
 
 		std::vector<int> components;
-		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 		std::vector<boost::default_color_type> colorMap;
-		countComponents(context, state, components, stack, colorMap);
+		countComponents(contextObj, state, components, stack, colorMap);
 		
-		const std::vector<int>& interestVertices = context.getInterestVertices();
+		const std::vector<int>& interestVertices = contextObj.getInterestVertices();
 		
 		std::vector<int> interestComponents;
 		for(std::size_t i = 0; i < interestVertices.size(); i++)
@@ -109,9 +109,9 @@ namespace networkReliability
 	}
 	void observationVisualiser::addPoints()
 	{
-		std::size_t nVertices = boost::num_vertices(context.getGraph());
-		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
-		const std::vector<int>& interestVertices = context.getInterestVertices();
+		std::size_t nVertices = boost::num_vertices(contextObj.getGraph());
+		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
+		const std::vector<int>& interestVertices = contextObj.getInterestVertices();
 
 		QPen blackPen(QColor("black"));
 		blackPen.setStyle(Qt::NoPen);
@@ -123,7 +123,7 @@ namespace networkReliability
 
 		for(std::size_t vertexCounter = 0; vertexCounter < nVertices; vertexCounter++)
 		{
-			Context::vertexPosition currentPosition = vertexPositions[vertexCounter];
+			context::vertexPosition currentPosition = vertexPositions[vertexCounter];
 			float x = currentPosition.first;
 			float y = currentPosition.second;
 			if(interestVertices.end() == std::find(interestVertices.begin(), interestVertices.end(), vertexCounter))
@@ -142,17 +142,17 @@ namespace networkReliability
 	void observationVisualiser::addLines()
 	{
 		const EdgeState* state = obs.getState();
-		const Context::internalGraph& graph = context.getGraph();
-		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+		const context::internalGraph& graph = contextObj.getGraph();
+		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 
 		QPen pen(QColor("black"));
 		pen.setWidthF(pointSize/10);
-		Context::internalGraph::edge_iterator start, end;
+		context::internalGraph::edge_iterator start, end;
 		boost::tie(start, end) = boost::edges(graph);
 
 		while(start != end)
 		{
-			Context::vertexPosition sourcePosition = vertexPositions[start->m_source], targetPosition = vertexPositions[start->m_target];
+			context::vertexPosition sourcePosition = vertexPositions[start->m_source], targetPosition = vertexPositions[start->m_target];
 			if(state[boost::get(boost::edge_index, graph, *start)] & OP_MASK)
 			{
 				graphicsScene->addLine(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, pen);
@@ -177,7 +177,7 @@ namespace networkReliability
 			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 			if(keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return)
 			{
-				obs = NetworkReliabilityObs(context, randomSource);
+				obs = NetworkReliabilityObs(contextObj, randomSource);
 				updateGraphics();
 				return true;
 			}

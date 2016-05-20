@@ -1,0 +1,1 @@
+setClass("crudeMCResult", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", n = "integer", probability = "numeric", graph = "ANY", seed = "integer", interestVertices = "integer"))

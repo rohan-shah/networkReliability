@@ -16,7 +16,7 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		observationVisualiser(Context const& context, boost::mt19937& randomSource, float pointSize);
+		observationVisualiser(context const& contextObj, boost::mt19937& randomSource, float pointSize);
 		~observationVisualiser();
 		bool eventFilter(QObject* object, QEvent *event);
 	private:
@@ -27,7 +27,7 @@ namespace networkReliability
 		void updateGraphics();
 
 		NetworkReliabilityObs obs;
-		Context const& context;
+		context const& contextObj;
 		boost::mt19937& randomSource;
 		QGraphicsScene* graphicsScene;
 		QGraphicsView* graphicsView;

@@ -1,5 +1,1 @@
 export(crudeMC)
-export(pmc)
-export(turnip)
-export(generalisedSplittingFixedFactors)
-export(generalisedSplittingFixedEffort)

@@ -16,11 +16,11 @@
 #include <QGraphicsSceneMouseEvent>
 namespace networkReliability
 {
-	bool sortByFirst(Context::vertexPosition const& first, Context::vertexPosition const& second)
+	bool sortByFirst(context::vertexPosition const& first, context::vertexPosition const& second)
 	{
 		return first.first < second.first;
 	}
-	bool sortBySecond(Context::vertexPosition const& first, Context::vertexPosition const& second)
+	bool sortBySecond(context::vertexPosition const& first, context::vertexPosition const& second)
 	{
 		return first.second < second.second;
 	}
@@ -41,9 +41,9 @@ namespace networkReliability
 	}
 	void subObservationVisualiserBase::updateReducedGraphData(const NetworkReliabilityObs& subObs)
 	{
-		boost::detail::depth_first_visit_restricted_impl_helper<Context::internalGraph>::stackType stack;
+		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 		std::vector<boost::default_color_type> colorMap;
-		nUnreducedComponents = countComponents(context, subObs.getState(), reducedComponents, stack, colorMap);
+		nUnreducedComponents = countComponents(contextObj, subObs.getState(), reducedComponents, stack, colorMap);
 		subObs.getReducedGraphNoSelfWithWeights(reducedGraphData);
 	}
 	void subObservationVisualiserBase::initialiseControls()
@@ -57,7 +57,7 @@ namespace networkReliability
 		graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->viewport()->installEventFilter(this);
 
-		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 		minX = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first - pointSize;
 		maxX = std::max_element(vertexPositions.begin(), vertexPositions.end(), sortByFirst)->first + pointSize;
 		minY = std::min_element(vertexPositions.begin(), vertexPositions.end(), sortBySecond)->second - pointSize;
@@ -68,8 +68,8 @@ namespace networkReliability
 		layout->setContentsMargins(0,0,0,0);
 		setLayout(layout);
 	}
-	subObservationVisualiserBase::subObservationVisualiserBase(const Context& context, float pointSize)
-		:pointSize(pointSize), highlightedReducedComponent(-1), reducedGraphData(context.getInterestVertices()), reduced(false), context(context), reducedPointsItem(NULL), reducedLinesItem(NULL), unreducedPointsItem(NULL), unreducedLinesItem(NULL), highlightedGroupItem(NULL), backgroundItem(NULL)
+	subObservationVisualiserBase::subObservationVisualiserBase(const context& contextObj, float pointSize)
+		:pointSize(pointSize), highlightedReducedComponent(-1), reducedGraphData(contextObj.getInterestVertices()), reduced(false), contextObj(contextObj), reducedPointsItem(NULL), reducedLinesItem(NULL), unreducedPointsItem(NULL), unreducedLinesItem(NULL), highlightedGroupItem(NULL), backgroundItem(NULL)
 	{
 		initialiseControls();
 
@@ -142,10 +142,10 @@ namespace networkReliability
 	void subObservationVisualiserBase::constructUnreducedPoints()
 	{
 		assert(unreducedPointsItem);
-		std::size_t nVertices = boost::num_vertices(context.getGraph());
+		std::size_t nVertices = boost::num_vertices(contextObj.getGraph());
 
-		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
-		const std::vector<int>& interestVertices = context.getInterestVertices();
+		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
+		const std::vector<int>& interestVertices = contextObj.getInterestVertices();
 
 		QPen blackPen(QColor("black"));
 		blackPen.setStyle(Qt::NoPen);
@@ -161,7 +161,7 @@ namespace networkReliability
 
 		for(std::size_t vertexCounter = 0; vertexCounter < nVertices; vertexCounter++)
 		{
-			Context::vertexPosition currentPosition = vertexPositions[vertexCounter];
+			context::vertexPosition currentPosition = vertexPositions[vertexCounter];
 			float x = currentPosition.first;
 			float y = currentPosition.second;
 			if(highlightedReducedComponent != -1 && reducedComponents[vertexCounter] == highlightedReducedComponent)
@@ -188,8 +188,8 @@ namespace networkReliability
 	{
 		assert(unreducedLinesItem);
 		const EdgeState* state = subObs.getState();
-		const Context::internalGraph& graph = context.getGraph();
-		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+		const context::internalGraph& graph = contextObj.getGraph();
+		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 
 		QPen pen(QColor("black"));
 		pen.setWidthF(pointSize/10);
@@ -207,14 +207,14 @@ namespace networkReliability
 		QPen dashedRedPen(QColor("red"));
 		dashedRedPen.setDashPattern(dashPattern);
 
-		Context::internalGraph::edge_iterator start, end;
+		context::internalGraph::edge_iterator start, end;
 		boost::tie(start, end) = boost::edges(graph);
 
-		boost::property_map<Context::internalGraph, boost::edge_index_t>::const_type edgeIndexMap = boost::get(boost::edge_index, graph);
+		boost::property_map<context::internalGraph, boost::edge_index_t>::const_type edgeIndexMap = boost::get(boost::edge_index, graph);
 
 		while(start != end)
 		{
-			Context::vertexPosition sourcePosition = vertexPositions[start->m_source], targetPosition = vertexPositions[start->m_target];
+			context::vertexPosition sourcePosition = vertexPositions[start->m_source], targetPosition = vertexPositions[start->m_target];
 			if(state[boost::get(boost::edge_index, graph, *start)] & FIXED_OP)
 			{
 				QGraphicsLineItem* newItem = new QGraphicsLineItem(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, unreducedLinesItem);
@@ -248,9 +248,9 @@ namespace networkReliability
 			QPointF position = mouseEvent->scenePos();
 			emit positionChanged(position.x(), position.y());
 
-			const Context::internalGraph& graph = context.getGraph();
+			const context::internalGraph& graph = contextObj.getGraph();
 			std::size_t nVertices = boost::num_vertices(graph);
-			const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+			const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 
 			if(!reduced)
 			{
@@ -303,8 +303,8 @@ namespace networkReliability
 	void subObservationVisualiserBase::constructReducedPoints()
 	{
 		assert(reducedPointsItem);
-		const Context::internalGraph& unreducedGraph = context.getGraph();
-		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+		const context::internalGraph& unreducedGraph = contextObj.getGraph();
+		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 
 		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
 		NetworkReliabilityObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
@@ -318,13 +318,13 @@ namespace networkReliability
 		blackPen.setStyle(Qt::NoPen);
 		QBrush blackBrush(QColor("black"));
 
-		Context::internalGraph::vertex_iterator currentUnreducedVertex, endUnreducedVertex;
+		context::internalGraph::vertex_iterator currentUnreducedVertex, endUnreducedVertex;
 		boost::tie(currentUnreducedVertex, endUnreducedVertex) = boost::vertices(unreducedGraph);
 		for(;currentUnreducedVertex != endUnreducedVertex; currentUnreducedVertex++)
 		{
 			if(stillPresentInReduced[reducedComponents[*currentUnreducedVertex]])
 			{
-				Context::vertexPosition currentPosition = vertexPositions[*currentUnreducedVertex];
+				context::vertexPosition currentPosition = vertexPositions[*currentUnreducedVertex];
 				float x = currentPosition.first;
 				float y = currentPosition.second;
 
@@ -337,8 +337,8 @@ namespace networkReliability
 	void subObservationVisualiserBase::constructReducedLines(const NetworkReliabilityObs& subObs)
 	{
 		assert(reducedLinesItem);
-		const Context::internalGraph& unreducedGraph = context.getGraph();
-		const std::vector<Context::vertexPosition>& vertexPositions = context.getVertexPositions();
+		const context::internalGraph& unreducedGraph = contextObj.getGraph();
+		const std::vector<Context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 
 		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
 		NetworkReliabilityObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;

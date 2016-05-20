@@ -163,7 +163,7 @@ namespace networkReliability
 			throw std::runtime_error("Graph ordering data had the wrong size");
 		}
 
-		if(nVertices != vertexPositions->size())
+		if(vertexPositions && nVertices != vertexPositions->size())
 		{
 			throw std::runtime_error("Vertex position data had the wrong size");
 		}
@@ -374,6 +374,8 @@ namespace networkReliability
 	}
 	const std::vector<context::vertexPosition>& context::getVertexPositions() const
 	{
+		std::size_t nVertices = boost::num_vertices(getGraph());
+		if(!vertexPositions || nVertices != vertexPositions->size()) throw std::runtime_error("Attempted to call getVertexPositions even though the input graph had no positions assigned");
 		return *vertexPositions;
 	}
 	context context::fromFile(std::string path, bool& successful, boost::shared_ptr<const std::vector<int> > interestVertices, std::string& message, const mpfr_class& operationalProbability, bool useSpatialDistances)

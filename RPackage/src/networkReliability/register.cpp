@@ -4,10 +4,13 @@
 	#undef RcppExport
 	#define RcppExport extern "C" __declspec(dllexport)
 #endif
+#include "crudeMC.h"
 extern "C" const char* package_name = "networkReliability";
 R_CallMethodDef callMethods[] = 
 {
-	//{"crudeMC_igraph", (DL_FUNC)&multistateTurnip::crudeMC_igraph, 6},
+	{"crudeMC_igraph", (DL_FUNC)&networkReliability::crudeMC_igraph, 5},
+	{"crudeMC_graphAM", (DL_FUNC)&networkReliability::crudeMC_graphAM, 5},
+	{"crudeMC_graphNEL", (DL_FUNC)&networkReliability::crudeMC_graphNEL, 5},
 	{NULL, NULL, 0}
 };
 RcppExport void R_init_networkReliability(DllInfo *info)

@@ -12,7 +12,6 @@ namespace networkReliability
 		const context& contextObj;
 		boost::mt19937 randomSource;
 		std::size_t n;
-		double probability;
 	};
 	double crudeMC(crudeMCArgs& args);
 }
