@@ -16,3 +16,4 @@ Collate:
 	'onLoad.R'
 	'Rcpp_exceptions.R'
 	'approximateZeroVariance.R'
+	'exhaustiveSearch.R'

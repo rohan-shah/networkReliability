@@ -69,7 +69,8 @@ namespace networkReliability
 		}
 		Rcpp::CharacterVector edges_list_names = Rcpp::as<Rcpp::CharacterVector>(edges_list.attr("names"));
 
-		graphRef =  context::inputGraph(nVertices);
+		graphRef = context::inputGraph(nVertices);
+		int edgeIndexCounter = 0;
 		for(int i = 0; i < edges_list.size(); i++)
 		{
 			int nodeIndex = std::distance(nodeNames.begin(), std::find(nodeNames.begin(), nodeNames.end(), edges_list_names(i)));
@@ -99,7 +100,8 @@ namespace networkReliability
 			}
 			for(int j = 0; j < targetIndicesThisNode.size(); j++)
 			{
-				boost::add_edge((std::size_t)nodeIndex, (std::size_t)((int)targetIndicesThisNode(j)-1), graphRef);
+				boost::add_edge((std::size_t)nodeIndex, (std::size_t)((int)targetIndicesThisNode(j)-1), edgeIndexCounter, graphRef);
+				edgeIndexCounter++;
 			}
 		}
 	}

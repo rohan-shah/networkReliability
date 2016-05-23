@@ -6,6 +6,7 @@
 #endif
 #include "crudeMC.h"
 #include "approximateZeroVariance.h"
+#include "exhaustiveSearch.h"
 extern "C" const char* package_name = "networkReliability";
 R_CallMethodDef callMethods[] = 
 {
@@ -15,6 +16,9 @@ R_CallMethodDef callMethods[] =
 	{"approximateZeroVariance_igraph", (DL_FUNC)&networkReliability::approximateZeroVariance_igraph, 5},
 	{"approximateZeroVariance_graphAM", (DL_FUNC)&networkReliability::approximateZeroVariance_graphAM, 5},
 	{"approximateZeroVariance_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVariance_graphNEL, 5},
+	{"exhaustiveSearch_igraph", (DL_FUNC)&networkReliability::exhaustiveSearch_igraph, 3},
+	{"exhaustiveSearch_graphAM", (DL_FUNC)&networkReliability::exhaustiveSearch_graphAM, 3},
+	{"exhaustiveSearch_graphNEL", (DL_FUNC)&networkReliability::exhaustiveSearch_graphNEL, 3},
 	{NULL, NULL, 0}
 };
 RcppExport void R_init_networkReliability(DllInfo *info)

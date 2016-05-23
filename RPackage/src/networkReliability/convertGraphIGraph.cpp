@@ -29,9 +29,11 @@ namespace networkReliability
 
 		//Construct graph
 		graphRef = context::inputGraph(nVertices);
+		int edgeIndexCounter = 0;
 		for(int i = 0; i < edgesVertex1.size(); i++)
 		{
-			boost::add_edge(edgesVertex1(i), edgesVertex2(i), graphRef);
+			boost::add_edge(edgesVertex1(i), edgesVertex2(i), edgeIndexCounter, graphRef);
+			edgeIndexCounter++;
 		}
 	}
 }

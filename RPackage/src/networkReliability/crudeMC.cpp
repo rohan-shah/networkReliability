@@ -12,6 +12,7 @@ namespace networkReliability
 		for(std::vector<int>::iterator i = interestVertices.begin(); i != interestVertices.end(); i++)
 		{
 			(*i)--;
+			if(*i < 0) throw std::runtime_error("Interest vertices must be non-negative");
 		}
 		double probability = Rcpp::as<double>(probability_sexp);
 		mpfr_class probability_mpfr = probability;

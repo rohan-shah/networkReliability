@@ -44,6 +44,7 @@ namespace networkReliability
 			throw std::runtime_error("Slot adjMat of input graph must be a square matrix");
 		}
 
+		int edgeIndexCounter = 0;
 		graphRef = context::inputGraph(nVertices);
 		for(int i = 0; i < nVertices; i++)
 		{
@@ -51,7 +52,8 @@ namespace networkReliability
 			{
 				if(adjMat(i, j) > 0)
 				{
-					boost::add_edge((std::size_t)i, (std::size_t)j, graphRef);
+					boost::add_edge((std::size_t)i, (std::size_t)j, edgeIndexCounter, graphRef);
+					edgeIndexCounter++;
 				}
 			}
 		}
