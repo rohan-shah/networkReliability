@@ -24,7 +24,7 @@ namespace networkReliability
 		for(std::size_t i = 0; i < n; i++)
 		{
 			NetworkReliabilityObs obs(contextObj, args.randomSource);
-			if(!isSingleComponent(contextObj, obs.getState(), components, stack, colorMap))
+			if(!isSingleComponent(contextObj.getGraph(), obs.getState(), components, stack, colorMap, contextObj.getInterestVertices()))
 			{
 				countDisconnected++;
 			}			

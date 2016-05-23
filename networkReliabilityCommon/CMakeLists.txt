@@ -27,17 +27,16 @@ target_link_libraries(networkReliabilityCommon PUBLIC aliasMethod truncatedBinom
 if(GRAPHVIZ_FOUND)
 	target_include_directories(networkReliabilityCommon PUBLIC ${GRAPHVIZ_INCLUDE_DIR})
 	target_link_libraries(networkReliabilityCommon PUBLIC graphviz_gvc graphviz_cgraph graphviz_pathplan)
+	set_target_properties(networkReliabilityCommon PROPERTIES COMPILE_DEFINITIONS HAS_GRAPHVIZ)	
 endif()
 target_include_directories(networkReliabilityCommon PUBLIC ${allPointsMaxFlow_INCLUDE_DIRS})
 target_compile_definitions(networkReliabilityCommon PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
 
-if(GRAPHVIZ_FOUND)
-	set_target_properties(networkReliabilityCommon PROPERTIES COMPILE_DEFINITIONS HAS_GRAPHVIZ)	
-endif()
-
 if(${Qt5_FOUND})
 	target_link_libraries(networkReliabilityCommon PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)
 endif()
+#Add openMP
+set_target_properties(networkReliabilityCommon PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS} LINK_FLAGS ${OpenMP_CXX_FLAGS})
 if(WIN32)
 	target_link_libraries(networkReliabilityCommon PUBLIC mpfr mpir)
 	set_target_properties(networkReliabilityCommon PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/ PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/x64/)

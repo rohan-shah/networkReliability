@@ -3,20 +3,20 @@
 #include <boost/graph/filtered_graph.hpp>
 namespace networkReliability
 {
-	int countComponents(context const& context, const edgeState* state, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap)
+	int countComponents(context::internalGraph const& graph, const edgeState* state, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap)
 	{
-		const std::size_t nVertices = boost::num_vertices(context.getGraph());
+		const std::size_t nVertices = boost::num_vertices(graph);
 		components.resize(nVertices);
 		
 		colorMap.clear();
 		colorMap.resize(nVertices, Color::white());
 
-		return boost::connected_components_restricted(context.getGraph(), &(components[0]), &(colorMap[0]), stack, state);
+		return boost::connected_components_restricted(graph, &(components[0]), &(colorMap[0]), stack, state);
 	}
-	bool isSingleComponent(context const& context, const edgeState* state, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap)
+
+	bool isSingleComponent(context::internalGraph const& graph, const edgeState* state, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap, const std::vector<int>& interestVertices)
 	{
-		countComponents(context, state, components, stack, colorMap);
-		const std::vector<int>& interestVertices = context.getInterestVertices();
+		countComponents(graph, state, components, stack, colorMap);
 		int firstInterestComponentID = components[interestVertices[0]];
 		for(std::size_t i = 1; i < interestVertices.size(); i++)
 		{

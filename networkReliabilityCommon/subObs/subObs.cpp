@@ -15,7 +15,7 @@ namespace networkReliability
 		}
 		void subObs::getReducedGraph(context::internalGraph& outputGraph, std::vector<int>& edgeCounts, std::vector<int>& components, boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType& stack, std::vector<boost::default_color_type>& colorMap) const
 		{
-			int nComponents = countComponents(contextObj, state.get(), components, stack, colorMap);
+			int nComponents = countComponents(contextObj.getGraph(), state.get(), components, stack, colorMap);
 			edgeCounts.clear();
 			edgeCounts.resize(nComponents * nComponents);
 
@@ -52,7 +52,7 @@ namespace networkReliability
 		void subObs::getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const
 		{
 			input.nUnreducedEdges = 0;
-			int nComponents = countComponents(contextObj, state.get(), input.components, input.stack, input.colorMap);
+			int nComponents = countComponents(contextObj.getGraph(), state.get(), input.components, input.stack, input.colorMap);
 			input.edgeCounts.clear();
 			input.edgeCounts.resize(nComponents * nComponents);
 

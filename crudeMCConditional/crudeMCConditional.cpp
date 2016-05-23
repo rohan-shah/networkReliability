@@ -93,7 +93,7 @@ namespace networkReliability
 			for (int j = 0; j < nOperational; j++) edgeStates[permutation[j]] = UNFIXED_OP;
 			for (std::size_t j = nOperational; j < nEdges; j++) edgeStates[permutation[j]] = UNFIXED_INOP;
 
-			if (!isSingleComponent(contextObj, edgeStates.get(), components, stack, colorMap))
+			if (!isSingleComponent(contextObj.getGraph(), edgeStates.get(), components, stack, colorMap, contextObj.getInterestVertices()))
 			{
 				countDisconnected++;
 			}

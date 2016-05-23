@@ -166,7 +166,7 @@ namespace networkReliability
 						edgeStatePtr[edgeCounter] = UNFIXED_INOP;
 					}
 				}
-				bool currentGraphConnected = isSingleComponent(contextObj, edgeStatePtr, privateConnectedComponents, stack, colorMap);
+				bool currentGraphConnected = isSingleComponent(contextObj.getGraph(), edgeStatePtr, privateConnectedComponents, stack, colorMap, contextObj.getInterestVertices());
 				if(!currentGraphConnected)
 				{
 					for(std::size_t i = 0; i < nFunctions; i++)

@@ -181,7 +181,7 @@ namespace networkReliability
 						tooManyEdges.add(*j);
 						tooManyEdgesCount++;
 						::networkReliability::obs::withResampling obs = ::networkReliability::subObs::getObservation<::networkReliability::subObs::withResampling>::get(*j, randomSource);
-						if(!isSingleComponent(contextObj, obs.getState(), components, stack, colorMap))
+						if(!isSingleComponent(contextObj.getGraph(), obs.getState(), components, stack, colorMap, contextObj.getInterestVertices()))
 						{
 							estimate += j->getGeneratedObservationConditioningProb();
 						}

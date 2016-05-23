@@ -161,7 +161,7 @@ namespace networkReliability
 			::networkReliability::obs::basic currentObs = ::networkReliability::obs::basic::constructConditional(contextObj, randomSource);
 			::networkReliability::subObs::basic subObs = ::networkReliability::obs::getSubObservation<::networkReliability::obs::basic>::get(currentObs, thresholds[0]);
 
-			if (!isSingleComponent(contextObj, subObs.getState(), components, stack, colorMap))
+			if (!isSingleComponent(contextObj.getGraph(), subObs.getState(), components, stack, colorMap, contextObj.getInterestVertices()))
 			{
 				observations.push_back(std::move(subObs));
 			}
@@ -177,7 +177,7 @@ namespace networkReliability
 				{
 					::networkReliability::obs::basic newObs = ::networkReliability::subObs::getObservation<::networkReliability::subObs::basic>::get(*j, randomSource);
 					::networkReliability::subObs::basic sub = ::networkReliability::obs::getSubObservation<::networkReliability::obs::basic>::get(newObs, thresholds[splittingLevel+1]);
-					if(!isSingleComponent(contextObj, sub.getState(), components, stack, colorMap))
+					if(!isSingleComponent(contextObj.getGraph(), sub.getState(), components, stack, colorMap, contextObj.getInterestVertices()))
 					{
 						nextStepObservations.push_back(std::move(sub));
 					}

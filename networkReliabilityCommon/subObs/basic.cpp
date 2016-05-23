@@ -15,7 +15,7 @@ namespace networkReliability
 		}
 		void basic::initialise()
 		{
-			potentiallyDisconnected = isSingleComponent(contextObj, state.get(), contextObj.capacityVector, contextObj.depthFirstStack, contextObj.colorVector);
+			potentiallyDisconnected = isSingleComponent(contextObj.getGraph(), state.get(), contextObj.capacityVector, contextObj.depthFirstStack, contextObj.colorVector, contextObj.getInterestVertices());
 			const std::size_t nEdges = contextObj.getNEdges();
 			//Profiling has indicated that the push_back below costs in terms of calls to new[]. Hence the call to reserve first.  
 			int couldBeDeactivatedCounter = 0;
