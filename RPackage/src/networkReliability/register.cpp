@@ -7,6 +7,9 @@
 #include "crudeMC.h"
 #include "approximateZeroVariance.h"
 #include "exhaustiveSearch.h"
+#include "includeMPFRNetworkReliability.h"
+#include "setDefaultPrec.h"
+#include "exhaustiveProbability.h"
 extern "C" const char* package_name = "networkReliability";
 R_CallMethodDef callMethods[] = 
 {
@@ -19,6 +22,8 @@ R_CallMethodDef callMethods[] =
 	{"exhaustiveSearch_igraph", (DL_FUNC)&networkReliability::exhaustiveSearch_igraph, 3},
 	{"exhaustiveSearch_graphAM", (DL_FUNC)&networkReliability::exhaustiveSearch_graphAM, 3},
 	{"exhaustiveSearch_graphNEL", (DL_FUNC)&networkReliability::exhaustiveSearch_graphNEL, 3},
+	{"setDefaultPrec", (DL_FUNC)&networkReliability::setDefaultPrec, 1},
+	{"exhaustiveProbability", (DL_FUNC)&networkReliability::exhaustiveProbability, 2},
 	{NULL, NULL, 0}
 };
 RcppExport void R_init_networkReliability(DllInfo *info)
@@ -37,4 +42,7 @@ RcppExport void R_init_networkReliability(DllInfo *info)
 
 	R_registerRoutines(info, NULL, &(callMethodsVector[0]), NULL, NULL);
 	init_Rcpp_cache();
+
+	//Setup default precision
+	networkReliability::mpfr_class::default_precision(1024);
 }

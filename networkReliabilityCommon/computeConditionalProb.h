@@ -1,7 +1,7 @@
 #ifndef COMPUTE_CONDITIONAL_PROB_HEADER_GUARD
 #define COMPUTE_CONDITIONAL_PROB_HEADER_GUARD
 #include <algorithm>
-#include "includeMPFR.h"
+#include "includeMPFRNetworkReliability.h"
 #include <vector>
 namespace networkReliability
 {

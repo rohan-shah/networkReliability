@@ -1,7 +1,7 @@
 #ifndef ARGUMENTS_MPFR_HEADER_GUARD
 #define ARGUMENTS_MPFR_HEADER_GUARD
 #include <boost/program_options.hpp>
-#include "includeMPFR.h"
+#include "includeMPFRNetworkReliability.h"
 #include "context.h"
 namespace networkReliability
 {

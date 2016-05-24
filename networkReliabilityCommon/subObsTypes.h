@@ -1,6 +1,6 @@
 #ifndef SUB_OBS_TYPE_HEADER_GUARD
 #define SUB_OBS_TYPE_HEADER_GUARD
-#include "includeMPFR.h"
+#include "includeMPFRNetworkReliability.h"
 namespace networkReliability
 {
 	namespace obs

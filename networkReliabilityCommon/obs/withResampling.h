@@ -5,7 +5,7 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/shared_array.hpp>
 #include "obs/withSub.h"
-#include "includeMPFR.h"
+#include "includeMPFRNetworkReliability.h"
 #include "obs/withSub.h"
 #include "obs/getSubObservation.hpp"
 #include "subObs/getObservation.hpp"

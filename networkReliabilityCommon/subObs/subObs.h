@@ -2,10 +2,10 @@
 #define NETWORK_RELIABILITY_SUB_OBS_SUB_OBS_ROOT_HEADER_GUARD
 #include <boost/random/mersenne_twister.hpp>
 #include "context.h"
-#include "serializeGMP.hpp"
+#include "serializeGMPNetworkReliability.hpp"
 #include "edgeState.h"
 #include <boost/shared_array.hpp>
-#include "includeMPFR.h"
+#include "includeMPFRNetworkReliability.h"
 #include "graphAlgorithms.h"
 #include "networkReliabilityObs.h"
 namespace networkReliability

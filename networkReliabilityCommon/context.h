@@ -12,8 +12,9 @@
 #include <boost/graph/adj_list_serialize.hpp>
 #include <vector>
 #include "TruncatedBinomialDistribution.h"
+#include "includeMPFRNetworkReliability.h"
 #include "allPointsMaxFlow.hpp"
-#include "serializeGMP.hpp"
+#include "serializeGMPNetworkReliability.hpp"
 #include "depth_first_search_restricted.hpp"
 #define HIGH_CAPACITY 100000
 namespace networkReliability

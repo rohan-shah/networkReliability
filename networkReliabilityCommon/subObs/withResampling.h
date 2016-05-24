@@ -2,10 +2,10 @@
 #define NETWORK_RELIABILITY_SUB_OBS_WITH_RESAMPLING_HEADER_GUARD
 #include <boost/random/mersenne_twister.hpp>
 #include "context.h"
-#include "serializeGMP.hpp"
+#include "serializeGMPNetworkReliability.hpp"
 #include "edgeState.h"
 #include <boost/shared_array.hpp>
-#include "includeMPFR.h"
+#include "includeMPFRNetworkReliability.h"
 #include "graphAlgorithms.h"
 #include "subObs/subObs.h"
 #include "subObs/getObservation.hpp"

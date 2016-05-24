@@ -9,7 +9,6 @@
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/sum.hpp>
 #include <boost/random/bernoulli_distribution.hpp>
-#include "includeMPFR.h"
 #include "argumentsMPFR.h"
 #include "conditionalPMC.h"
 #include <boost/multiprecision/cpp_dec_float.hpp>
