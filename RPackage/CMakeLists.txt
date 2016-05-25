@@ -1,6 +1,6 @@
 find_package(Rcpp REQUIRED)
 set(copyPackageDependencies)
-set(dataFiles dodecahedron.graphml dodecahedronEnumeration.RData)
+set(dataFiles dodecahedron.graphml dodecahedronConnectedEnumeration.RData dodecahedronDisconnectedEnumeration.RData)
 if(WIN32)
 	foreach(BUILD_TYPE IN LISTS CMAKE_CONFIGURATION_TYPES)
 		foreach(DATAFILE IN LISTS dataFiles)

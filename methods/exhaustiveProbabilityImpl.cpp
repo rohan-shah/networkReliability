@@ -19,7 +19,15 @@ namespace networkReliability
 
 			result += counts[i] * compProbabilityPower * probabilityPower;
 		}
-		mpfr_class unreliability = 1 - result;
+		mpfr_class unreliability;
+		if(countDisconnected)
+		{
+			unreliability = result;
+		}
+		else
+		{
+			unreliability = 1 - result;
+		}
 		return unreliability.convert_to<double>();
 	}
 }
