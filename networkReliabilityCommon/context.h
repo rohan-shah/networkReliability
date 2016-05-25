@@ -164,6 +164,66 @@ namespace networkReliability
 		std::vector<mpfr_class> operationalProbabilityPowers, inoperationalProbabilityPowers;
 		void constructPowers();
 	};
+	namespace contextImpl
+	{
+		template<typename Key, context::internalGraph::vertices_size_type Ret> class constant_property_map_vertices_size_type : public boost::put_get_helper<context::internalGraph::vertices_size_type, constant_property_map_vertices_size_type<Key, Ret> > 
+		{
+		public:
+			typedef Key key_type;
+			typedef context::internalGraph::vertices_size_type reference;
+			typedef context::internalGraph::vertices_size_type value_type;
+
+			typedef boost::readable_property_map_tag category;
+
+			constant_property_map_vertices_size_type(){}
+
+			reference operator[](const Key&) const 
+			{
+				return Ret;
+			}
+		};
+		template<typename Key, int Ret> class constant_property_map_int : public boost::put_get_helper<int, constant_property_map_int<Key, Ret> > 
+		{
+		public:
+			typedef Key key_type;
+			typedef int reference;
+			typedef int value_type;
+
+			typedef boost::readable_property_map_tag category;
+
+			constant_property_map_int(){}
+
+			reference operator[](const Key&) const 
+			{
+				return Ret;
+			}
+		};
+
+		struct twoDArray
+		{
+			int* base;
+			std::size_t dim;
+			struct twoDArrayInternal
+			{
+				twoDArrayInternal(int* base)
+					:base(base)
+				{};
+				int& operator[](std::size_t j)
+				{
+					return *(base + j);
+				}
+				const int& operator[](std::size_t j) const
+				{
+					return *(base + j);
+				}
+				int* base;
+			};
+			twoDArrayInternal operator[](std::size_t i) const
+			{
+				return twoDArrayInternal(base + dim*i);
+			};
+		};
+	}
 }
 namespace boost
 {

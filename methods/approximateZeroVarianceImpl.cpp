@@ -1,7 +1,6 @@
 #include "approximateZeroVarianceImpl.h"
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/uniform_01.hpp>
-#include "empiricalDistribution.h"
 namespace networkReliability
 {
 	void approximateZeroVariance(approximateZeroVarianceArgs& args)
@@ -23,8 +22,6 @@ namespace networkReliability
 		boost::random::uniform_01<float,float> uniformReal;
 		//Vector used for mincut calculations
 		std::vector<int> state(2*nEdges);
-		//Similar vector of states, used to output the conditional distribution
-		std::vector<edgeState> outputStates(nEdges);
 		//Sum over all the n simulations
 		args.estimateFirstMoment = 0;
 		args.estimateSecondMoment = 0;
@@ -48,6 +45,7 @@ namespace networkReliability
 
 		state[0] = state[1] = HIGH_CAPACITY;
 		int initialMinCutSizeUp = args.contextObj.getMinCut(state);
+		//This branch is only taken if there are only two vertices of interest, and the first edge directly connects them.
 		if(initialMinCutSizeUp >= HIGH_CAPACITY)
 		{
 			minCutUpProb = 0;
@@ -70,7 +68,7 @@ namespace networkReliability
 			std::size_t edgeCounter = 0;
 			if(random < initialQTilde)
 			{
-				state[0] = state[1] = 0; outputStates[0] = UNFIXED_INOP;
+				state[0] = state[1] = 0; 
 				currentLikelihoodRatio = inopProbability / initialQTilde;
 				if(initialMinCutSizeDown == 0)
 				{
@@ -80,7 +78,7 @@ namespace networkReliability
 			}
 			else 
 			{
-				state[0] = state[1] = HIGH_CAPACITY; outputStates[0] = UNFIXED_OP;
+				state[0] = state[1] = HIGH_CAPACITY; 
 				currentLikelihoodRatio = (1-inopProbability) / (1-initialQTilde);
 				if(initialMinCutSizeUp >= HIGH_CAPACITY)
 				{
@@ -111,7 +109,7 @@ namespace networkReliability
 					float random = uniformReal(args.randomSource);
 					if(random < qTilde)
 					{
-						state[2*edgeCounter] = state[2*edgeCounter+1] = 0; outputStates[edgeCounter] = UNFIXED_INOP;
+						state[2*edgeCounter] = state[2*edgeCounter+1] = 0; 
 						currentLikelihoodRatio *= inopProbability / qTilde;
 						if(minCutSizeDown == 0)
 						{
@@ -121,7 +119,7 @@ namespace networkReliability
 					}
 					else 
 					{
-						state[2*edgeCounter] = state[2*edgeCounter+1] = HIGH_CAPACITY; outputStates[edgeCounter] = UNFIXED_OP;
+						state[2*edgeCounter] = state[2*edgeCounter+1] = HIGH_CAPACITY; 
 						currentLikelihoodRatio *= opProbability / (1-qTilde);
 						if(minCutSizeUp >= HIGH_CAPACITY)
 						{
