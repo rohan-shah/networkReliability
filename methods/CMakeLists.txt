@@ -3,7 +3,7 @@ set(CppFiles crudeMCImpl.cpp approximateZeroVarianceImpl.cpp exhaustiveSearchImp
 set(HeaderFiles crudeMCImpl.h approximateZeroVarianceImpl.h exhaustiveSearchImpl.h exhaustiveProbabilityImpl.h approximateZeroVarianceWORImpl.h)
 
 add_library(methods STATIC ${CppFiles} ${HeaderFiles})
-target_link_libraries(methods PUBLIC networkReliabilityCommon) 
+target_link_libraries(methods PUBLIC networkReliabilityCommon sampling)
 target_include_directories(methods PUBLIC ${PROJECT_SOURCE_DIR}/methods)
 set_target_properties(methods PROPERTIES COMPILE_FLAGS ${OpenMP_CXX_FLAGS} LINK_FLAGS ${OpenMP_CXX_FLAGS})
 if(WIN32)

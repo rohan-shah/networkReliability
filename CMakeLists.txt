@@ -11,6 +11,7 @@ find_package(Boost 1.53.0 COMPONENTS graph program_options system serialization 
 find_package(truncatedBinomialDistribution REQUIRED CONFIG)
 find_package(Qt5 COMPONENTS Widgets Core Gui)
 find_package(maxFlowAlgorithms REQUIRED CONFIG)
+find_package(sampling REQUIRED CONFIG)
 find_package(OpenMP REQUIRED)
 find_package(GraphViz)
 find_package(aliasMethod REQUIRED)

@@ -3,6 +3,7 @@
 #include <boost/random/uniform_01.hpp>
 #include <boost/graph/stoer_wagner_min_cut.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
+#include "sampford.h"
 namespace networkReliability
 {
 	namespace approximateZeroVarianceImpl
@@ -113,25 +114,32 @@ namespace networkReliability
 		{
 			cachedInopPowers[i] = boost::multiprecision::pow(inopProbability, i);
 		}
+		sampling::sampfordFromParetoNaiveArgs samplingArgs;
 		//Temporaries for calculating max flow values
 		approximateZeroVarianceImpl::approximateZeroVarianceScratch scratch;
 		//Get out the vector that holds the flow
 		std::vector<int> residualCapacities(n * nEdges * 2);
+		std::vector<bool> canReuseMinCut(n);
+		std::vector<int> minCutSize(n);
+
 		//Initialise with the two initial choices - The first edge can be up or down. 
 		std::vector<mpfr_class> weights;
 		weights.reserve(n);
 
 		std::fill(states.begin(), states.begin()+2*nEdges, 1);
 		states[0] = states[1] = 0;
+		minCutSize[0] = getMinCut(states.begin(), residualCapacities.begin(), graph, undirectedGraph, interestVertices, scratch);
+		canReuseMinCut[0] = true;
 
 		std::fill(states.begin()+2*nEdges, states.begin()+4*nEdges, 1);
-		states[0] = states[1] = HIGH_CAPACITY;
-		int initialMinCutSizeUp = getMinCut(states.begin(), residualCapacities.begin(), graph, undirectedGraph, interestVertices, scratch);
-		if(initialMinCutSizeUp < HIGH_CAPACITY)
+		states[2*nEdges] = states[2*nEdges+1] = HIGH_CAPACITY;
+		minCutSize[1] = getMinCut(states.begin()+2*nEdges, residualCapacities.begin()+2*nEdges, graph, undirectedGraph, interestVertices, scratch);
+		if(minCutSize[1] < HIGH_CAPACITY)
 		{
 			//In this case there are two initial particles
 			weights.push_back(inopProbability);
 			weights.push_back(opProbability);
+			canReuseMinCut[1] = (residualCapacities[2*nEdges] == 1) && (residualCapacities[2*nEdges+1] == 1);
 		}
 		else
 		{
@@ -140,56 +148,48 @@ namespace networkReliability
 		}
 		//The choices for sampling
 		std::vector<std::pair<int, bool> > choices;
-		std::vector<bool> canReuseMinCut(n);
-		std::vector<int> minCutSizeDown(n), minCutSizeUp(n);
-		/*for(edgeCounter = 1; edgeCounter < nEdges; edgeCounter++)
+		std::vector<mpfr_class> newWeights;
+		for(int edgeCounter = 1; edgeCounter < (int)nEdges; edgeCounter++)
 		{
-				bool canReuseMinCut = false;
-				int minCutSizeDown, minCutSizeUp;
-				for(edgeCounter = 1; edgeCounter < nEdges; edgeCounter++)
+			//Construct choices
+			choices.clear();
+			newWeights.clear();
+			for(int particleCounter = 0; particleCounter < (int)weights.size(); particleCounter++)
+			{
+				states[2*nEdges*particleCounter + 2*edgeCounter] = states[2*nEdges*particleCounter + 2*edgeCounter+1] = 0;
+				int minCutSizeDown;
+				if(canReuseMinCut[particleCounter] && args.optimiseMinCut) minCutSizeDown = minCutSize[particleCounter];
+				else minCutSizeDown = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
+				mpfr_class minCutDownProb = cachedInopPowers[minCutSizeDown];
+
+				int minCutSizeUp;
+				states[2*nEdges*particleCounter + 2*edgeCounter] = states[2*nEdges*particleCounter + 2*edgeCounter+1] = HIGH_CAPACITY;
+				if(canReuseMinCut[particleCounter] || args.optimiseMinCut) minCutSizeUp = minCutSize[particleCounter];
+				else
 				{
-					state[2*edgeCounter] = state[2*edgeCounter+1] = 0;
-					if(!canReuseMinCut || !args.optimiseMinCut) minCutSizeDown = args.contextObj.getMinCut(state);
-					minCutDownProb = cachedInopPowers[minCutSizeDown];
-
-					state[2*edgeCounter] = state[2*edgeCounter+1] = HIGH_CAPACITY;
-					if(!canReuseMinCut || !args.optimiseMinCut) minCutSizeUp = args.contextObj.getMinCut(state);
-					if(minCutSizeUp >= HIGH_CAPACITY)
-					{
-						minCutUpProb = 0;
-					}
-					else minCutUpProb = cachedInopPowers[ minCutSizeUp];
-
-					qTilde = inopProbability * minCutDownProb;
+					minCutSizeUp = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
+				}
+				mpfr_class minCutUpProb;
+				if(minCutSizeUp >= HIGH_CAPACITY)
+				{
+					minCutUpProb = 0;
+					choices.push_back(std::make_pair(particleCounter, false));
+					newWeights.push_back(weights[particleCounter]  / inopProbability);
+				}
+				else
+				{
+					minCutUpProb = cachedInopPowers[ minCutSizeUp];
+					mpfr_class qTilde = inopProbability * minCutDownProb;
 					qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
-					float random = uniformReal(args.randomSource);
-					if(random < qTilde)
-					{
-						state[2*edgeCounter] = state[2*edgeCounter+1] = 0; 
-						currentLikelihoodRatio *= inopProbability / qTilde;
-						if(minCutSizeDown == 0)
-						{
-							indicatorValue = 1;
-							break;
-						}
-					}
-					else 
-					{
-						state[2*edgeCounter] = state[2*edgeCounter+1] = HIGH_CAPACITY; 
-						currentLikelihoodRatio *= opProbability / (1-qTilde);
-						if(minCutSizeUp >= HIGH_CAPACITY)
-						{
-							indicatorValue = 0;
-							break;
-						}
-					}
-					canReuseMinCut = (residualCapacityVector[2*edgeCounter] == 1) && (residualCapacityVector[2*edgeCounter+1] == 1);
+					choices.push_back(std::make_pair(particleCounter, false));
+					choices.push_back(std::make_pair(particleCounter, true));
+					newWeights.push_back(weights[particleCounter]  * qTilde / inopProbability);
+					newWeights.push_back(weights[particleCounter]  * (1 - qTilde) / opProbability);
 				}
 			}
-			args.estimateFirstMoment += indicatorValue * currentLikelihoodRatio;
-			args.estimateSecondMoment += indicatorValue * currentLikelihoodRatio * currentLikelihoodRatio;
+			/*args.estimateFirstMoment += indicatorValue * currentLikelihoodRatio;
+			args.estimateSecondMoment += indicatorValue * currentLikelihoodRatio * currentLikelihoodRatio;*/
 		}
-		args.estimateFirstMoment /= args.n;
-		args.estimateSecondMoment /= args.n;*/
+		args.estimate /= args.n;
 	}
 }
