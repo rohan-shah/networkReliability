@@ -13,7 +13,6 @@ namespace networkReliability
 		boost::mt19937 randomSource;
 		std::size_t n;
 		mpfr_class estimate;
-		bool optimiseMinCut;
 	};
 	void approximateZeroVarianceWOR(approximateZeroVarianceWORArgs& args);
 }

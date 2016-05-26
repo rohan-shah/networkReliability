@@ -102,7 +102,7 @@ namespace networkReliability
 					{
 						minCutUpProb = 0;
 					}
-					else minCutUpProb = cachedInopPowers[ minCutSizeUp];
+					else minCutUpProb = cachedInopPowers[minCutSizeUp];
 
 					qTilde = inopProbability * minCutDownProb;
 					qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);

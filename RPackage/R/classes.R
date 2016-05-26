@@ -1,3 +1,4 @@
 setClass("crudeMCResult", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", n = "integer", probability = "numeric", graph = "ANY", seed = "integer", interestVertices = "integer"))
 setClass("approximateZeroVarianceResult", slots = list(firstMoment = "mpfr", secondMoment = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", n = "integer", probability = "numeric", graph = "ANY", seed = "integer", interestVertices = "integer"))
+setClass("approximateZeroVarianceWORResult", slots = list(estimate = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", n = "integer", probability = "numeric", graph = "ANY", seed = "integer", interestVertices = "integer"))
 setClass("exhaustiveSearchResult", slots = list(graph = "ANY", call = "call", start = "POSIXct", end = "POSIXct", data = "mpfr", interestVertices = "integer", countDisconnected = "logical"))

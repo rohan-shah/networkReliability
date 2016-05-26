@@ -85,6 +85,15 @@ namespace networkReliability
 
 	void approximateZeroVarianceWOR(approximateZeroVarianceWORArgs& args)
 	{
+		struct choice
+		{
+			choice(int parentIndex, bool edgePresent, int minCutSize)
+				:parentIndex(parentIndex), edgePresent(edgePresent), minCutSize(minCutSize)
+			{}
+			int parentIndex;
+			bool edgePresent;
+			int minCutSize;
+		};
 		std::size_t n = args.n;
 		if(n < 1)
 		{
@@ -97,16 +106,9 @@ namespace networkReliability
 		const context::internalDirectedGraph& graph = args.contextObj.getDirectedGraph();
 		const context::internalGraph& undirectedGraph = args.contextObj.getGraph();
 		
-		if(interestVertices.size() > 2 && args.optimiseMinCut)
-		{
-			throw std::runtime_error("Can only specify option optimiseMinCut with 2-terminal reliability");
-		}
-
 		boost::random::uniform_01<float,float> uniformReal;
 		//Vector used for mincut calculations
-		std::vector<int> states(2*nEdges*n);
-		//Sum over all the n simulations
-		args.estimate = 0;
+		std::vector<int> states(2*nEdges*n), newStates(2*nEdges*n);
 
 		//Cache powers of the inopProbability 
 		boost::scoped_array<mpfr_class> cachedInopPowers(new mpfr_class[nEdges+1]);
@@ -118,18 +120,18 @@ namespace networkReliability
 		//Temporaries for calculating max flow values
 		approximateZeroVarianceImpl::approximateZeroVarianceScratch scratch;
 		//Get out the vector that holds the flow
-		std::vector<int> residualCapacities(n * nEdges * 2);
-		std::vector<bool> canReuseMinCut(n);
-		std::vector<int> minCutSize(n);
+		std::vector<int> residualCapacities(n * nEdges * 2), newResidualCapacities(n * nEdges * 2);
+		std::vector<int> minCutSize(n), newMinCutSize(n);
 
 		//Initialise with the two initial choices - The first edge can be up or down. 
-		std::vector<mpfr_class> weights;
+		std::vector<mpfr_class> weights, newWeights, sampfordWeights;
 		weights.reserve(n);
+		newWeights.reserve(n);
+		sampfordWeights.reserve(n);
 
 		std::fill(states.begin(), states.begin()+2*nEdges, 1);
 		states[0] = states[1] = 0;
 		minCutSize[0] = getMinCut(states.begin(), residualCapacities.begin(), graph, undirectedGraph, interestVertices, scratch);
-		canReuseMinCut[0] = true;
 
 		std::fill(states.begin()+2*nEdges, states.begin()+4*nEdges, 1);
 		states[2*nEdges] = states[2*nEdges+1] = HIGH_CAPACITY;
@@ -139,7 +141,6 @@ namespace networkReliability
 			//In this case there are two initial particles
 			weights.push_back(inopProbability);
 			weights.push_back(opProbability);
-			canReuseMinCut[1] = (residualCapacities[2*nEdges] == 1) && (residualCapacities[2*nEdges+1] == 1);
 		}
 		else
 		{
@@ -147,49 +148,73 @@ namespace networkReliability
 			weights.push_back(inopProbability);
 		}
 		//The choices for sampling
-		std::vector<std::pair<int, bool> > choices;
-		std::vector<mpfr_class> newWeights;
+		std::vector<choice> choices;
 		for(int edgeCounter = 1; edgeCounter < (int)nEdges; edgeCounter++)
 		{
 			//Construct choices
 			choices.clear();
-			newWeights.clear();
+			sampfordWeights.clear();
 			for(int particleCounter = 0; particleCounter < (int)weights.size(); particleCounter++)
 			{
 				states[2*nEdges*particleCounter + 2*edgeCounter] = states[2*nEdges*particleCounter + 2*edgeCounter+1] = 0;
-				int minCutSizeDown;
-				if(canReuseMinCut[particleCounter] && args.optimiseMinCut) minCutSizeDown = minCutSize[particleCounter];
-				else minCutSizeDown = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
+				int minCutSizeDown = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
 				mpfr_class minCutDownProb = cachedInopPowers[minCutSizeDown];
 
-				int minCutSizeUp;
 				states[2*nEdges*particleCounter + 2*edgeCounter] = states[2*nEdges*particleCounter + 2*edgeCounter+1] = HIGH_CAPACITY;
-				if(canReuseMinCut[particleCounter] || args.optimiseMinCut) minCutSizeUp = minCutSize[particleCounter];
-				else
-				{
-					minCutSizeUp = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
-				}
+				int minCutSizeUp = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
 				mpfr_class minCutUpProb;
 				if(minCutSizeUp >= HIGH_CAPACITY)
 				{
 					minCutUpProb = 0;
-					choices.push_back(std::make_pair(particleCounter, false));
-					newWeights.push_back(weights[particleCounter]  / inopProbability);
+					choices.push_back(choice(particleCounter, false, minCutSizeDown));
+					sampfordWeights.push_back(weights[particleCounter]  / inopProbability);
 				}
 				else
 				{
-					minCutUpProb = cachedInopPowers[ minCutSizeUp];
+					minCutUpProb = cachedInopPowers[minCutSizeUp];
 					mpfr_class qTilde = inopProbability * minCutDownProb;
 					qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
-					choices.push_back(std::make_pair(particleCounter, false));
-					choices.push_back(std::make_pair(particleCounter, true));
-					newWeights.push_back(weights[particleCounter]  * qTilde / inopProbability);
-					newWeights.push_back(weights[particleCounter]  * (1 - qTilde) / opProbability);
+					choices.push_back(choice(particleCounter, false, minCutSizeDown));
+					choices.push_back(choice(particleCounter, true, minCutSizeUp));
+					sampfordWeights.push_back(weights[particleCounter]  * qTilde / inopProbability);
+					sampfordWeights.push_back(weights[particleCounter]  * (1 - qTilde) / opProbability);
 				}
 			}
+			newWeights.clear();
+			newMinCutSize.clear();
+			if(sampfordWeights.size() <= n)
+			{
+				for(int choiceCounter = 0; choiceCounter < (int)sampfordWeights.size(); choiceCounter++)
+				{
+					memcpy(&*(newStates.begin()+choiceCounter*2*nEdges), &*(states.begin()+choices[choiceCounter].parentIndex*2*nEdges), sizeof(int)*2*nEdges);
+					memcpy(&*(newResidualCapacities.begin()+choiceCounter*2*nEdges), &*(residualCapacities.begin()+choices[choiceCounter].parentIndex*2*nEdges), sizeof(int)*2*nEdges);
+					if(choices[choiceCounter].edgePresent)
+					{
+						newStates[choiceCounter*2*nEdges + 2*edgeCounter] = newStates[choiceCounter*2*nEdges + 2*edgeCounter + 1] = HIGH_CAPACITY;
+						newWeights.push_back(weights[choices[choiceCounter].parentIndex]*opProbability);
+					}
+					else
+					{
+						newStates[choiceCounter*2*nEdges + 2*edgeCounter] = newStates[choiceCounter*2*nEdges + 2*edgeCounter + 1] = 0;
+						newWeights.push_back(weights[choices[choiceCounter].parentIndex]*inopProbability);
+					}
+					newMinCutSize.push_back(choices[choiceCounter].minCutSize);
+				}
+			}
+			else
+			{
+				throw std::runtime_error("Internal error");
+			}
+			newWeights.swap(weights);
+			newStates.swap(states);
+			newMinCutSize.swap(minCutSize);
 			/*args.estimateFirstMoment += indicatorValue * currentLikelihoodRatio;
 			args.estimateSecondMoment += indicatorValue * currentLikelihoodRatio * currentLikelihoodRatio;*/
 		}
-		args.estimate /= args.n;
+		args.estimate = 0;
+		for(std::vector<mpfr_class>::iterator i = weights.begin(); i != weights.end(); i++)
+		{
+			args.estimate += *i;
+		}
 	}
 }
