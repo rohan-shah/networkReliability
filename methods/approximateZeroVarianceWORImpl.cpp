@@ -117,6 +117,9 @@ namespace networkReliability
 			cachedInopPowers[i] = boost::multiprecision::pow(inopProbability, i);
 		}
 		sampling::sampfordFromParetoNaiveArgs samplingArgs;
+		samplingArgs.n = n;
+		std::vector<int> indices;
+		std::vector<mpfr_class> inclusionProbabilities;
 		//Temporaries for calculating max flow values
 		approximateZeroVarianceImpl::approximateZeroVarianceScratch scratch;
 		//Get out the vector that holds the flow
@@ -203,7 +206,27 @@ namespace networkReliability
 			}
 			else
 			{
-				throw std::runtime_error("Internal error");
+				indices.clear();
+				inclusionProbabilities.clear();
+				sampling::sampfordFromParetoNaive(samplingArgs, indices, inclusionProbabilities, sampfordWeights, args.randomSource);
+				int counter = 0;
+				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
+				{
+					memcpy(&*(newStates.begin()+counter*2*nEdges), &*(states.begin()+choices[*i].parentIndex*2*nEdges), sizeof(int)*2*nEdges);
+					memcpy(&*(newResidualCapacities.begin()+counter*2*nEdges), &*(residualCapacities.begin()+choices[*i].parentIndex*2*nEdges), sizeof(int)*2*nEdges);
+					if(choices[*i].edgePresent)
+					{
+						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = HIGH_CAPACITY;
+						newWeights.push_back(weights[choices[*i].parentIndex]*opProbability / inclusionProbabilities[*i]);
+					}
+					else
+					{
+						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = 0;
+						newWeights.push_back(weights[choices[*i].parentIndex]*inopProbability / inclusionProbabilities[*i]);
+					}
+					newMinCutSize.push_back(choices[*i].minCutSize);
+					counter++;
+				}
 			}
 			newWeights.swap(weights);
 			newStates.swap(states);
