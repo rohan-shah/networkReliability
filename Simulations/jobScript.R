@@ -50,8 +50,11 @@ if(method == "approxZeroVariance")
 	while(counter < nReps + 1)
 	{
 		results[[counter]] <- approximateZeroVariance(graph = graph, probability = probability, n = sampleSize, seed = counter, interestVertices = interestVertices)
-		save(results, file = tmpFile)
-		file.rename(from = tmpFile, to = outputFile)
+		if(counter %% 100 == 0)
+		{
+			save(results, file = tmpFile)
+			file.rename(from = tmpFile, to = outputFile)
+		}
 		counter <- counter + 1
 	}
 } else if(method == "approxZeroVarianceWOR")
@@ -65,8 +68,11 @@ if(method == "approxZeroVariance")
 	while(counter < nReps + 1)
 	{
 		results[[counter]] <- approximateZeroVarianceWOR(graph = graph, probability = probability, n = sampleSize, seed = counter, interestVertices = interestVertices)
-		save(results, file = tmpFile)
-		file.rename(from = tmpFile, to = outputFile)
+		if(counter %% 100 == 0)
+		{
+			save(results, file = tmpFile)
+			file.rename(from = tmpFile, to = outputFile)
+		}
 		counter <- counter + 1
 	}
 } else

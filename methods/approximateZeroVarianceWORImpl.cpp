@@ -127,38 +127,51 @@ namespace networkReliability
 		std::vector<int> minCutSize(n), newMinCutSize(n);
 
 		//Initialise with the two initial choices - The first edge can be up or down. 
-		std::vector<mpfr_class> weights, newWeights, sampfordWeights;
+		std::vector<mpfr_class> weights, newWeights, importanceDensity, newImportanceDensity, copiedWeights;
 		weights.reserve(n);
 		newWeights.reserve(n);
-		sampfordWeights.reserve(n);
+		importanceDensity.reserve(n);
 
 		std::fill(states.begin(), states.begin()+2*nEdges, 1);
 		states[0] = states[1] = 0;
 		minCutSize[0] = getMinCut(states.begin(), residualCapacities.begin(), graph, undirectedGraph, interestVertices, scratch);
 
 		std::fill(states.begin()+2*nEdges, states.begin()+4*nEdges, 1);
-		states[2*nEdges] = states[2*nEdges+1] = HIGH_CAPACITY;
+		states[2*nEdges] = states[2*nEdges + 1] = HIGH_CAPACITY;
 		minCutSize[1] = getMinCut(states.begin()+2*nEdges, residualCapacities.begin()+2*nEdges, graph, undirectedGraph, interestVertices, scratch);
 		if(minCutSize[1] < HIGH_CAPACITY)
 		{
 			//In this case there are two initial particles
 			weights.push_back(inopProbability);
 			weights.push_back(opProbability);
+			mpfr_class minCutDownProb = cachedInopPowers[minCutSize[0]];
+			mpfr_class minCutUpProb = cachedInopPowers[minCutSize[1]];
+			mpfr_class qTilde = inopProbability * minCutDownProb;
+			qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
+			importanceDensity.push_back(qTilde);
+			importanceDensity.push_back(1 - qTilde);
 		}
 		else
 		{
 			//In this case there is only one initial particle
 			weights.push_back(inopProbability);
+			importanceDensity.push_back(1);
 		}
 		//The choices for sampling
 		std::vector<choice> choices;
+		args.estimate = 0;
 		for(int edgeCounter = 1; edgeCounter < (int)nEdges; edgeCounter++)
 		{
 			//Construct choices
 			choices.clear();
-			sampfordWeights.clear();
+			newImportanceDensity.clear();
 			for(int particleCounter = 0; particleCounter < (int)weights.size(); particleCounter++)
 			{
+				if(minCutSize[particleCounter] == 0)
+				{
+					args.estimate += weights[particleCounter];
+					continue;
+				}
 				states[2*nEdges*particleCounter + 2*edgeCounter] = states[2*nEdges*particleCounter + 2*edgeCounter+1] = 0;
 				int minCutSizeDown = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
 				mpfr_class minCutDownProb = cachedInopPowers[minCutSizeDown];
@@ -170,7 +183,7 @@ namespace networkReliability
 				{
 					minCutUpProb = 0;
 					choices.push_back(choice(particleCounter, false, minCutSizeDown));
-					sampfordWeights.push_back(weights[particleCounter]  / inopProbability);
+					newImportanceDensity.push_back(importanceDensity[particleCounter]);
 				}
 				else
 				{
@@ -179,15 +192,16 @@ namespace networkReliability
 					qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
 					choices.push_back(choice(particleCounter, false, minCutSizeDown));
 					choices.push_back(choice(particleCounter, true, minCutSizeUp));
-					sampfordWeights.push_back(weights[particleCounter]  * qTilde / inopProbability);
-					sampfordWeights.push_back(weights[particleCounter]  * (1 - qTilde) / opProbability);
+					newImportanceDensity.push_back(importanceDensity[particleCounter]  * qTilde);
+					newImportanceDensity.push_back(importanceDensity[particleCounter]  * (1 - qTilde));
 				}
 			}
 			newWeights.clear();
 			newMinCutSize.clear();
-			if(sampfordWeights.size() <= n)
+			importanceDensity.clear();
+			if(newImportanceDensity.size() <= n)
 			{
-				for(int choiceCounter = 0; choiceCounter < (int)sampfordWeights.size(); choiceCounter++)
+				for(int choiceCounter = 0; choiceCounter < (int)newImportanceDensity.size(); choiceCounter++)
 				{
 					memcpy(&*(newStates.begin()+choiceCounter*2*nEdges), &*(states.begin()+choices[choiceCounter].parentIndex*2*nEdges), sizeof(int)*2*nEdges);
 					memcpy(&*(newResidualCapacities.begin()+choiceCounter*2*nEdges), &*(residualCapacities.begin()+choices[choiceCounter].parentIndex*2*nEdges), sizeof(int)*2*nEdges);
@@ -203,12 +217,13 @@ namespace networkReliability
 					}
 					newMinCutSize.push_back(choices[choiceCounter].minCutSize);
 				}
+				importanceDensity.swap(newImportanceDensity);
 			}
 			else
 			{
 				indices.clear();
 				inclusionProbabilities.clear();
-				sampling::sampfordFromParetoNaive(samplingArgs, indices, inclusionProbabilities, sampfordWeights, args.randomSource);
+				sampling::sampfordFromParetoNaive(samplingArgs, indices, inclusionProbabilities, newImportanceDensity, args.randomSource, copiedWeights);
 				int counter = 0;
 				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
 				{
@@ -224,17 +239,17 @@ namespace networkReliability
 						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = 0;
 						newWeights.push_back(weights[choices[*i].parentIndex]*inopProbability / inclusionProbabilities[*i]);
 					}
+					if(newWeights.back() > 100) throw std::runtime_error("Internal error");
 					newMinCutSize.push_back(choices[*i].minCutSize);
+					//importanceDensity.push_back(1);
+					importanceDensity.push_back(newImportanceDensity[*i] / inclusionProbabilities[*i]);
 					counter++;
 				}
 			}
 			newWeights.swap(weights);
 			newStates.swap(states);
 			newMinCutSize.swap(minCutSize);
-			/*args.estimateFirstMoment += indicatorValue * currentLikelihoodRatio;
-			args.estimateSecondMoment += indicatorValue * currentLikelihoodRatio * currentLikelihoodRatio;*/
 		}
-		args.estimate = 0;
 		for(std::vector<mpfr_class>::iterator i = weights.begin(); i != weights.end(); i++)
 		{
 			args.estimate += *i;
