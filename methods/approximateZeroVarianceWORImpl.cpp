@@ -120,6 +120,8 @@ namespace networkReliability
 		samplingArgs.n = n;
 		std::vector<int> indices;
 		std::vector<mpfr_class> inclusionProbabilities;
+		samplingArgs.indices = &indices;
+		samplingArgs.inclusionProbabilities = &inclusionProbabilities;
 		//Temporaries for calculating max flow values
 		approximateZeroVarianceImpl::approximateZeroVarianceScratch scratch;
 		//Get out the vector that holds the flow
@@ -127,7 +129,10 @@ namespace networkReliability
 		std::vector<int> minCutSize(n), newMinCutSize(n);
 
 		//Initialise with the two initial choices - The first edge can be up or down. 
-		std::vector<mpfr_class> weights, newWeights, importanceDensity, newImportanceDensity, copiedWeights;
+		std::vector<mpfr_class> weights, newWeights, importanceDensity, newImportanceDensity, rescaledWeights;
+		samplingArgs.weights = &newImportanceDensity;
+		samplingArgs.rescaledWeights = &rescaledWeights;
+
 		weights.reserve(n);
 		newWeights.reserve(n);
 		importanceDensity.reserve(n);
@@ -223,7 +228,7 @@ namespace networkReliability
 			{
 				indices.clear();
 				inclusionProbabilities.clear();
-				sampling::sampfordFromParetoNaive(samplingArgs, indices, inclusionProbabilities, newImportanceDensity, args.randomSource, copiedWeights);
+				sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
 				int counter = 0;
 				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
 				{
