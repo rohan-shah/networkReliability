@@ -1,5 +1,6 @@
 source("./generateScenarios.R")
 library(Rmpfr)
+library(networkReliability)
 allResults <- list()
 for(i in 1:nrow(scenarios))
 {
@@ -56,7 +57,17 @@ varianceFunc <- function(x)
 variances <- do.call(c, lapply(allResults, varianceFunc))
 workNormalizedVariance <- as.numeric(variances * averageSecondsPerRun)
 
+data(dodecahedronConnectedEnumeration)
+trueValues <- apply(scenarios, 1, function(x)
+{
+	if(x["graph"] == "dodecahedron")
+	{
+		return(exhaustiveProbability(searchObj = dodecahedronConnectedEnumeration, probability = as.numeric(x["probability"])))
+	}
+	return(NA)
+})
+empiricalBias <- averageEstimates - trueValues
 relativeErrors <- sqrt(variances) / averageEstimates
 wnrv <- as.numeric(variances * averageSecondsPerRun / (averageEstimates^2))
 
-save(allResults,averageEstimates, averageSecondsPerRun, secondsPerRun, variances, workNormalizedVariance, wnrv, relativeErrors, file = "summarised.RData")
+save(allResults,averageEstimates, averageSecondsPerRun, empiricalBias, secondsPerRun, variances, workNormalizedVariance, wnrv, relativeErrors, trueValues, file = "summarised.RData")
