@@ -1,13 +1,13 @@
 source("./generateScenarios.R")
 library(xtable)
 load("./summarised.RData")
-produceTable <- function(indices, showEmpiricalBias)
+produceTable <- function(indices, showEmpiricalMse)
 {
-	empiricalBias <- as.numeric(empiricalBias)
-	results <- cbind(scenarios, wnrv, relativeErrors, empiricalBias)
-	if(showEmpiricalBias)
+	mse <- as.numeric(mse)
+	results <- cbind(scenarios, wnrv, relativeErrors, mse)
+	if(showEmpiricalMse)
 	{
-		retVal <- results[indices,c("method", "sampleSize", "wnrv", "relativeErrors", "empiricalBias")]
+		retVal <- results[indices,c("method", "sampleSize", "wnrv", "relativeErrors", "mse")]
 		colnames(retVal) <- c("Method", "$n$", "WNRV", "RE", "MSE")
 	}
 	else

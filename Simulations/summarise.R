@@ -70,4 +70,5 @@ empiricalBias <- averageEstimates - trueValues
 relativeErrors <- sqrt(variances) / averageEstimates
 wnrv <- as.numeric(variances * averageSecondsPerRun / (averageEstimates^2))
 
-save(allResults,averageEstimates, averageSecondsPerRun, empiricalBias, secondsPerRun, variances, workNormalizedVariance, wnrv, relativeErrors, trueValues, file = "summarised.RData")
+mse <- variances + empiricalBias^2
+save(allResults, averageEstimates, mse,  averageSecondsPerRun, empiricalBias, secondsPerRun, variances, workNormalizedVariance, wnrv, relativeErrors, trueValues, file = "summarised.RData")
