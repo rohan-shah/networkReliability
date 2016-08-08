@@ -118,10 +118,7 @@ namespace networkReliability
 		}
 		sampling::sampfordFromParetoNaiveArgs samplingArgs;
 		samplingArgs.n = n;
-		std::vector<int> indices;
-		std::vector<mpfr_class> inclusionProbabilities;
-		samplingArgs.indices = &indices;
-		samplingArgs.inclusionProbabilities = &inclusionProbabilities;
+		std::vector<int>& indices = samplingArgs.indices;
 		//Temporaries for calculating max flow values
 		approximateZeroVarianceImpl::approximateZeroVarianceScratch scratch;
 		//Get out the vector that holds the flow
@@ -129,9 +126,9 @@ namespace networkReliability
 		std::vector<int> minCutSize(n), newMinCutSize(n);
 
 		//Initialise with the two initial choices - The first edge can be up or down. 
-		std::vector<mpfr_class> weights, newWeights, importanceDensity, newImportanceDensity, rescaledWeights;
-		samplingArgs.weights = &newImportanceDensity;
-		samplingArgs.rescaledWeights = &rescaledWeights;
+		std::vector<mpfr_class> weights, newWeights, importanceDensity;
+		std::vector<mpfr_class>& newImportanceDensity = samplingArgs.weights;
+		std::vector<mpfr_class> rescaledWeights = samplingArgs.rescaledWeights;
 
 		weights.reserve(n);
 		newWeights.reserve(n);
@@ -227,7 +224,6 @@ namespace networkReliability
 			else
 			{
 				indices.clear();
-				inclusionProbabilities.clear();
 				sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
 				int counter = 0;
 				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
@@ -237,17 +233,17 @@ namespace networkReliability
 					if(choices[*i].edgePresent)
 					{
 						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = HIGH_CAPACITY;
-						newWeights.push_back(weights[choices[*i].parentIndex]*opProbability / inclusionProbabilities[*i]);
+						newWeights.push_back(weights[choices[*i].parentIndex]*opProbability / rescaledWeights[*i]);
 					}
 					else
 					{
 						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = 0;
-						newWeights.push_back(weights[choices[*i].parentIndex]*inopProbability / inclusionProbabilities[*i]);
+						newWeights.push_back(weights[choices[*i].parentIndex]*inopProbability / rescaledWeights[*i]);
 					}
 					if(newWeights.back() > 100) throw std::runtime_error("Internal error");
 					newMinCutSize.push_back(choices[*i].minCutSize);
 					//importanceDensity.push_back(1);
-					importanceDensity.push_back(newImportanceDensity[*i] / inclusionProbabilities[*i]);
+					importanceDensity.push_back(newImportanceDensity[*i] / rescaledWeights[*i]);
 					counter++;
 				}
 			}

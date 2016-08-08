@@ -20,6 +20,27 @@ if(graph == "dodecahedron")
 {
 	graph <- igraph::read_graph(file = system.file("data/dodecahedron.graphml", package="networkReliability"), format = "graphml")
 	interestVertices <- c(1, 20)
+} else if(graph == "dodecSeries")
+{
+	graph <- igraph::read_graph(file = system.file("data/dodecahedron.graphml", package="networkReliability"), format = "graphml")
+	graph <- disjoint_union(disjoint_union(graph, graph), graph)
+	graph <- add_edges(graph, c(20, 21, 21, 20))
+	graph <- add_edges(graph, c(40, 41, 41, 40))
+	interestVertices <- c(1, 60)
+} else if(graph == "dodecParallel")
+{
+	graph <- igraph::read_graph(file = system.file("data/dodecahedron.graphml", package="networkReliability"), format = "graphml")
+	graph <- disjoint_union(disjoint_union(graph, graph), graph)
+	graph <- add_vertices(graph, 2)
+	#One new set of edges
+	graph <- add_edges(graph, c(61, 1, 1, 61))
+	graph <- add_edges(graph, c(61, 21, 21, 61))
+	graph <- add_edges(graph, c(61, 41, 41, 61))
+	#Second set of new edges
+	graph <- add_edges(graph, c(62, 20, 20, 62))
+	graph <- add_edges(graph, c(62, 40, 40, 62))
+	graph <- add_edges(graph, c(62, 60, 60, 62))
+	interestVertices <- c(61, 62)
 } else if(graph == "grid9")
 {
 	graph <- igraph::make_lattice(dim = 2, length = 9)
@@ -30,8 +51,8 @@ if(graph == "dodecahedron")
 	graph <- add_vertices(graph, 2)
 	for(i in 1:9)
 	{
-		graph <- add_edges(graph, c(82, i))
-		graph <- add_edges(graph, c(83, i+72))
+		graph <- add_edges(graph, c(82, i, i, 82))
+		graph <- add_edges(graph, c(83, i+72, i+72, 83))
 	}
 	interestVertices <- c(82, 83)
 } else
