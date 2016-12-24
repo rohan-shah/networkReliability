@@ -131,7 +131,8 @@ namespace networkReliability
 		{
 			cachedInopPowers[i] = boost::multiprecision::pow(inopProbability, i);
 		}
-		sampling::conditionalPoissonSequentialArgs samplingArgs(true);
+		//sampling::conditionalPoissonSequentialArgs samplingArgs(true);
+		sampling::sampfordFromParetoNaiveArgs samplingArgs;
 		samplingArgs.n = n;
 		std::vector<int>& indices = samplingArgs.indices;
 		//Temporaries for calculating max flow values
@@ -216,7 +217,7 @@ namespace networkReliability
 			{
 				if(minCutSize[particleCounter] == 0)
 				{
-					args.estimate += trueDensity[particleCounter] / productInclusion[particleCounter];
+					args.estimate += trueDensity[particleCounter];
 					continue;
 				}
 				states[2*nEdges*particleCounter + 2*edgeCounter] = states[2*nEdges*particleCounter + 2*edgeCounter+1] = 0;
@@ -267,13 +268,13 @@ namespace networkReliability
 						newTrueDensity.push_back(trueDensity[parentIndex]*inopProbability);
 					}
 					newMinCutSize.push_back(choices[choiceCounter].minCutSize);
-					newProductInclusion.push_back(productInclusion[parentIndex]);
+					//newProductInclusion.push_back(productInclusion[parentIndex]);
 
-					approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor newVertex = boost::add_vertex(varianceEstimationGraph);
+					/*approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor newVertex = boost::add_vertex(varianceEstimationGraph);
 					approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, newVertex);
 					vertexInfo.indexWithinDesign = choiceCounter;
 					boost::add_edge(newVertex, previousStepVertices[parentIndex], varianceEstimationGraph);
-					nextStepVertices.push_back(newVertex);
+					nextStepVertices.push_back(newVertex);*/
 				}
 				importanceDensity.swap(newImportanceDensity);
 			}
@@ -282,15 +283,16 @@ namespace networkReliability
 				indices.clear();
 
 				samplingArgs.weights.clear();
-				for(int i = 0; i < (int)choices.size(); i++) samplingArgs.weights.push_back(newImportanceDensity[i] / productInclusion[choices[i].parentIndex]);
+				for(int i = 0; i < (int)choices.size(); i++) samplingArgs.weights.push_back(newImportanceDensity[i]);// / productInclusion[choices[i].parentIndex]);
 				
-				sampling::conditionalPoissonSequential(samplingArgs, args.randomSource);
+				//sampling::conditionalPoissonSequential(samplingArgs, args.randomSource);
+				sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
 			
 				boost::shared_ptr<boost::numeric::ublas::matrix<::sampling::mpfr_class> > secondOrderInclusion(new boost::numeric::ublas::matrix<::sampling::mpfr_class>());
 				//::sampling::conditionalPoissonSecondOrderInclusionProbabilities(samplingArgs, samplingArgs.inclusionProbabilities, *secondOrderInclusion.get());
 				
-				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusionProbabilities(new std::vector<::sampling::mpfr_class>());
-				inclusionProbabilities->swap(samplingArgs.inclusionProbabilities);
+				//boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusionProbabilities(new std::vector<::sampling::mpfr_class>());
+				//inclusionProbabilities->swap(samplingArgs.inclusionProbabilities);
 				
 				int counter = 0;
 				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
@@ -301,26 +303,26 @@ namespace networkReliability
 					if(choices[*i].edgePresent)
 					{
 						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = HIGH_CAPACITY;
-						newTrueDensity.push_back(trueDensity[parentIndex]*opProbability);
+						newTrueDensity.push_back(trueDensity[parentIndex]*opProbability / samplingArgs.rescaledWeights[*i]);//(*inclusionProbabilities)[*i]);
 					}
 					else
 					{
 						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = 0;
-						newTrueDensity.push_back(trueDensity[parentIndex]*inopProbability);
+						newTrueDensity.push_back(trueDensity[parentIndex]*inopProbability / samplingArgs.rescaledWeights[*i]);//(*inclusionProbabilities)[*i]);
 					}
 					if(newTrueDensity.back() > 100) throw std::runtime_error("Internal error");
-					newProductInclusion.push_back(productInclusion[parentIndex] * (*inclusionProbabilities)[*i]);
+					//newProductInclusion.push_back(productInclusion[parentIndex] * (*inclusionProbabilities)[*i]);
 					
-					approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor newVertex = boost::add_vertex(varianceEstimationGraph);
+					/*approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor newVertex = boost::add_vertex(varianceEstimationGraph);
 					approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, newVertex);
 					vertexInfo.indexWithinDesign = *i;
 					vertexInfo.inclusionProbabilities = inclusionProbabilities;
 					vertexInfo.secondOrderInclusion = secondOrderInclusion;
 					boost::add_edge(newVertex, previousStepVertices[parentIndex], varianceEstimationGraph);
-					nextStepVertices.push_back(newVertex);
+					nextStepVertices.push_back(newVertex);*/
 					
 					newMinCutSize.push_back(choices[*i].minCutSize);
-					importanceDensity.push_back(newImportanceDensity[*i]);
+					importanceDensity.push_back(newImportanceDensity[*i] / samplingArgs.rescaledWeights[*i]);//(*inclusionProbabilities)[*i]);
 					counter++;
 				}
 			}
@@ -332,7 +334,7 @@ namespace networkReliability
 		}
 		for(int i = 0; i < (int)trueDensity.size(); i++)
 		{
-			args.estimate += trueDensity[i] / productInclusion[i];;
+			args.estimate += trueDensity[i];
 		}
 	}
 }
