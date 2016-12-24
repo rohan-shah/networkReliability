@@ -131,8 +131,7 @@ namespace networkReliability
 		{
 			cachedInopPowers[i] = boost::multiprecision::pow(inopProbability, i);
 		}
-		//sampling::conditionalPoissonSequentialArgs samplingArgs(true);
-		sampling::sampfordFromParetoNaiveArgs samplingArgs;
+		sampling::conditionalPoissonSequentialArgs samplingArgs(true);
 		samplingArgs.n = n;
 		std::vector<int>& indices = samplingArgs.indices;
 		//Temporaries for calculating max flow values
@@ -285,14 +284,13 @@ namespace networkReliability
 				samplingArgs.weights.clear();
 				for(int i = 0; i < (int)choices.size(); i++) samplingArgs.weights.push_back(newImportanceDensity[i] / productInclusion[choices[i].parentIndex]);
 				
-				//sampling::conditionalPoissonSequential(samplingArgs, args.randomSource);
-				sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
+				sampling::conditionalPoissonSequential(samplingArgs, args.randomSource);
 			
 				boost::shared_ptr<boost::numeric::ublas::matrix<::sampling::mpfr_class> > secondOrderInclusion(new boost::numeric::ublas::matrix<::sampling::mpfr_class>());
 				//::sampling::conditionalPoissonSecondOrderInclusionProbabilities(samplingArgs, samplingArgs.inclusionProbabilities, *secondOrderInclusion.get());
 				
-				//boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusionProbabilities(new std::vector<::sampling::mpfr_class>());
-				//inclusionProbabilities->swap(samplingArgs.inclusionProbabilities);
+				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusionProbabilities(new std::vector<::sampling::mpfr_class>());
+				inclusionProbabilities->swap(samplingArgs.inclusionProbabilities);
 				
 				int counter = 0;
 				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
@@ -311,7 +309,7 @@ namespace networkReliability
 						newTrueDensity.push_back(trueDensity[parentIndex]*inopProbability);
 					}
 					if(newTrueDensity.back() > 100) throw std::runtime_error("Internal error");
-					newProductInclusion.push_back(productInclusion[parentIndex] * samplingArgs.rescaledWeights[*i]);
+					newProductInclusion.push_back(productInclusion[parentIndex] * (*inclusionProbabilities)[*i]);
 					
 					/*approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor newVertex = boost::add_vertex(varianceEstimationGraph);
 					approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, newVertex);
