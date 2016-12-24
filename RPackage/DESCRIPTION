@@ -17,6 +17,7 @@ Collate:
 	'Rcpp_exceptions.R'
 	'approximateZeroVariance.R'
 	'approximateZeroVarianceWOR.R'
+	'approximateZeroVarianceWORWithVariance.R'
 	'exhaustiveSearch.R'
 	'exhaustiveProbability.R'
 	'setDefaultPrec.R'

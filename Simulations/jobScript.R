@@ -51,8 +51,8 @@ if(graph == "dodecahedron")
 	graph <- add_vertices(graph, 2)
 	for(i in 1:9)
 	{
-		graph <- add_edges(graph, c(82, i, i, 82))
-		graph <- add_edges(graph, c(83, i+72, i+72, 83))
+		graph <- add_edges(graph, c(82, i))
+		graph <- add_edges(graph, c(83, i+72))
 	}
 	interestVertices <- c(82, 83)
 } else

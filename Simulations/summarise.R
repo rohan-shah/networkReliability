@@ -35,6 +35,26 @@ averageEstimatesFunc <- function(x)
 }
 averageEstimates <- do.call(c, lapply(allResults, averageEstimatesFunc))
 
+singleEstimatesFunc <- function(x)
+{
+	if(length(x) == 0)
+	{
+		return(NA)
+	}
+	else if(class(x[[1]]) == "approximateZeroVarianceResult") 
+	{
+		return(as.numeric(x[[1]]@firstMoment))
+	}
+	else if(class(x[[1]]) == "approximateZeroVarianceWORResult")
+	{
+		return(as.numeric(x[[1]]@estimate))
+	}
+	else 
+	{
+		stop("Internal error")
+	}
+}
+singleEstimates <- do.call(c, lapply(allResults, singleEstimatesFunc))
 varianceFunc <- function(x)
 {
 	if(length(x) == 0)
@@ -71,4 +91,4 @@ relativeErrors <- sqrt(variances) / averageEstimates
 wnrv <- as.numeric(variances * averageSecondsPerRun / (averageEstimates^2))
 
 mse <- variances + empiricalBias^2
-save(allResults, averageEstimates, mse,  averageSecondsPerRun, empiricalBias, secondsPerRun, variances, workNormalizedVariance, wnrv, relativeErrors, trueValues, file = "summarised.RData")
+save(allResults, averageEstimates, singleEstimates, mse,  averageSecondsPerRun, empiricalBias, secondsPerRun, variances, workNormalizedVariance, wnrv, relativeErrors, trueValues, file = "summarised.RData")

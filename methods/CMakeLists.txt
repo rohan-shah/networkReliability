@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles crudeMCImpl.cpp approximateZeroVarianceImpl.cpp exhaustiveSearchImpl.cpp exhaustiveProbabilityImpl.cpp approximateZeroVarianceWORImpl.cpp)
-set(HeaderFiles crudeMCImpl.h approximateZeroVarianceImpl.h exhaustiveSearchImpl.h exhaustiveProbabilityImpl.h approximateZeroVarianceWORImpl.h)
+set(CppFiles crudeMCImpl.cpp approximateZeroVarianceImpl.cpp exhaustiveSearchImpl.cpp exhaustiveProbabilityImpl.cpp approximateZeroVarianceWORImpl.cpp approximateZeroVarianceWORWithVarianceImpl.cpp)
+set(HeaderFiles crudeMCImpl.h approximateZeroVarianceImpl.h exhaustiveSearchImpl.h exhaustiveProbabilityImpl.h approximateZeroVarianceWORImpl.h approximateZeroVarianceWORWithVarianceImpl.h)
 
 add_library(methods STATIC ${CppFiles} ${HeaderFiles})
 target_link_libraries(methods PUBLIC networkReliabilityCommon sampling)

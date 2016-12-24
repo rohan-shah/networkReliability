@@ -7,6 +7,7 @@
 #include "crudeMC.h"
 #include "approximateZeroVariance.h"
 #include "approximateZeroVarianceWOR.h"
+#include "approximateZeroVarianceWORWithVariance.h"
 #include "exhaustiveSearch.h"
 #include "includeMPFRNetworkReliability.h"
 #include "setDefaultPrec.h"
@@ -23,6 +24,9 @@ R_CallMethodDef callMethods[] =
 	{"approximateZeroVarianceWOR_igraph", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_igraph, 5},
 	{"approximateZeroVarianceWOR_graphAM", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_graphAM, 5},
 	{"approximateZeroVarianceWOR_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_graphNEL, 5},
+	{"approximateZeroVarianceWORWithVariance_igraph", (DL_FUNC)&networkReliability::approximateZeroVarianceWORWithVariance_igraph, 5},
+	{"approximateZeroVarianceWORWithVariance_graphAM", (DL_FUNC)&networkReliability::approximateZeroVarianceWORWithVariance_graphAM, 5},
+	{"approximateZeroVarianceWORWithVariance_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVarianceWORWithVariance_graphNEL, 5},
 	{"exhaustiveSearch_igraph", (DL_FUNC)&networkReliability::exhaustiveSearch_igraph, 3},
 	{"exhaustiveSearch_graphAM", (DL_FUNC)&networkReliability::exhaustiveSearch_graphAM, 3},
 	{"exhaustiveSearch_graphNEL", (DL_FUNC)&networkReliability::exhaustiveSearch_graphNEL, 3},
