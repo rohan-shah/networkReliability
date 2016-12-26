@@ -26,5 +26,5 @@ approximateZeroVarianceWORWithVariance <- function(graph, probability, n, seed, 
 	{
 		stop("Input graph must have class \"igraph\", \"graphAM\" or \"graphNEL\"")
 	}
-	return(new("approximateZeroVarianceWORWithVarianceResult", estimate = mpfr(result), call = match.call(), start = start, end = end, n = as.integer(n), interestVertices = as.integer(interestVertices), seed = as.integer(seed), graph = graph, probability = probability))
+	return(new("approximateZeroVarianceWORWithVarianceResult", estimate = mpfr(result$estimate), varianceEstimate = mpfr(result$varianceEstimate), call = match.call(), start = start, end = end, n = as.integer(n), interestVertices = as.integer(interestVertices), seed = as.integer(seed), graph = graph, probability = probability))
 }

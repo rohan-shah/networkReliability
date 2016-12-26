@@ -12,6 +12,7 @@
 #include "includeMPFRNetworkReliability.h"
 #include "setDefaultPrec.h"
 #include "exhaustiveProbability.h"
+#include "approximateZeroVarianceFearnhead.h"
 extern "C" const char* package_name = "networkReliability";
 R_CallMethodDef callMethods[] = 
 {
@@ -24,6 +25,9 @@ R_CallMethodDef callMethods[] =
 	{"approximateZeroVarianceWOR_igraph", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_igraph, 5},
 	{"approximateZeroVarianceWOR_graphAM", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_graphAM, 5},
 	{"approximateZeroVarianceWOR_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_graphNEL, 5},
+	{"approximateZeroVarianceFearnhead_igraph", (DL_FUNC)&networkReliability::approximateZeroVarianceFearnhead_igraph, 5},
+	{"approximateZeroVarianceFearnhead_graphAM", (DL_FUNC)&networkReliability::approximateZeroVarianceFearnhead_graphAM, 5},
+	{"approximateZeroVarianceFearnhead_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVarianceFearnhead_graphNEL, 5},
 	{"approximateZeroVarianceWORWithVariance_igraph", (DL_FUNC)&networkReliability::approximateZeroVarianceWORWithVariance_igraph, 5},
 	{"approximateZeroVarianceWORWithVariance_graphAM", (DL_FUNC)&networkReliability::approximateZeroVarianceWORWithVariance_graphAM, 5},
 	{"approximateZeroVarianceWORWithVariance_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVarianceWORWithVariance_graphNEL, 5},

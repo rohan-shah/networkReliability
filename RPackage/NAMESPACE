@@ -1,6 +1,7 @@
 export(crudeMC)
 export(approximateZeroVariance)
 export(approximateZeroVarianceWOR)
+export(approximateZeroVarianceFearnhead)
 export(approximateZeroVarianceWORWithVariance)
 export(exhaustiveSearch)
 export(exhaustiveProbability)

@@ -23,7 +23,7 @@ namespace networkReliability
 		args.randomSource.seed(seed);
 		args.n = n;
 		approximateZeroVarianceWORWithVariance(args);
-		return Rcpp::wrap(args.estimate.str());
+		return Rcpp::List::create(Rcpp::Named("estimate") = Rcpp::wrap(args.estimate.str()), Rcpp::Named("varianceEstimate") = Rcpp::wrap(args.varianceEstimate.str()));
 	END_RCPP
 	}
 	SEXP approximateZeroVarianceWORWithVariance_igraph(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp)

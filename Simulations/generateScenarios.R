@@ -1,4 +1,4 @@
-methods <- c("approxZeroVariance", "approxZeroVarianceWOR")
+methods <- c("approxZeroVariance", "approxZeroVarianceWOR", "fearnhead")
 probabilities <- c(0.9, 0.99, 0.999, 0.9999)
 sampleSize <- c(10, 100, 10000)
 graphs <- c("dodecahedron", "grid9", "grid9Augmented", "dodecSeries", "dodecParallel")
