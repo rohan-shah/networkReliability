@@ -28,6 +28,10 @@ averageEstimatesFunc <- function(x)
 	{
 		return(as.numeric(mean(do.call(c, lapply(x, function(y) y@estimate)))))
 	}
+	else if(class(x[[1]]) == "approximateZeroVarianceWORWithVarianceResult")
+	{
+		return(as.numeric(mean(do.call(c, lapply(x, function(y) y@estimate)))))
+	}
 	else 
 	{
 		stop("Internal error")
@@ -49,13 +53,18 @@ singleEstimatesFunc <- function(x)
 	{
 		return(as.numeric(x[[1]]@estimate))
 	}
+	else if(class(x[[1]]) == "approximateZeroVarianceWORWithVarianceResult")
+	{
+		return(as.numeric(x[[1]]@estimate))
+	}
 	else 
 	{
 		stop("Internal error")
 	}
 }
 singleEstimates <- do.call(c, lapply(allResults, singleEstimatesFunc))
-varianceFunc <- function(x)
+
+empiricalVarianceFunc <- function(x)
 {
 	if(length(x) == 0)
 	{
@@ -69,14 +78,42 @@ varianceFunc <- function(x)
 	{
 		return(var(as.numeric(do.call(c, lapply(x, function(y) y@estimate)))))
 	}
+	else if(class(x[[1]]) == "approximateZeroVarianceWORWithVarianceResult")
+	{
+		return(var(as.numeric(do.call(c, lapply(x, function(y) y@estimate)))))
+	}
 	else 
 	{
 		stop("Internal error")
 	}
 }
-variances <- do.call(c, lapply(allResults, varianceFunc))
-workNormalizedVariance <- as.numeric(variances * averageSecondsPerRun)
+empiricalVariances <- do.call(c, lapply(allResults, empiricalVarianceFunc))
 
+varianceEstimateFunc <- function(x)
+{
+	if(length(x) == 0)
+	{
+		return(NA)
+	}
+	else if(class(x[[1]]) == "approximateZeroVarianceResult") 
+	{
+		return(NA)
+	}
+	else if(class(x[[1]]) == "approximateZeroVarianceWORResult")
+	{
+		return(NA)
+	}
+	else if(class(x[[1]]) == "approximateZeroVarianceWORWithVarianceResult")
+	{
+		return(as.numeric(mean(do.call(c, lapply(x, function(y) y@varianceEstimate)))))
+	}
+	else 
+	{
+		stop("Internal error")
+	}
+}
+varianceEstimates <- do.call(c, lapply(allResults, varianceEstimateFunc))
+workNormalizedVariance <- as.numeric(empiricalVariances * averageSecondsPerRun)
 data(dodecahedronConnectedEnumeration)
 trueValues <- apply(scenarios, 1, function(x)
 {
@@ -87,8 +124,8 @@ trueValues <- apply(scenarios, 1, function(x)
 	return(NA)
 })
 empiricalBias <- averageEstimates - trueValues
-relativeErrors <- sqrt(variances) / averageEstimates
-wnrv <- as.numeric(variances * averageSecondsPerRun / (averageEstimates^2))
+relativeErrors <- sqrt(empiricalVariances) / averageEstimates
+wnrv <- as.numeric(empiricalVariances * averageSecondsPerRun / (averageEstimates^2))
 
-mse <- variances + empiricalBias^2
-save(allResults, averageEstimates, singleEstimates, mse,  averageSecondsPerRun, empiricalBias, secondsPerRun, variances, workNormalizedVariance, wnrv, relativeErrors, trueValues, file = "summarised.RData")
+mse <- empiricalVariances + empiricalBias^2
+save(allResults, averageEstimates, singleEstimates, mse,  averageSecondsPerRun, empiricalBias, secondsPerRun, empiricalVariances, workNormalizedVariance, wnrv, relativeErrors, trueValues, file = "summarised.RData")

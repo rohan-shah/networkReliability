@@ -1,12 +1,11 @@
 #include "approximateZeroVarianceWORImpl.h"
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/uniform_01.hpp>
-#include <boost/graph/stoer_wagner_min_cut.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include "sampford.h"
 namespace networkReliability
 {
-	namespace approximateZeroVarianceImpl
+	namespace approximateZeroVarianceWORImpl
 	{
 		struct approximateZeroVarianceScratch
 		{
@@ -17,7 +16,7 @@ namespace networkReliability
 			std::vector<int> distanceVector;
 		};
 	}
-	int getMinCut(std::vector<int>::iterator capacity, std::vector<int>::iterator residual, const context::internalDirectedGraph& graph, const context::internalGraph& undirectedGraph, const std::vector<int>& interestVertices, approximateZeroVarianceImpl::approximateZeroVarianceScratch& scratch)
+	int getMinCut(std::vector<int>::iterator capacity, std::vector<int>::iterator residual, const context::internalDirectedGraph& graph, const context::internalGraph& undirectedGraph, const std::vector<int>& interestVertices, approximateZeroVarianceWORImpl::approximateZeroVarianceScratch& scratch)
 	{
 		std::size_t nVertices = boost::num_vertices(graph);
 		std::size_t nEdges = boost::num_edges(graph);
@@ -25,64 +24,51 @@ namespace networkReliability
 		scratch.colorVector.resize(nEdges);
 		scratch.distanceVector.resize(nEdges);
 
-		//Are we looking at the all-terminal reliability problem?
-		if(interestVertices.size() == nVertices)
+		const std::size_t nInterestVertices = interestVertices.size();
+		//Use the all-points max flow
+		if(interestVertices.size() * (interestVertices.size() - 1) / 2 > nVertices - 1)
 		{
-			contextImpl::constant_property_map_vertices_size_type<context::internalGraph::edge_descriptor, 1L> edgeWeights;
-
-			//BOOST_AUTO(parities, boost::make_one_bit_color_map(num_vertices(*graph), get(boost::vertex_index, *graph)));
-			return (int)boost::stoer_wagner_min_cut(undirectedGraph, edgeWeights);//, boost::parity_map(parities));
+			scratch.maxFlowResults.resize(nVertices * nVertices, std::numeric_limits<int>::max());
+			allPointsMaxFlow::allPointsMaxFlow<context::internalDirectedGraph, int>(scratch.maxFlowResults.begin(), capacity, graph, scratch.allPointsMaxFlowScratch);
+			int minimum = std::numeric_limits<int>::max();
+			for(std::size_t i = 0; i < nInterestVertices; i++)
+			{
+				for(std::size_t j = i+1; j < nInterestVertices; j++)
+				{
+					minimum = std::min(minimum, scratch.maxFlowResults[interestVertices[i] + interestVertices[j] * nVertices]);
+				}
+			}
+			return minimum;
 		}
-		//or are we looking at the k-terminal reliability problem?
+		//Otherwise just call max-flow a bunch of times (the naive version)
 		else
 		{
-			const std::size_t nInterestVertices = interestVertices.size();
-			//Use the all-points max flow
-			if(interestVertices.size() * (interestVertices.size() - 1) / 2 > nVertices - 1)
-			{
-				scratch.maxFlowResults.resize(nVertices * nVertices, std::numeric_limits<int>::max());
-				allPointsMaxFlow::allPointsMaxFlow<context::internalDirectedGraph, int>(scratch.maxFlowResults.begin(), capacity, graph, scratch.allPointsMaxFlowScratch);
-				int minimum = std::numeric_limits<int>::max();
-				for(std::size_t i = 0; i < nInterestVertices; i++)
-				{
-					for(std::size_t j = i+1; j < nInterestVertices; j++)
-					{
-						minimum = std::min(minimum, scratch.maxFlowResults[interestVertices[i] + interestVertices[j] * nVertices]);
-					}
-				}
-				return minimum;
-			}
-			//Otherwise just call max-flow a bunch of times (the naive version)
-			else
-			{
-				scratch.maxFlowResults.resize(nInterestVertices * nInterestVertices, std::numeric_limits<int>::max());
-				typedef boost::property_map<context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMapType;
-				typedef boost::property_map<context::internalDirectedGraph, boost::vertex_index_t>::const_type vertexIndexMapType;
-				typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMapType> edgeCapacityMapType;
-				typedef boost::iterator_property_map<typename std::vector<context::internalDirectedGraph::edge_descriptor>::iterator, vertexIndexMapType> vertexPredecessorMapType;
-				typedef boost::iterator_property_map<typename std::vector<boost::default_color_type>::iterator, vertexIndexMapType> colorMapType;
-				typedef boost::iterator_property_map<typename std::vector<int>::iterator, vertexIndexMapType> distanceMapType;
+			scratch.maxFlowResults.resize(nInterestVertices * nInterestVertices, std::numeric_limits<int>::max());
+			typedef boost::property_map<context::internalDirectedGraph, boost::edge_index_t>::const_type edgeIndexMapType;
+			typedef boost::property_map<context::internalDirectedGraph, boost::vertex_index_t>::const_type vertexIndexMapType;
+			typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMapType> edgeCapacityMapType;
+			typedef boost::iterator_property_map<typename std::vector<context::internalDirectedGraph::edge_descriptor>::iterator, vertexIndexMapType> vertexPredecessorMapType;
+			typedef boost::iterator_property_map<typename std::vector<boost::default_color_type>::iterator, vertexIndexMapType> colorMapType;
+			typedef boost::iterator_property_map<typename std::vector<int>::iterator, vertexIndexMapType> distanceMapType;
 
-				edgeIndexMapType edgeIndexMap = boost::get(boost::edge_index, graph);
-				vertexIndexMapType vertexIndexMap = boost::get(boost::vertex_index, graph);
-				edgeCapacityMapType residualCapacityMap(residual, edgeIndexMap);
-				edgeCapacityMapType edgeCapacityMap(capacity, edgeIndexMap);
-				vertexPredecessorMapType vertexPredecessorMap(scratch.vertexPredecessor.begin(), vertexIndexMap);
-				colorMapType colorMap(scratch.colorVector.begin(), vertexIndexMap);
-				distanceMapType distanceMap(scratch.distanceVector.begin(), vertexIndexMap);
+			edgeIndexMapType edgeIndexMap = boost::get(boost::edge_index, graph);
+			vertexIndexMapType vertexIndexMap = boost::get(boost::vertex_index, graph);
+			edgeCapacityMapType residualCapacityMap(residual, edgeIndexMap);
+			edgeCapacityMapType edgeCapacityMap(capacity, edgeIndexMap);
+			vertexPredecessorMapType vertexPredecessorMap(scratch.vertexPredecessor.begin(), vertexIndexMap);
+			colorMapType colorMap(scratch.colorVector.begin(), vertexIndexMap);
+			distanceMapType distanceMap(scratch.distanceVector.begin(), vertexIndexMap);
 
-				for(std::size_t i = 0; i < nInterestVertices; i++)
+			for(std::size_t i = 0; i < nInterestVertices; i++)
+			{
+				for(std::size_t j = i+1; j < nInterestVertices; j++)
 				{
-					for(std::size_t j = i+1; j < nInterestVertices; j++)
-					{
-						scratch.maxFlowResults[i + j * nInterestVertices] = scratch.maxFlowResults[j + i * nInterestVertices] = boost::boykov_kolmogorov_max_flow(graph, interestVertices[i], interestVertices[j], boost::residual_capacity_map(residualCapacityMap).capacity_map(edgeCapacityMap).predecessor_map(vertexPredecessorMap).color_map(colorMap).distance_map(distanceMap));
-					}
+					scratch.maxFlowResults[i + j * nInterestVertices] = scratch.maxFlowResults[j + i * nInterestVertices] = boost::boykov_kolmogorov_max_flow(graph, interestVertices[i], interestVertices[j], boost::residual_capacity_map(residualCapacityMap).capacity_map(edgeCapacityMap).predecessor_map(vertexPredecessorMap).color_map(colorMap).distance_map(distanceMap));
 				}
-				return *std::min_element(scratch.maxFlowResults.begin(), scratch.maxFlowResults.end());
 			}
+			return *std::min_element(scratch.maxFlowResults.begin(), scratch.maxFlowResults.end());
 		}
 	}
-
 	void approximateZeroVarianceWOR(approximateZeroVarianceWORArgs& args)
 	{
 		struct choice
@@ -120,7 +106,7 @@ namespace networkReliability
 		samplingArgs.n = n;
 		std::vector<int>& indices = samplingArgs.indices;
 		//Temporaries for calculating max flow values
-		approximateZeroVarianceImpl::approximateZeroVarianceScratch scratch;
+		approximateZeroVarianceWORImpl::approximateZeroVarianceScratch scratch;
 		//Get out the vector that holds the flow
 		std::vector<int> residualCapacities(n * nEdges * 2), newResidualCapacities(n * nEdges * 2);
 		std::vector<int> minCutSize(n), newMinCutSize(n);

@@ -1,4 +1,5 @@
 #include "argumentsMPFR.h"
+#include <iostream>
 namespace networkReliability
 {
 	bool readProbabilityString(boost::program_options::variables_map& variableMap, mpfr_class& out)

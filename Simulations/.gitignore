@@ -1,2 +1,4 @@
 /results
 /summarised.RData
+/jobScript.Rout.*
+/slurm-*

@@ -96,6 +96,42 @@ if(method == "approxZeroVariance")
 		}
 		counter <- counter + 1
 	}
+} else if(method == "fearnhead")
+{
+	counter <- 1
+	if(file.exists(outputFile))
+	{
+		load(outputFile)
+		counter <- length(results)+1
+	} else results <- list()
+	while(counter < nReps + 1)
+	{
+		results[[counter]] <- approximateZeroVarianceFearnhead(graph = graph, probability = probability, n = sampleSize, seed = counter, interestVertices = interestVertices)
+		if(counter %% 100 == 0)
+		{
+			save(results, file = tmpFile)
+			file.rename(from = tmpFile, to = outputFile)
+		}
+		counter <- counter + 1
+	}
+} else if(method == "approxZeroVarianceWORWithVariance")
+{
+	counter <- 1
+	if(file.exists(outputFile))
+	{
+		load(outputFile)
+		counter <- length(results)+1
+	} else results <- list()
+	while(counter < nReps + 1)
+	{
+		results[[counter]] <- approximateZeroVarianceWORWithVariance(graph = graph, probability = probability, n = sampleSize, seed = counter, interestVertices = interestVertices)
+		if(counter %% 100 == 0)
+		{
+			save(results, file = tmpFile)
+			file.rename(from = tmpFile, to = outputFile)
+		}
+		counter <- counter + 1
+	}
 } else
 {
 	stop("Unrecognized method")
