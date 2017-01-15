@@ -3,6 +3,7 @@
 #include <boost/random/uniform_01.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include "sampford.h"
+#include "depth_first_search_fixed.hpp"
 namespace networkReliability
 {
 	namespace approximateZeroVarianceWORMergeImpl
@@ -18,18 +19,19 @@ namespace networkReliability
 		struct particle
 		{
 		public:
-			std::vector<int> capacity, residual;
+			std::vector<int> capacity, residual, downEdges;
 			mpfr_class weight, importanceDensity;
 			int minCutSize;
 			particle()
 			{}
 			particle(particle&& other)
-				: capacity(std::move(other.capacity)), residual(std::move(other.residual)), weight(std::move(other.weight)), importanceDensity(std::move(other.importanceDensity)), minCutSize(other.minCutSize)
+				: capacity(std::move(other.capacity)), residual(std::move(other.residual)), downEdges(std::move(other.downEdges)), weight(std::move(other.weight)), importanceDensity(std::move(other.importanceDensity)), minCutSize(other.minCutSize)
 			{}
 			particle& operator=(particle&& other)
 			{
 				capacity.swap(other.capacity);
 				residual.swap(other.residual);
+				downEdges.swap(other.downEdges);
 				weight = other.weight;
 				importanceDensity = other.importanceDensity;
 				minCutSize = other.minCutSize;
@@ -40,10 +42,9 @@ namespace networkReliability
 	int getMinCut(std::vector<int>& capacity, std::vector<int>& residual, const context::internalDirectedGraph& graph, const context::internalGraph& undirectedGraph, const std::vector<int>& interestVertices, approximateZeroVarianceWORMergeImpl::approximateZeroVarianceScratch& scratch)
 	{
 		std::size_t nVertices = boost::num_vertices(graph);
-		std::size_t nEdges = boost::num_edges(graph);
-		scratch.vertexPredecessor.resize(nEdges);
-		scratch.colorVector.resize(nEdges);
-		scratch.distanceVector.resize(nEdges);
+		scratch.vertexPredecessor.resize(nVertices);
+		scratch.colorVector.resize(nVertices);
+		scratch.distanceVector.resize(nVertices);
 
 		const std::size_t nInterestVertices = interestVertices.size();
 		//Use the all-points max flow
@@ -104,6 +105,20 @@ namespace networkReliability
 		const std::vector<int>& interestVertices = args.contextObj.getInterestVertices();
 		const context::internalDirectedGraph& graph = args.contextObj.getDirectedGraph();
 		const context::internalGraph& undirectedGraph = args.contextObj.getGraph();
+		const std::size_t nVertices = boost::num_vertices(graph);
+
+		boost::detail::depth_first_visit_fixed_impl_helper<context::internalGraph>::stackType fixedSearchStack;
+		std::vector<std::pair<int, int> > edges(nEdges);
+		{
+			context::internalGraph::edge_iterator current, end;
+			boost::tie(current, end) = boost::edges(undirectedGraph);
+			for(; current != end; current++)
+			{
+				int index = boost::get(boost::edge_index, undirectedGraph, *current), target = boost::target(*current, undirectedGraph), source = boost::source(*current, undirectedGraph);
+				edges[index] = std::make_pair(target, source);
+				
+			}
+		}
 		
 		boost::random::uniform_01<float,float> uniformReal;
 
@@ -118,6 +133,7 @@ namespace networkReliability
 		std::vector<int>& indices = samplingArgs.indices;
 		//Temporaries for calculating max flow values
 		approximateZeroVarianceWORMergeImpl::approximateZeroVarianceScratch scratch;
+		scratch.colorVector.resize(nVertices);
 
 		//Initialise with the two initial choices - The first edge can be up or down. 
 		std::vector<mpfr_class>& newImportanceDensity = samplingArgs.weights;
@@ -132,6 +148,7 @@ namespace networkReliability
 			missingEdgeParticle.residual[0] = missingEdgeParticle.residual[1] = 0;
 			missingEdgeParticle.minCutSize = getMinCut(missingEdgeParticle.capacity, missingEdgeParticle.residual, graph, undirectedGraph, interestVertices, scratch);
 			missingEdgeParticle.weight = inopProbability;
+			missingEdgeParticle.downEdges.push_back(0);
 
 			approximateZeroVarianceWORMergeImpl::particle withEdgeParticle;
 			withEdgeParticle.capacity.resize(2*nEdges, 1);
@@ -147,6 +164,7 @@ namespace networkReliability
 				mpfr_class minCutUpProb = cachedInopPowers[withEdgeParticle.minCutSize];
 				mpfr_class qTilde = inopProbability * minCutDownProb;
 				qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
+	
 				missingEdgeParticle.importanceDensity = qTilde;
 				withEdgeParticle.importanceDensity = 1 - qTilde;
 				//In this case there are two initial particles
@@ -173,15 +191,12 @@ namespace networkReliability
 				particles[particleCounter].capacity[2*edgeCounter] = particles[particleCounter].capacity[2*edgeCounter + 1] = 0;
 				particles[particleCounter].residual[2*edgeCounter] = particles[particleCounter].residual[2*edgeCounter + 1] = 0;
 				int minCutSizeDown = getMinCut(particles[particleCounter].capacity, particles[particleCounter].residual, graph, undirectedGraph, interestVertices, scratch);
-				mpfr_class minCutDownProb = cachedInopPowers[minCutSizeDown];
 
 				particles[particleCounter].capacity[2*edgeCounter] = particles[particleCounter].capacity[2*edgeCounter + 1] = HIGH_CAPACITY;
 				particles[particleCounter].residual[2*edgeCounter] = particles[particleCounter].residual[2*edgeCounter + 1] = HIGH_CAPACITY;
 				int minCutSizeUp = getMinCut(particles[particleCounter].capacity, particles[particleCounter].residual, graph, undirectedGraph, interestVertices, scratch);
-				mpfr_class minCutUpProb;
 				if(minCutSizeUp >= HIGH_CAPACITY)
 				{
-					minCutUpProb = 0;
 					approximateZeroVarianceWORMergeImpl::particle newParticle;
 					newParticle.capacity = particles[particleCounter].capacity;
 					newParticle.capacity[2*edgeCounter] = newParticle.capacity[2*edgeCounter + 1] = 0;
@@ -192,11 +207,15 @@ namespace networkReliability
 					newParticle.weight = particles[particleCounter].weight * inopProbability;
 					newParticle.importanceDensity = particles[particleCounter].importanceDensity;
 					newParticle.minCutSize = minCutSizeDown;
+
+					newParticle.downEdges = particles[particleCounter].downEdges;
+					newParticle.downEdges.push_back(edgeCounter);
 					newParticles.emplace_back(std::move(newParticle));
 				}
 				else
 				{
-					minCutUpProb = cachedInopPowers[minCutSizeUp];
+					mpfr_class minCutDownProb = cachedInopPowers[minCutSizeDown];
+					mpfr_class minCutUpProb = cachedInopPowers[minCutSizeUp];
 					mpfr_class qTilde = inopProbability * minCutDownProb;
 					qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
 					
@@ -209,6 +228,7 @@ namespace networkReliability
 					upParticle.weight = particles[particleCounter].weight * opProbability;
 					upParticle.importanceDensity = particles[particleCounter].importanceDensity * (1 - qTilde);
 					upParticle.minCutSize = minCutSizeUp;
+					upParticle.downEdges = particles[particleCounter].downEdges;
 
 
 					downParticle.capacity = particles[particleCounter].capacity;
@@ -218,20 +238,86 @@ namespace networkReliability
 					downParticle.weight = particles[particleCounter].weight * inopProbability;
 					downParticle.importanceDensity = particles[particleCounter].importanceDensity * qTilde;
 					downParticle.minCutSize = minCutSizeDown;
+					downParticle.downEdges = particles[particleCounter].downEdges;
+					downParticle.downEdges.push_back(edgeCounter);
 
 					newParticles.emplace_back(std::move(downParticle));
 					newParticles.emplace_back(std::move(upParticle));
 				}
 			}
+			//Mark as active edges whoose state is irrelevant at this point. 
+			for(int particleCounter = 0; particleCounter < (int)newParticles.size(); particleCounter++)
+			{
+				typedef boost::color_traits<boost::default_color_type> Color;
+				std::fill(scratch.colorVector.begin(), scratch.colorVector.end(), Color::white());
+				boost::default_dfs_visitor visitor;
+				//Check which vertices are accessible from the source or sink, via edges with capacity HIGH_CAPACITY
+				boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[0], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(newParticles[particleCounter].capacity[0]), boost::detail::nontruth2());
+				std::vector<int> newDownEdges;
+				for(int i = 0; i < (int)newParticles[particleCounter].downEdges.size(); i++)
+				{
+					int edgeIndex = newParticles[particleCounter].downEdges[i];
+					int vertex1 = edges[edgeIndex].first;
+					int vertex2 = edges[edgeIndex].second;
+					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
+					{
+						newParticles[particleCounter].capacity[2 * edgeIndex] = newParticles[particleCounter].capacity[2 * edgeIndex + 1] = HIGH_CAPACITY;
+						newParticles[particleCounter].residual[2 * edgeIndex] = newParticles[particleCounter].residual[2 * edgeIndex + 1] = HIGH_CAPACITY;
+					}
+					else newDownEdges.push_back(edgeIndex);
+				}
+				std::fill(scratch.colorVector.begin(), scratch.colorVector.end(), Color::white());
+				boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[1], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(newParticles[particleCounter].capacity[0]), boost::detail::nontruth2());
+				for(int i = 0; i < (int)newParticles[particleCounter].downEdges.size(); i++)
+				{
+					int edgeIndex = newParticles[particleCounter].downEdges[i];
+					int vertex1 = edges[edgeIndex].first;
+					int vertex2 = edges[edgeIndex].second;
+					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
+					{
+						newParticles[particleCounter].capacity[2 * edgeIndex] = newParticles[particleCounter].capacity[2 * edgeIndex + 1] = HIGH_CAPACITY;
+						newParticles[particleCounter].residual[2 * edgeIndex] = newParticles[particleCounter].residual[2 * edgeIndex + 1] = HIGH_CAPACITY;
+					}
+					else newDownEdges.push_back(edgeIndex);
+				}
+				newParticles[particleCounter].downEdges.swap(newDownEdges);
+			}
+			//Sort by state.
+			std::sort(newParticles.begin(), newParticles.end(), [nEdges](const approximateZeroVarianceWORMergeImpl::particle& first, const approximateZeroVarianceWORMergeImpl::particle& second){ return memcmp(&(first.capacity[0]), &(second.capacity[0]), sizeof(int)*nEdges*2) < 0;});
+			std::size_t unitsAfterMerge = 0;
+			//Merge particles
+			{
+				int particleCounter = 0;
+				while(particleCounter < (int)newParticles.size())
+				{
+					mpfr_class additionalWeight = 0, additionalImportanceDensity = 0;
+					int particleCounter2 = particleCounter+1;
+					for(; particleCounter2 < (int)newParticles.size() && memcmp(&(newParticles[particleCounter].capacity[0]), &(newParticles[particleCounter2].capacity[0]), sizeof(int)*2 * nEdges) == 0; particleCounter2++)
+					{
+						additionalWeight += newParticles[particleCounter2].weight;
+						additionalImportanceDensity += newParticles[particleCounter2].importanceDensity;
+						newParticles[particleCounter2].weight = 0;
+						newParticles[particleCounter2].importanceDensity = 0;
+					}
+					newParticles[particleCounter].weight += additionalWeight;
+					newParticles[particleCounter].importanceDensity += additionalImportanceDensity;
+					unitsAfterMerge++;
+					particleCounter = particleCounter2;
+				}
+			}
+			//std::size_t unitsAfterMerge = newParticles.size();
 			newImportanceDensity.clear();
 			for(std::vector<approximateZeroVarianceWORMergeImpl::particle>::iterator i = newParticles.begin(); i != newParticles.end(); i++)
 			{
 				newImportanceDensity.push_back(i->importanceDensity);
 			}
 			particles.clear();
-			if(newParticles.size() <= n)
+			if(unitsAfterMerge <= n)
 			{
-				particles.swap(newParticles);
+				for(int i = 0; i < (int)newParticles.size(); i++)
+				{
+					if(newParticles[i].weight != 0) particles.emplace_back(std::move(newParticles[i]));
+				}
 			}
 			else
 			{

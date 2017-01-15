@@ -19,10 +19,9 @@ namespace networkReliability
 	int getMinCut(std::vector<int>::iterator capacity, std::vector<int>::iterator residual, const context::internalDirectedGraph& graph, const context::internalGraph& undirectedGraph, const std::vector<int>& interestVertices, approximateZeroVarianceFearnheadImpl::approximateZeroVarianceFearnheadScratch& scratch)
 	{
 		std::size_t nVertices = boost::num_vertices(graph);
-		std::size_t nEdges = boost::num_edges(graph);
-		scratch.vertexPredecessor.resize(nEdges);
-		scratch.colorVector.resize(nEdges);
-		scratch.distanceVector.resize(nEdges);
+		scratch.vertexPredecessor.resize(nVertices);
+		scratch.colorVector.resize(nVertices);
+		scratch.distanceVector.resize(nVertices);
 
 		const std::size_t nInterestVertices = interestVertices.size();
 		//Use the all-points max flow
