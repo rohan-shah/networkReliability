@@ -7,6 +7,7 @@
 #include "crudeMC.h"
 #include "approximateZeroVariance.h"
 #include "approximateZeroVarianceWOR.h"
+#include "approximateZeroVarianceWORMerge.h"
 #include "approximateZeroVarianceWORWithVariance.h"
 #include "exhaustiveSearch.h"
 #include "includeMPFRNetworkReliability.h"
@@ -22,6 +23,9 @@ R_CallMethodDef callMethods[] =
 	{"approximateZeroVariance_igraph", (DL_FUNC)&networkReliability::approximateZeroVariance_igraph, 5},
 	{"approximateZeroVariance_graphAM", (DL_FUNC)&networkReliability::approximateZeroVariance_graphAM, 5},
 	{"approximateZeroVariance_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVariance_graphNEL, 5},
+	{"approximateZeroVarianceWORMerge_igraph", (DL_FUNC)&networkReliability::approximateZeroVarianceWORMerge_igraph, 5},
+	{"approximateZeroVarianceWORMerge_graphAM", (DL_FUNC)&networkReliability::approximateZeroVarianceWORMerge_graphAM, 5},
+	{"approximateZeroVarianceWORMerge_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVarianceWORMerge_graphNEL, 5},
 	{"approximateZeroVarianceWOR_igraph", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_igraph, 5},
 	{"approximateZeroVarianceWOR_graphAM", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_graphAM, 5},
 	{"approximateZeroVarianceWOR_graphNEL", (DL_FUNC)&networkReliability::approximateZeroVarianceWOR_graphNEL, 5},

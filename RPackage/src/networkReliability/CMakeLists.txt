@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-set(HeaderFiles convertGraph.h crudeMC.h createContext.h approximateZeroVariance.h exhaustiveSearch.h setDefaultPrec.h exhaustiveProbability.h approximateZeroVarianceWOR.h approximateZeroVarianceWORWithVariance.h approximateZeroVarianceFearnhead.h)
-set(CppFiles convertGraphAM.cpp convertGraph.cpp convertGraphIGraph.cpp convertGraphNEL.cpp register.cpp crudeMC.cpp createContext.cpp approximateZeroVariance.cpp exhaustiveSearch.cpp setDefaultPrec.cpp exhaustiveProbability.cpp approximateZeroVarianceWOR.cpp approximateZeroVarianceWORWithVariance.cpp approximateZeroVarianceFearnhead.cpp)
+set(HeaderFiles convertGraph.h crudeMC.h createContext.h approximateZeroVariance.h exhaustiveSearch.h setDefaultPrec.h exhaustiveProbability.h approximateZeroVarianceWOR.h approximateZeroVarianceWORWithVariance.h approximateZeroVarianceFearnhead.h approximateZeroVarianceWORMerge.h)
+set(CppFiles convertGraphAM.cpp convertGraph.cpp convertGraphIGraph.cpp convertGraphNEL.cpp register.cpp crudeMC.cpp createContext.cpp approximateZeroVariance.cpp exhaustiveSearch.cpp setDefaultPrec.cpp exhaustiveProbability.cpp approximateZeroVarianceWOR.cpp approximateZeroVarianceWORWithVariance.cpp approximateZeroVarianceFearnhead.cpp approximateZeroVarianceWORMerge.cpp)
 add_library(networkReliabilityRPackage SHARED ${CppFiles} ${HeaderFiles})
 target_link_libraries(networkReliabilityRPackage PUBLIC networkReliabilityCommon Rcpp methods)
 set_target_properties(networkReliabilityRPackage PROPERTIES OUTPUT_NAME "networkReliability")

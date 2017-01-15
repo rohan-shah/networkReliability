@@ -22,3 +22,4 @@ Collate:
 	'exhaustiveSearch.R'
 	'exhaustiveProbability.R'
 	'setDefaultPrec.R'
+	'approximateZeroVarianceWORMerge.R'

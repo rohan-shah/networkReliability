@@ -94,7 +94,7 @@ namespace networkReliability
 		
 		boost::random::uniform_01<float,float> uniformReal;
 		//Vector used for mincut calculations
-		std::vector<int> states(2*nEdges*n), newStates(2*nEdges*n);
+		std::vector<int> states(2*nEdges*std::max(2, (int)n)), newStates(2*nEdges*std::max(2, (int)n));
 
 		//Cache powers of the inopProbability 
 		boost::scoped_array<mpfr_class> cachedInopPowers(new mpfr_class[nEdges+1]);
@@ -108,8 +108,8 @@ namespace networkReliability
 		//Temporaries for calculating max flow values
 		approximateZeroVarianceWORImpl::approximateZeroVarianceScratch scratch;
 		//Get out the vector that holds the flow
-		std::vector<int> residualCapacities(n * nEdges * 2), newResidualCapacities(n * nEdges * 2);
-		std::vector<int> minCutSize(n), newMinCutSize(n);
+		std::vector<int> residualCapacities(std::max(2, (int)n) * nEdges * 2), newResidualCapacities(std::max(2, (int)n) * nEdges * 2);
+		std::vector<int> minCutSize(std::max(2, (int)n)), newMinCutSize(std::max(2, (int)n));
 
 		//Initialise with the two initial choices - The first edge can be up or down. 
 		std::vector<mpfr_class> weights, newWeights, importanceDensity;
