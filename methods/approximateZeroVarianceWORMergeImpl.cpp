@@ -318,6 +318,7 @@ namespace networkReliability
 				}
 				bool altered = false;
 				std::vector<int>& downEdges = currentParticle.parentData->downEdges;
+				std::vector<int> newDownEdges;
 				for(int i = 0; i < (int)downEdges.size(); i++)
 				{
 					int edgeIndex = downEdges[i];
@@ -339,18 +340,27 @@ namespace networkReliability
 							{
 								currentParticle.ownedData->capacity[2*edgeCounter] = currentParticle.ownedData->capacity[2*edgeCounter+1] = currentParticle.ownedData->residual[2*edgeCounter] = currentParticle.ownedData->residual[2*edgeCounter+1] = 0;
 							}
-							std::copy(currentParticle.parentData->downEdges.begin(), currentParticle.parentData->downEdges.begin() + i, currentParticle.ownedData->downEdges.begin());
 						}
 						currentParticle.ownedData->capacity[2 * edgeIndex] = currentParticle.ownedData->capacity[2 * edgeIndex + 1] = HIGH_CAPACITY;
 						currentParticle.ownedData->residual[2 * edgeIndex] = currentParticle.ownedData->residual[2 * edgeIndex + 1] = HIGH_CAPACITY;
 					}
-					else if(altered)
+					else
 					{
-						currentParticle.ownedData->downEdges.push_back(edgeIndex);
+						newDownEdges.push_back(edgeIndex);
+					}
+				}
+				if(!currentParticle.hasNextEdge)
+				{
+					int vertex1 = edges[edgeCounter].first;
+					int vertex2 = edges[edgeCounter].second;
+					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
+					{
+						currentParticle.hasNextEdge = true;
 					}
 				}
 
-
+				//Same thing, but starting from the other interest vertex.
+				std::vector<int> newDownEdges2;
 				std::fill(scratch.colorVector.begin(), scratch.colorVector.end(), Color::white());
 				if(currentParticle.ownedData)
 				{
@@ -367,9 +377,9 @@ namespace networkReliability
 					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[1], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
 					currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = copied;
 				}
-				for(int i = 0; i < (int)downEdges.size(); i++)
+				for(int i = 0; i < (int)newDownEdges.size(); i++)
 				{
-					int edgeIndex = downEdges[i];
+					int edgeIndex = newDownEdges[i];
 					int vertex1 = edges[edgeIndex].first;
 					int vertex2 = edges[edgeIndex].second;
 					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
@@ -388,16 +398,25 @@ namespace networkReliability
 							{
 								currentParticle.ownedData->capacity[2*edgeCounter] = currentParticle.ownedData->capacity[2*edgeCounter+1] = currentParticle.ownedData->residual[2*edgeCounter] = currentParticle.ownedData->residual[2*edgeCounter+1] = 0;
 							}
-							std::copy(currentParticle.parentData->downEdges.begin(), currentParticle.parentData->downEdges.begin() + i, currentParticle.ownedData->downEdges.begin());
 						}
 						currentParticle.ownedData->capacity[2 * edgeIndex] = currentParticle.ownedData->capacity[2 * edgeIndex + 1] = HIGH_CAPACITY;
 						currentParticle.ownedData->residual[2 * edgeIndex] = currentParticle.ownedData->residual[2 * edgeIndex + 1] = HIGH_CAPACITY;
 					}
-					else if(altered)
+					else
 					{
-						currentParticle.ownedData->downEdges.push_back(edgeIndex);
+						newDownEdges2.push_back(edgeIndex);
 					}
 				}
+				if(!currentParticle.hasNextEdge)
+				{
+					int vertex1 = edges[edgeCounter].first;
+					int vertex2 = edges[edgeCounter].second;
+					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
+					{
+						currentParticle.hasNextEdge = true;
+					}
+				}
+				if(altered) currentParticle.ownedData->downEdges = newDownEdges2;
 			}
 			//Sort by state.
 			std::sort(newParticles.begin(), newParticles.end(), [edgeCounter](const approximateZeroVarianceWORMergeImpl::particle& first, const approximateZeroVarianceWORMergeImpl::particle& second){ return first.order(second, edgeCounter);});
@@ -450,7 +469,12 @@ namespace networkReliability
 							else
 							{
 								movedParticle.ownedData->capacity[2*edgeCounter] = movedParticle.ownedData->capacity[2*edgeCounter+1] = movedParticle.ownedData->residual[2*edgeCounter] = movedParticle.ownedData->residual[2*edgeCounter+1] = 0;
+								movedParticle.ownedData->downEdges.push_back(edgeCounter);
 							}
+						}
+						else if(!movedParticle.hasNextEdge)
+						{
+							movedParticle.ownedData->downEdges.push_back(edgeCounter);
 						}
 					}
 				}
@@ -476,7 +500,12 @@ namespace networkReliability
 						else
 						{
 							movedParticle.ownedData->capacity[2*edgeCounter] = movedParticle.ownedData->capacity[2*edgeCounter+1] = movedParticle.ownedData->residual[2*edgeCounter] = movedParticle.ownedData->residual[2*edgeCounter+1] = 0;
+							movedParticle.ownedData->downEdges.push_back(edgeCounter);
 						}
+					}
+					else if(!movedParticle.hasNextEdge)
+					{
+						movedParticle.ownedData->downEdges.push_back(edgeCounter);
 					}
 					movedParticle.importanceDensity /= rescaledWeights[*i];
 					movedParticle.weight /= rescaledWeights[*i];
