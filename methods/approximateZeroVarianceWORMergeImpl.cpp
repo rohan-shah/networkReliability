@@ -307,12 +307,14 @@ namespace networkReliability
 				}
 				else
 				{
-					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[0], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
+					int copied = currentParticle.parentData->capacity[2*edgeCounter];
 					if(currentParticle.hasNextEdge)
 					{
-						boost::detail::depth_first_visit_fixed_impl(undirectedGraph, edges[edgeCounter].second, visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
-						boost::detail::depth_first_visit_fixed_impl(undirectedGraph, edges[edgeCounter].first, visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
+						currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = HIGH_CAPACITY;
 					}
+					else currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = 0;
+					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[0], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
+					currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = copied;
 				}
 				bool altered = false;
 				std::vector<int>& downEdges = currentParticle.parentData->downEdges;
@@ -352,16 +354,18 @@ namespace networkReliability
 				std::fill(scratch.colorVector.begin(), scratch.colorVector.end(), Color::white());
 				if(currentParticle.ownedData)
 				{
-					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[0], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.ownedData->capacity[0]), boost::detail::nontruth2());
+					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[1], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.ownedData->capacity[0]), boost::detail::nontruth2());
 				}
 				else
 				{
-					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[0], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
+					int copied = currentParticle.parentData->capacity[2*edgeCounter];
 					if(currentParticle.hasNextEdge)
 					{
-						boost::detail::depth_first_visit_fixed_impl(undirectedGraph, edges[edgeCounter].second, visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
-						boost::detail::depth_first_visit_fixed_impl(undirectedGraph, edges[edgeCounter].first, visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
+						currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = HIGH_CAPACITY;
 					}
+					else currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = 0;
+					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[1], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
+					currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = copied;
 				}
 				for(int i = 0; i < (int)downEdges.size(); i++)
 				{
