@@ -50,6 +50,11 @@ plot <- data %>% filter(graph == "dodecSeries" & probability == 0.9999 & method 
 pdf("./dodecSeriesRE0_9999.pdf")
 print(plot)
 dev.off()
+#Plot variance, for the dodecahedron series graph with p = 0.9999
+plot <- data %>% filter(graph == "dodecSeries" & probability == 0.9999 & method != "approxZeroVarianceWORWithVariance") %>% ggplot(mapping = aes(sampleSize, empiricalVariance, colour = method)) + scale_y + geom_line(size = size) + scale_x_log10(breaks = c(10, 100, 1000, 10000), labels = c(10, 100, 1000, 10000)) + theme(legend.position = c(0.2, 0.2)) + xlab("Sample size") + ylab("Var") + scale_colour_discrete("Method", breaks = c("approxZeroVariance", "approxZeroVarianceWOR", "approxZeroVarianceWORMerge", "fearnhead"), labels = c("IS", "WOR", "WOR-Merge", "Fearnhead"))
+pdf("./dodecSeriesVar0_9999.pdf")
+print(plot)
+dev.off()
 
 #Plot workNormalizedVariance, for the dodecahedron parallel graph with p = 0.9999
 plot <- data %>% filter(graph == "dodecParallel" & probability == 0.9999 & method != "approxZeroVarianceWORWithVariance") %>% ggplot(mapping = aes(sampleSize, workNormalizedVariance, colour = method)) + scale_y + geom_line(size = size) + scale_x_log10(breaks = c(10, 100, 1000, 10000), labels = c(10, 100, 1000, 10000)) + theme(legend.position = c(0.2, 0.2)) + xlab("Sample size") + ylab("WNV") + scale_colour_discrete("Method", breaks = c("approxZeroVariance", "approxZeroVarianceWOR", "approxZeroVarianceWORMerge", "fearnhead"), labels = c("IS", "WOR", "WOR-Merge", "Fearnhead"))
