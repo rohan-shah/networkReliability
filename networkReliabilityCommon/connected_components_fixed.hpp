@@ -8,12 +8,12 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //=======================================================================
 //
-#ifndef BOOST_GRAPH_CONNECTED_COMPONENTS_RESTRICTED_HPP
-#define BOOST_GRAPH_CONNECTED_COMPONENTS_RESTRICTED_HPP
+#ifndef BOOST_GRAPH_CONNECTED_COMPONENTS_FIXED_HPP
+#define BOOST_GRAPH_CONNECTED_COMPONENTS_FIXED_HPP
 
 #include <boost/config.hpp>
 #include "edgeState.h"
-#include "depth_first_search_restricted.hpp"
+#include "depth_first_search_fixed.hpp"
 #include <boost/graph/properties.hpp>
 #include <boost/graph/graph_concepts.hpp>
 #include <boost/graph/overloading.hpp>
@@ -25,8 +25,8 @@ namespace boost {
 
   template <class Graph, class ComponentMap, class ColorMap>
   inline typename property_traits<ComponentMap>::value_type
-  connected_components_restricted(const Graph& g, ComponentMap c, ColorMap color, typename detail::depth_first_visit_restricted_impl_helper<Graph>::stackType& stack,
-						const networkReliability::edgeState* state
+  connected_components_fixed(const Graph& g, ComponentMap c, ColorMap color, typename detail::depth_first_visit_fixed_impl_helper<Graph>::stackType& stack,
+						const int* state
                        BOOST_GRAPH_ENABLE_IF_MODELS_PARM(Graph, vertex_list_graph_tag))
   {
     if (num_vertices(g) == 0) return 0;
@@ -39,7 +39,7 @@ namespace boost {
     // c_count initialized to "nil" (with nil represented by (max)())
     comp_type c_count((std::numeric_limits<comp_type>::max)());
     detail::components_recorder<ComponentMap> vis(c, c_count);
-    depth_first_search_restricted(g, vis, color, stack, state);
+    depth_first_search_fixed(g, vis, color, stack, state);
     if(c_count == (std::numeric_limits<comp_type>::max)()) return 0;
     return c_count + 1;
   }

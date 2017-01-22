@@ -103,7 +103,7 @@ namespace boost {
   template <class VertexListGraph, class DFSVisitor, class ColorMap>
   void
   depth_first_search_fixed(const VertexListGraph& g, DFSVisitor vis, ColorMap color, typename detail::depth_first_visit_fixed_impl_helper<VertexListGraph>::stackType& stack,
-                     const networkReliability::edgeState* state)
+                     const int* state)
   {
 		typedef typename graph_traits<VertexListGraph>::vertex_descriptor Vertex;
 		BOOST_CONCEPT_ASSERT(( DFSVisitorConcept<DFSVisitor, VertexListGraph> ));

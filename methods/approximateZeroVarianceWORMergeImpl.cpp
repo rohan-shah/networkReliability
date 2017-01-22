@@ -3,7 +3,7 @@
 #include <boost/random/uniform_01.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include "sampford.h"
-#include "depth_first_search_fixed.hpp"
+#include "connected_components_fixed.hpp"
 namespace networkReliability
 {
 	namespace approximateZeroVarianceWORMergeImpl
@@ -165,7 +165,9 @@ namespace networkReliability
 		const context::internalGraph& undirectedGraph = args.contextObj.getGraph();
 		const std::size_t nVertices = boost::num_vertices(graph);
 
-		boost::detail::depth_first_visit_fixed_impl_helper<context::internalGraph>::stackType fixedSearchStack;
+		boost::detail::depth_first_visit_fixed_impl_helper<context::internalGraph>::stackType componentsStack;
+		std::vector<int> components(nVertices);
+ 
 		std::vector<std::pair<int, int> > edges(nEdges);
 		{
 			context::internalGraph::edge_iterator current, end;
@@ -299,23 +301,14 @@ namespace networkReliability
 				approximateZeroVarianceWORMergeImpl::particle& currentParticle = newParticles[particleCounter];
 				typedef boost::color_traits<boost::default_color_type> Color;
 				std::fill(scratch.colorVector.begin(), scratch.colorVector.end(), Color::white());
-				boost::default_dfs_visitor visitor;
+				//compute connected components. 
+				if(currentParticle.hasNextEdge)
+				{
+					currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = HIGH_CAPACITY;
+				}
+				else currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = 0;
+				boost::connected_components_fixed(undirectedGraph, &(components[0]), &(scratch.colorVector[0]), componentsStack, &(currentParticle.parentData->capacity[0]));
 				//Check which vertices are accessible from the source or sink, via edges with capacity HIGH_CAPACITY
-				if(currentParticle.ownedData)
-				{
-					throw std::runtime_error("This should be impossible");
-				}
-				else
-				{
-					int copied = currentParticle.parentData->capacity[2*edgeCounter];
-					if(currentParticle.hasNextEdge)
-					{
-						currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = HIGH_CAPACITY;
-					}
-					else currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = 0;
-					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[0], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
-					currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = copied;
-				}
 				bool altered = false;
 				std::vector<int>& downEdges = currentParticle.parentData->downEdges;
 				std::vector<int> newDownEdges;
@@ -324,7 +317,7 @@ namespace networkReliability
 					int edgeIndex = downEdges[i];
 					int vertex1 = edges[edgeIndex].first;
 					int vertex2 = edges[edgeIndex].second;
-					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
+					if(components[vertex1] == components[vertex2])
 					{
 						if(!altered)
 						{
@@ -353,70 +346,12 @@ namespace networkReliability
 				{
 					int vertex1 = edges[edgeCounter].first;
 					int vertex2 = edges[edgeCounter].second;
-					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
+					if(components[vertex1] == components[vertex2])
 					{
 						currentParticle.hasNextEdge = true;
 					}
 				}
-
-				//Same thing, but starting from the other interest vertex.
-				std::vector<int> newDownEdges2;
-				std::fill(scratch.colorVector.begin(), scratch.colorVector.end(), Color::white());
-				if(currentParticle.ownedData)
-				{
-					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[1], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.ownedData->capacity[0]), boost::detail::nontruth2());
-				}
-				else
-				{
-					int copied = currentParticle.parentData->capacity[2*edgeCounter];
-					if(currentParticle.hasNextEdge)
-					{
-						currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = HIGH_CAPACITY;
-					}
-					else currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = 0;
-					boost::detail::depth_first_visit_fixed_impl(undirectedGraph, interestVertices[1], visitor, &(scratch.colorVector[0]), fixedSearchStack, &(currentParticle.parentData->capacity[0]), boost::detail::nontruth2());
-					currentParticle.parentData->capacity[2*edgeCounter] = currentParticle.parentData->capacity[2*edgeCounter+1] = copied;
-				}
-				for(int i = 0; i < (int)newDownEdges.size(); i++)
-				{
-					int edgeIndex = newDownEdges[i];
-					int vertex1 = edges[edgeIndex].first;
-					int vertex2 = edges[edgeIndex].second;
-					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
-					{
-						if(!altered)
-						{
-							altered = true;
-							currentParticle.ownedData.reset(new approximateZeroVarianceWORMergeImpl::particleData());
-							currentParticle.ownedData->capacity = currentParticle.parentData->capacity;
-							currentParticle.ownedData->residual = currentParticle.parentData->residual;
-							if(currentParticle.hasNextEdge)
-							{
-								currentParticle.ownedData->capacity[2*edgeCounter] = currentParticle.ownedData->capacity[2*edgeCounter+1] = currentParticle.ownedData->residual[2*edgeCounter] = currentParticle.ownedData->residual[2*edgeCounter+1] = HIGH_CAPACITY;
-							}
-							else
-							{
-								currentParticle.ownedData->capacity[2*edgeCounter] = currentParticle.ownedData->capacity[2*edgeCounter+1] = currentParticle.ownedData->residual[2*edgeCounter] = currentParticle.ownedData->residual[2*edgeCounter+1] = 0;
-							}
-						}
-						currentParticle.ownedData->capacity[2 * edgeIndex] = currentParticle.ownedData->capacity[2 * edgeIndex + 1] = HIGH_CAPACITY;
-						currentParticle.ownedData->residual[2 * edgeIndex] = currentParticle.ownedData->residual[2 * edgeIndex + 1] = HIGH_CAPACITY;
-					}
-					else
-					{
-						newDownEdges2.push_back(edgeIndex);
-					}
-				}
-				if(!currentParticle.hasNextEdge)
-				{
-					int vertex1 = edges[edgeCounter].first;
-					int vertex2 = edges[edgeCounter].second;
-					if(scratch.colorVector[vertex1] == Color::black() && scratch.colorVector[vertex2] == Color::black())
-					{
-						currentParticle.hasNextEdge = true;
-					}
-				}
-				if(altered) currentParticle.ownedData->downEdges = newDownEdges2;
+				if(altered) currentParticle.ownedData->downEdges = newDownEdges;
 			}
 			//Sort by state.
 			std::sort(newParticles.begin(), newParticles.end(), [edgeCounter](const approximateZeroVarianceWORMergeImpl::particle& first, const approximateZeroVarianceWORMergeImpl::particle& second){ return first.order(second, edgeCounter);});
