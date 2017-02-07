@@ -48,7 +48,14 @@ namespace networkReliability
 					for(; current2 != end; current2++)
 					{
 						const varianceGraphVertex& childVertexInfo2 = boost::get(boost::vertex_name, graph, boost::target(*current2, graph));
-						currentVertexInfo.accumulatedVariance += (1 - (*inclusionProbabilities)[childVertexInfo.indexWithinDesign] * (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign] / (*secondOrderInclusion)(childVertexInfo.indexWithinDesign, childVertexInfo2.indexWithinDesign)) * (childVertexInfo.accumulatedMean / (*inclusionProbabilities)[childVertexInfo.indexWithinDesign]) * (childVertexInfo2.accumulatedMean / (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign]);
+						if(childVertexInfo.indexWithinDesign == childVertexInfo2.indexWithinDesign)
+						{
+							currentVertexInfo.accumulatedVariance += ((1 - (*inclusionProbabilities)[childVertexInfo.indexWithinDesign]) / (*inclusionProbabilities)[childVertexInfo.indexWithinDesign]) * (childVertexInfo.accumulatedMean / (*inclusionProbabilities)[childVertexInfo.indexWithinDesign]) * (childVertexInfo2.accumulatedMean / (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign]);
+						}
+						else
+						{
+							currentVertexInfo.accumulatedVariance += (1 - (*inclusionProbabilities)[childVertexInfo.indexWithinDesign] * (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign] / (*secondOrderInclusion)(childVertexInfo.indexWithinDesign, childVertexInfo2.indexWithinDesign)) * (childVertexInfo.accumulatedMean / (*inclusionProbabilities)[childVertexInfo.indexWithinDesign]) * (childVertexInfo2.accumulatedMean / (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign]);
+						}
 					}
 				}
 			}
