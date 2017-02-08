@@ -25,6 +25,37 @@ namespace networkReliability
 			mpfr_class d;
 		};
 		typedef boost::adjacency_list<boost::listS, boost::vecS, boost::directedS, boost::property<boost::vertex_name_t, varianceGraphVertex> > varianceGraph;
+		struct particleData
+		{
+			std::vector<int> capacity, residual, downEdges;
+		};
+		struct particle
+		{
+		public:
+			boost::shared_ptr<particleData> parentData;
+			boost::shared_ptr<particleData> ownedData;
+			mpfr_class weight, importanceDensity, trueDensity;
+			bool hasNextEdge;
+			int minCutSize;
+			int parentIndex;
+			particle()
+			{}
+			particle(particle&& other)
+				: parentData(std::move(other.parentData)), ownedData(std::move(other.ownedData)), weight(std::move(other.weight)), importanceDensity(std::move(other.importanceDensity)), trueDensity(other.trueDensity), hasNextEdge(other.hasNextEdge), minCutSize(other.minCutSize), parentIndex(other.parentIndex)
+			{}
+			particle& operator=(particle&& other)
+			{
+				parentData.swap(other.parentData);
+				ownedData.swap(other.ownedData);
+				weight = other.weight;
+				importanceDensity = other.importanceDensity;
+				trueDensity = other.trueDensity;
+				hasNextEdge = other.hasNextEdge;
+				minCutSize = other.minCutSize;
+				parentIndex = other.parentIndex;
+				return *this;
+			}
+		};
 		struct accumulationVisitor : public boost::default_dfs_visitor
 		{
 		public:
@@ -33,6 +64,12 @@ namespace networkReliability
 				varianceGraph::out_edge_iterator current, end;
 				boost::tie(current, end) = boost::out_edges(u, graph);
 				if(current == end) return;
+				{
+						
+				}
+				//else if(current == end + 1)
+				{
+				}
 
 				const varianceGraphVertex& currentVertexInfo = boost::get(boost::vertex_name, graph, u);
 				currentVertexInfo.accumulatedMean = currentVertexInfo.accumulatedVariance = 0.0;
@@ -71,7 +108,7 @@ namespace networkReliability
 
 		};
 	}
-	int getMinCut(std::vector<int>::iterator capacity, std::vector<int>::iterator residual, const context::internalDirectedGraph& graph, const context::internalGraph& undirectedGraph, const std::vector<int>& interestVertices, approximateZeroVarianceWithVarianceImpl::approximateZeroVarianceScratch& scratch)
+	int getMinCut(std::vector<int> capacity, std::vector<int> residual, const context::internalDirectedGraph& graph, const context::internalGraph& undirectedGraph, const std::vector<int>& interestVertices, approximateZeroVarianceWithVarianceImpl::approximateZeroVarianceScratch& scratch)
 	{
 		std::size_t nVertices = boost::num_vertices(graph);
 		scratch.vertexPredecessor.resize(nVertices);
@@ -83,7 +120,7 @@ namespace networkReliability
 		if(interestVertices.size() * (interestVertices.size() - 1) / 2 > nVertices - 1)
 		{
 			scratch.maxFlowResults.resize(nVertices * nVertices, std::numeric_limits<int>::max());
-			allPointsMaxFlow::allPointsMaxFlow<context::internalDirectedGraph, int>(scratch.maxFlowResults.begin(), capacity, graph, scratch.allPointsMaxFlowScratch);
+			allPointsMaxFlow::allPointsMaxFlow<context::internalDirectedGraph, int>(scratch.maxFlowResults.begin(), capacity.begin(), graph, scratch.allPointsMaxFlowScratch);
 			int minimum = std::numeric_limits<int>::max();
 			for(std::size_t i = 0; i < nInterestVertices; i++)
 			{
@@ -107,8 +144,8 @@ namespace networkReliability
 
 			edgeIndexMapType edgeIndexMap = boost::get(boost::edge_index, graph);
 			vertexIndexMapType vertexIndexMap = boost::get(boost::vertex_index, graph);
-			edgeCapacityMapType residualCapacityMap(residual, edgeIndexMap);
-			edgeCapacityMapType edgeCapacityMap(capacity, edgeIndexMap);
+			edgeCapacityMapType residualCapacityMap(residual.begin(), edgeIndexMap);
+			edgeCapacityMapType edgeCapacityMap(capacity.begin(), edgeIndexMap);
 			vertexPredecessorMapType vertexPredecessorMap(scratch.vertexPredecessor.begin(), vertexIndexMap);
 			colorMapType colorMap(scratch.colorVector.begin(), vertexIndexMap);
 			distanceMapType distanceMap(scratch.distanceVector.begin(), vertexIndexMap);
@@ -125,15 +162,6 @@ namespace networkReliability
 	}
 	void approximateZeroVarianceWORWithVariance(approximateZeroVarianceWORWithVarianceArgs& args)
 	{
-		struct choice
-		{
-			choice(int parentIndex, bool edgePresent, int minCutSize)
-				:parentIndex(parentIndex), edgePresent(edgePresent), minCutSize(minCutSize)
-			{}
-			int parentIndex;
-			bool edgePresent;
-			int minCutSize;
-		};
 		std::size_t n = args.n;
 		if(n < 1)
 		{
@@ -147,8 +175,6 @@ namespace networkReliability
 		const context::internalGraph& undirectedGraph = args.contextObj.getGraph();
 		
 		boost::random::uniform_01<float,float> uniformReal;
-		//Vector used for mincut calculations
-		std::vector<int> states(2*nEdges*n), newStates(2*nEdges*n);
 
 		//The graph used to help estimate the variance. The initial vertex is the root. 
 		approximateZeroVarianceWithVarianceImpl::varianceGraph varianceEstimationGraph;
@@ -166,194 +192,224 @@ namespace networkReliability
 		std::vector<int>& indices = samplingArgs.indices;
 		//Temporaries for calculating max flow values
 		approximateZeroVarianceWithVarianceImpl::approximateZeroVarianceScratch scratch;
-		//Get out the vector that holds the flow
-		std::vector<int> residualCapacities(n * nEdges * 2), newResidualCapacities(n * nEdges * 2);
-		std::vector<int> minCutSize(n), newMinCutSize(n);
 
-		//Initialise with the two initial choices - The first edge can be up or down. 
-		std::vector<mpfr_class> trueDensity, newTrueDensity, importanceDensity;
-		std::vector<mpfr_class> newImportanceDensity, productInclusion, newProductInclusion;
+		std::vector<mpfr_class>& newImportanceDensity = samplingArgs.weights;
 
-		trueDensity.reserve(n);
-		newTrueDensity.reserve(n);
-		importanceDensity.reserve(n);
-		newImportanceDensity.reserve(n);
-		productInclusion.reserve(n);
-		newProductInclusion.reserve(n);
-
-		std::fill(states.begin(), states.begin()+2*nEdges, 1);
-		states[0] = states[1] = 0;
-		minCutSize[0] = getMinCut(states.begin(), residualCapacities.begin(), graph, undirectedGraph, interestVertices, scratch);
-
-		std::fill(states.begin()+2*nEdges, states.begin()+4*nEdges, 1);
-		states[2*nEdges] = states[2*nEdges + 1] = HIGH_CAPACITY;
-		minCutSize[1] = getMinCut(states.begin()+2*nEdges, residualCapacities.begin()+2*nEdges, graph, undirectedGraph, interestVertices, scratch);
-		if(minCutSize[1] < HIGH_CAPACITY)
+		std::vector<approximateZeroVarianceWithVarianceImpl::particle> particles, newParticles;
 		{
-			//In this case there are two initial particles
-			trueDensity.push_back(inopProbability);
-			trueDensity.push_back(opProbability);
-			mpfr_class minCutDownProb = cachedInopPowers[minCutSize[0]];
-			mpfr_class minCutUpProb = cachedInopPowers[minCutSize[1]];
-			mpfr_class qTilde = inopProbability * minCutDownProb;
-			qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
-			importanceDensity.push_back(qTilde);
-			importanceDensity.push_back(1 - qTilde);
+			approximateZeroVarianceWithVarianceImpl::particle missingEdgeParticle;
+			missingEdgeParticle.ownedData.reset(new approximateZeroVarianceWithVarianceImpl::particleData());
+			missingEdgeParticle.hasNextEdge = false;
+			missingEdgeParticle.parentIndex = -1;
+			missingEdgeParticle.ownedData->capacity.resize(2*nEdges, 1);
+			missingEdgeParticle.ownedData->residual.resize(2*nEdges, 1);
+			missingEdgeParticle.ownedData->capacity[0] = missingEdgeParticle.ownedData->capacity[1] = 0;
+			missingEdgeParticle.ownedData->residual[0] = missingEdgeParticle.ownedData->residual[1] = 0;
+			missingEdgeParticle.minCutSize = getMinCut(missingEdgeParticle.ownedData->capacity, missingEdgeParticle.ownedData->residual, graph, undirectedGraph, interestVertices, scratch);
+			missingEdgeParticle.weight = inopProbability;
+			missingEdgeParticle.trueDensity = inopProbability;
+			missingEdgeParticle.ownedData->downEdges.push_back(0);
 
-			productInclusion.push_back(1);
-			productInclusion.push_back(1);
+			approximateZeroVarianceWithVarianceImpl::particle withEdgeParticle;
+			withEdgeParticle.ownedData.reset(new approximateZeroVarianceWithVarianceImpl::particleData());
+			withEdgeParticle.hasNextEdge = true;
+			withEdgeParticle.parentIndex = -1;
+			withEdgeParticle.ownedData->capacity.resize(2*nEdges, 1);
+			withEdgeParticle.ownedData->residual.resize(2*nEdges, 1);
+			withEdgeParticle.ownedData->capacity[0] = withEdgeParticle.ownedData->capacity[1] = HIGH_CAPACITY;
+			withEdgeParticle.ownedData->residual[0] = withEdgeParticle.ownedData->residual[1] = HIGH_CAPACITY;
+			withEdgeParticle.minCutSize = getMinCut(withEdgeParticle.ownedData->capacity, withEdgeParticle.ownedData->residual, graph, undirectedGraph, interestVertices, scratch);
+			withEdgeParticle.weight = opProbability;
+			withEdgeParticle.trueDensity = opProbability;
 
-			//Now for the variance graph
-			boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(2, 1.0));
+			if(withEdgeParticle.minCutSize < HIGH_CAPACITY)
+			{
+				mpfr_class minCutDownProb = cachedInopPowers[missingEdgeParticle.minCutSize];
+				mpfr_class minCutUpProb = cachedInopPowers[withEdgeParticle.minCutSize];
+				mpfr_class qTilde = inopProbability * minCutDownProb;
+				qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
+	
+				missingEdgeParticle.importanceDensity = qTilde;
+				withEdgeParticle.importanceDensity = 1 - qTilde;
+				//In this case there are two initial particles
+				particles.emplace_back(std::move(missingEdgeParticle));
+				particles.emplace_back(std::move(withEdgeParticle));
 
-			approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor firstVertex = boost::add_vertex(varianceEstimationGraph);
-			approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& firstVertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, firstVertex);
-			firstVertexInfo.inclusionProbabilities = inclusion;
-			firstVertexInfo.indexWithinDesign = 0;
-			boost::add_edge(rootVertex, firstVertex, varianceEstimationGraph);
-			previousStepVertices.push_back(firstVertex);
-			
-			approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor secondVertex = boost::add_vertex(varianceEstimationGraph);
-			approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& secondVertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, secondVertex);
-			secondVertexInfo.inclusionProbabilities = inclusion;
-			secondVertexInfo.indexWithinDesign = 0;
-			boost::add_edge(rootVertex, secondVertex, varianceEstimationGraph);
-			previousStepVertices.push_back(secondVertex);
+				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(2, 1.0));
+				approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor firstVertex = boost::add_vertex(varianceEstimationGraph);
+				approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& firstVertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, firstVertex);
+				firstVertexInfo.inclusionProbabilities = inclusion;
+				firstVertexInfo.indexWithinDesign = 0;
+				boost::add_edge(rootVertex, firstVertex, varianceEstimationGraph);
+				previousStepVertices.push_back(firstVertex);
+				
+				approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor secondVertex = boost::add_vertex(varianceEstimationGraph);
+				approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& secondVertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, secondVertex);
+				secondVertexInfo.inclusionProbabilities = inclusion;
+				secondVertexInfo.indexWithinDesign = 1;
+				boost::add_edge(rootVertex, secondVertex, varianceEstimationGraph);
+				previousStepVertices.push_back(secondVertex);
+			}
+			else
+			{
+				missingEdgeParticle.importanceDensity = 1;
+				particles.emplace_back(std::move(missingEdgeParticle));
+
+				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(1, 1.0));
+				approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor singleVertexDescriptor = boost::add_vertex(varianceEstimationGraph);
+				approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, singleVertexDescriptor);
+				vertexInfo.inclusionProbabilities = inclusion;
+				vertexInfo.indexWithinDesign = 0;
+				boost::add_edge(rootVertex, singleVertexDescriptor, varianceEstimationGraph);
+				previousStepVertices.push_back(singleVertexDescriptor);
+			}
 		}
-		else
-		{
-			//In this case there is only one initial particle
-			trueDensity.push_back(inopProbability);
-			importanceDensity.push_back(1);
-			productInclusion.push_back(1);
-
-			//Add extra vertex to vertex estimation graph. 
-			boost::shared_ptr<boost::numeric::ublas::matrix<::sampling::mpfr_class> > joint(new boost::numeric::ublas::matrix<::sampling::mpfr_class>(1, 1));
-			std::fill((*joint).data().begin(), (*joint).data().end(), 1);
-			boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(1, 1.0));
-
-			approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor singleVertexDescriptor = boost::add_vertex(varianceEstimationGraph);
-			approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, singleVertexDescriptor);
-			vertexInfo.inclusionProbabilities = inclusion;
-			vertexInfo.indexWithinDesign = 0;
-			boost::add_edge(rootVertex, singleVertexDescriptor, varianceEstimationGraph);
-			previousStepVertices.push_back(singleVertexDescriptor);
-		}
-		//The choices for sampling
-		std::vector<choice> choices;
 		args.estimate = 0;
 		for(int edgeCounter = 1; edgeCounter < (int)nEdges; edgeCounter++)
 		{
-			//Construct choices
-			choices.clear();
-			newImportanceDensity.clear();
-			for(int particleCounter = 0; particleCounter < (int)trueDensity.size(); particleCounter++)
+			newParticles.clear();
+			for(int particleCounter = 0; particleCounter < (int)particles.size(); particleCounter++)
 			{
-				if(minCutSize[particleCounter] == 0)
+				approximateZeroVarianceWithVarianceImpl::particle& currentParticle = particles[particleCounter];
+				if(currentParticle.minCutSize == 0)
 				{
-					args.estimate += trueDensity[particleCounter] / productInclusion[particleCounter];
+					args.estimate += currentParticle.weight;
 					approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, previousStepVertices[particleCounter]);
-					vertexInfo.accumulatedMean = trueDensity[particleCounter];
+					vertexInfo.accumulatedMean = currentParticle.trueDensity;
 					vertexInfo.accumulatedVariance = 0;
 					continue;
 				}
-				states[2*nEdges*particleCounter + 2*edgeCounter] = states[2*nEdges*particleCounter + 2*edgeCounter+1] = 0;
-				int minCutSizeDown = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
-				mpfr_class minCutDownProb = cachedInopPowers[minCutSizeDown];
+				currentParticle.ownedData->capacity[2*edgeCounter] = currentParticle.ownedData->capacity[2*edgeCounter + 1] = 0;
+				currentParticle.ownedData->residual[2*edgeCounter] = currentParticle.ownedData->residual[2*edgeCounter + 1] = 0;
+				int minCutSizeDown = getMinCut(currentParticle.ownedData->capacity, currentParticle.ownedData->residual, graph, undirectedGraph, interestVertices, scratch);
 
-				states[2*nEdges*particleCounter + 2*edgeCounter] = states[2*nEdges*particleCounter + 2*edgeCounter+1] = HIGH_CAPACITY;
-				int minCutSizeUp = getMinCut(states.begin()+particleCounter*2*nEdges, residualCapacities.begin()+particleCounter*2*nEdges, graph, undirectedGraph, interestVertices, scratch);
-				mpfr_class minCutUpProb;
+				currentParticle.ownedData->capacity[2*edgeCounter] = currentParticle.ownedData->capacity[2*edgeCounter + 1] = HIGH_CAPACITY;
+				currentParticle.ownedData->residual[2*edgeCounter] = currentParticle.ownedData->residual[2*edgeCounter + 1] = HIGH_CAPACITY;
+				int minCutSizeUp = getMinCut(currentParticle.ownedData->capacity, currentParticle.ownedData->residual, graph, undirectedGraph, interestVertices, scratch);
 				if(minCutSizeUp >= HIGH_CAPACITY)
 				{
-					minCutUpProb = 0;
-					choices.push_back(choice(particleCounter, false, minCutSizeDown));
-					newImportanceDensity.push_back(importanceDensity[particleCounter]);
+					approximateZeroVarianceWithVarianceImpl::particle newParticle;
+					newParticle.parentData = particles[particleCounter].ownedData;
+					newParticle.hasNextEdge = false;
+					newParticle.weight = currentParticle.weight * inopProbability;
+					newParticle.trueDensity = currentParticle.trueDensity * inopProbability;
+					newParticle.importanceDensity = currentParticle.importanceDensity;
+					newParticle.minCutSize = minCutSizeDown;
+					newParticle.parentIndex = particleCounter;
+					newParticles.emplace_back(std::move(newParticle));
 				}
 				else
 				{
-					minCutUpProb = cachedInopPowers[minCutSizeUp];
+					mpfr_class minCutDownProb = cachedInopPowers[minCutSizeDown];
+					mpfr_class minCutUpProb = cachedInopPowers[minCutSizeUp];
 					mpfr_class qTilde = inopProbability * minCutDownProb;
 					qTilde = qTilde / (qTilde  + opProbability * minCutUpProb);
-					choices.push_back(choice(particleCounter, false, minCutSizeDown));
-					choices.push_back(choice(particleCounter, true, minCutSizeUp));
-					newImportanceDensity.push_back(importanceDensity[particleCounter]  * qTilde);
-					newImportanceDensity.push_back(importanceDensity[particleCounter]  * (1 - qTilde));
+					
+					approximateZeroVarianceWithVarianceImpl::particle upParticle, downParticle;
+
+					upParticle.parentData = currentParticle.ownedData;
+					upParticle.hasNextEdge = true;
+					upParticle.weight = currentParticle.weight * opProbability;
+					upParticle.trueDensity = currentParticle.trueDensity * opProbability;
+					upParticle.importanceDensity = currentParticle.importanceDensity * (1 - qTilde);
+					upParticle.minCutSize = minCutSizeUp;
+
+					downParticle.parentData = currentParticle.ownedData;
+					downParticle.hasNextEdge = false;
+					downParticle.weight = currentParticle.weight * inopProbability;
+					downParticle.trueDensity = currentParticle.trueDensity * inopProbability;
+					downParticle.importanceDensity = currentParticle.importanceDensity * qTilde;
+					downParticle.minCutSize = minCutSizeDown;
+
+					downParticle.parentIndex = upParticle.parentIndex = particleCounter;
+					newParticles.emplace_back(std::move(downParticle));
+					newParticles.emplace_back(std::move(upParticle));
 				}
 			}
-			newTrueDensity.clear();
-			newMinCutSize.clear();
-			newProductInclusion.clear();
-			importanceDensity.clear();
+			particles.clear();
 			nextStepVertices.clear();
-			if(newImportanceDensity.size() <= n)
+			if(newParticles.size() <= n)
 			{
-				boost::shared_ptr<boost::numeric::ublas::matrix<::sampling::mpfr_class> > joint(new boost::numeric::ublas::matrix<::sampling::mpfr_class>(newImportanceDensity.size(), newImportanceDensity.size()));
-				std::fill((*joint).data().begin(), (*joint).data().end(), 1);
-				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(newImportanceDensity.size(), 1.0));
-				for(int choiceCounter = 0; choiceCounter < (int)newImportanceDensity.size(); choiceCounter++)
+				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(newParticles.size(), 1.0));
+				for(int i = 0; i < (int)newParticles.size(); i++)
 				{
-					int parentIndex = choices[choiceCounter].parentIndex;
-					memcpy(&*(newStates.begin()+choiceCounter*2*nEdges), &*(states.begin()+parentIndex*2*nEdges), sizeof(int)*2*nEdges);
-					memcpy(&*(newResidualCapacities.begin()+choiceCounter*2*nEdges), &*(residualCapacities.begin()+parentIndex*2*nEdges), sizeof(int)*2*nEdges);
-					if(choices[choiceCounter].edgePresent)
+					particles.emplace_back(std::move(newParticles[i]));
+					approximateZeroVarianceWithVarianceImpl::particle& movedParticle = particles.back();
+					if(!(movedParticle.ownedData))
 					{
-						newStates[choiceCounter*2*nEdges + 2*edgeCounter] = newStates[choiceCounter*2*nEdges + 2*edgeCounter + 1] = HIGH_CAPACITY;
-						newTrueDensity.push_back(trueDensity[parentIndex]*opProbability);
+						movedParticle.ownedData.reset(new approximateZeroVarianceWithVarianceImpl::particleData());
+						movedParticle.ownedData->capacity =  movedParticle.parentData->capacity;
+						movedParticle.ownedData->residual =  movedParticle.parentData->residual;
+						movedParticle.ownedData->downEdges = movedParticle.parentData->downEdges;
+						if(movedParticle.hasNextEdge)
+						{
+							movedParticle.ownedData->capacity[2*edgeCounter] = movedParticle.ownedData->capacity[2*edgeCounter+1] = movedParticle.ownedData->residual[2*edgeCounter] = movedParticle.ownedData->residual[2*edgeCounter+1] = HIGH_CAPACITY;
+						}
+						else
+						{
+							movedParticle.ownedData->capacity[2*edgeCounter] = movedParticle.ownedData->capacity[2*edgeCounter+1] = movedParticle.ownedData->residual[2*edgeCounter] = movedParticle.ownedData->residual[2*edgeCounter+1] = 0;
+							movedParticle.ownedData->downEdges.push_back(edgeCounter);
+						}
 					}
-					else
+					else if(!movedParticle.hasNextEdge)
 					{
-						newStates[choiceCounter*2*nEdges + 2*edgeCounter] = newStates[choiceCounter*2*nEdges + 2*edgeCounter + 1] = 0;
-						newTrueDensity.push_back(trueDensity[parentIndex]*inopProbability);
+						movedParticle.ownedData->downEdges.push_back(edgeCounter);
 					}
-					newMinCutSize.push_back(choices[choiceCounter].minCutSize);
-					newProductInclusion.push_back(productInclusion[parentIndex]);
 
 					approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor newVertex = boost::add_vertex(varianceEstimationGraph);
 					approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, newVertex);
 					vertexInfo.inclusionProbabilities = inclusion;
-					vertexInfo.indexWithinDesign = choiceCounter;
+					vertexInfo.indexWithinDesign = i;
 					vertexInfo.accumulatedMean = vertexInfo.accumulatedVariance = 0.0;
-					boost::add_edge(previousStepVertices[parentIndex], newVertex, varianceEstimationGraph);
+					boost::add_edge(previousStepVertices[movedParticle.parentIndex], newVertex, varianceEstimationGraph);
 					nextStepVertices.push_back(newVertex);
 				}
-				importanceDensity.swap(newImportanceDensity);
 			}
 			else
 			{
+				newImportanceDensity.clear();
+				for(std::vector<approximateZeroVarianceWithVarianceImpl::particle>::iterator i = newParticles.begin(); i != newParticles.end(); i++)
+				{
+					newImportanceDensity.push_back(i->importanceDensity);
+				}
 				indices.clear();
-
-				samplingArgs.weights.clear();
-				for(int i = 0; i < (int)choices.size(); i++) samplingArgs.weights.push_back(newImportanceDensity[i] / productInclusion[choices[i].parentIndex]);
-				
 				sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
 				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusionProbabilities(new std::vector<::sampling::mpfr_class>());
 				inclusionProbabilities->swap(samplingArgs.rescaledWeights);
 
 				mpfr_class d = 0;
-				for(int i = 0; i < (int)samplingArgs.rescaledWeights.size(); i++) 
+				for(int i = 0; i < (int)inclusionProbabilities->size(); i++) 
 				{
-					d += samplingArgs.rescaledWeights[i] * (1 - samplingArgs.rescaledWeights[i]);
+					d += (*inclusionProbabilities)[i] * (1 - (*inclusionProbabilities)[i]);
 				}
 				
 				int counter = 0;
 				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
 				{
-					int parentIndex = choices[*i].parentIndex;
-					memcpy(&*(newStates.begin()+counter*2*nEdges), &*(states.begin()+choices[*i].parentIndex*2*nEdges), sizeof(int)*2*nEdges);
-					memcpy(&*(newResidualCapacities.begin()+counter*2*nEdges), &*(residualCapacities.begin()+parentIndex*2*nEdges), sizeof(int)*2*nEdges);
-					if(choices[*i].edgePresent)
+					particles.emplace_back(std::move(newParticles[*i]));
+					approximateZeroVarianceWithVarianceImpl::particle& movedParticle = particles.back();
+					if(!(movedParticle.ownedData))
 					{
-						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = HIGH_CAPACITY;
-						newTrueDensity.push_back(trueDensity[parentIndex]*opProbability);
+						movedParticle.ownedData.reset(new approximateZeroVarianceWithVarianceImpl::particleData());
+						movedParticle.ownedData->capacity =  movedParticle.parentData->capacity;
+						movedParticle.ownedData->residual =  movedParticle.parentData->residual;
+						movedParticle.ownedData->downEdges = movedParticle.parentData->downEdges;
+						if(movedParticle.hasNextEdge)
+						{
+							movedParticle.ownedData->capacity[2*edgeCounter] = movedParticle.ownedData->capacity[2*edgeCounter+1] = movedParticle.ownedData->residual[2*edgeCounter] = movedParticle.ownedData->residual[2*edgeCounter+1] = HIGH_CAPACITY;
+						}
+						else
+						{
+							movedParticle.ownedData->capacity[2*edgeCounter] = movedParticle.ownedData->capacity[2*edgeCounter+1] = movedParticle.ownedData->residual[2*edgeCounter] = movedParticle.ownedData->residual[2*edgeCounter+1] = 0;
+							movedParticle.ownedData->downEdges.push_back(edgeCounter);
+						}
 					}
-					else
+					else if(!movedParticle.hasNextEdge)
 					{
-						newStates[counter*2*nEdges + 2*edgeCounter] = newStates[counter*2*nEdges + 2*edgeCounter + 1] = 0;
-						newTrueDensity.push_back(trueDensity[parentIndex]*inopProbability);
+						movedParticle.ownedData->downEdges.push_back(edgeCounter);
 					}
-					if(newTrueDensity.back() > 100) throw std::runtime_error("Internal error");
-					newProductInclusion.push_back(productInclusion[parentIndex] * (*inclusionProbabilities)[*i]);
+					movedParticle.importanceDensity /= (*inclusionProbabilities)[*i];
+					movedParticle.weight /= (*inclusionProbabilities)[*i];
 					
 					approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor newVertex = boost::add_vertex(varianceEstimationGraph);
 					approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, newVertex);
@@ -361,29 +417,23 @@ namespace networkReliability
 					vertexInfo.inclusionProbabilities = inclusionProbabilities;
 					vertexInfo.d = d;
 					vertexInfo.accumulatedMean = vertexInfo.accumulatedVariance = 0.0;
-					boost::add_edge(previousStepVertices[parentIndex], newVertex, varianceEstimationGraph);
+					boost::add_edge(previousStepVertices[movedParticle.parentIndex], newVertex, varianceEstimationGraph);
 					nextStepVertices.push_back(newVertex);
 					
-					newMinCutSize.push_back(choices[*i].minCutSize);
-					importanceDensity.push_back(newImportanceDensity[*i]);
 					counter++;
 				}
 			}
 			nextStepVertices.swap(previousStepVertices);
-			productInclusion.swap(newProductInclusion);
-			newTrueDensity.swap(trueDensity);
-			newStates.swap(states);
-			newMinCutSize.swap(minCutSize);
 		}
-		for(int i = 0; i < (int)trueDensity.size(); i++)
+		for(int i = 0; i < (int)particles.size(); i++)
 		{
-			args.estimate += trueDensity[i] / productInclusion[i];
+			args.estimate += particles[i].weight;
 		}
 		//Variance estimation
-		for(int i = 0; i < (int)trueDensity.size(); i++)
+		for(int i = 0; i < (int)particles.size(); i++)
 		{
 			approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, previousStepVertices[i]);
-			vertexInfo.accumulatedMean = trueDensity[i];
+			vertexInfo.accumulatedMean = particles[i].trueDensity;
 			vertexInfo.accumulatedVariance = 0;
 		}
 		typedef boost::color_traits<boost::default_color_type> Color;
