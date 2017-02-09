@@ -152,6 +152,7 @@ namespace networkReliability
 			typedef boost::iterator_property_map<typename std::vector<int>::iterator, edgeIndexMap> edgeCapacityMap;
 
 			edgeIndexMap edgeIndices = boost::get(boost::edge_index, *directedGraph);
+			std::copy(capacityVector.begin(), capacityVector.end(), edgeResidualCapacityVector.begin());
 			edgeCapacityMap residualCapacityMap(edgeResidualCapacityVector.begin(), edgeIndices);
 			edgeCapacityMap capacityMap(capacityVector.begin(), edgeIndices);
 
