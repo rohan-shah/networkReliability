@@ -80,7 +80,9 @@ empiricalVarianceFunc <- function(x)
 	}
 	else if(class(x[[1]]) == "approximateZeroVarianceWORWithVarianceResult")
 	{
-		return(var(as.numeric(do.call(c, lapply(x, function(y) y@estimate)))))
+		estimates <- do.call(c, lapply(x, function(y) y@estimate))
+		return(as.numeric(sum(estimates*estimates)/length(estimates) - (sum(estimates)/length(estimates))^2))
+		#return(var(as.numeric(do.call(c, lapply(x, function(y) y@estimate)))))
 	}
 	else 
 	{
