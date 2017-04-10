@@ -24,6 +24,10 @@ averageEstimatesFunc <- function(x)
 	{
 		return(as.numeric(mean(do.call(c, lapply(x, function(y) y@firstMoment)))))
 	}
+	else if(class(x[[1]]) == "residualResamplingResult") 
+	{
+		return(as.numeric(mean(do.call(c, lapply(x, function(y) y@firstMoment)))))
+	}
 	else if(class(x[[1]]) == "approximateZeroVarianceWORResult")
 	{
 		return(as.numeric(mean(do.call(c, lapply(x, function(y) y@estimate)))))
@@ -44,6 +48,10 @@ singleEstimatesFunc <- function(x)
 	if(length(x) == 0)
 	{
 		return(NA)
+	}
+	else if(class(x[[1]]) == "residualResamplingResult") 
+	{
+		return(as.numeric(x[[1]]@firstMoment))
 	}
 	else if(class(x[[1]]) == "approximateZeroVarianceResult") 
 	{
@@ -70,13 +78,18 @@ empiricalVarianceFunc <- function(x)
 	{
 		return(NA)
 	}
+	else if(class(x[[1]]) == "residualResamplingResult") 
+	{
+		return(var(as.numeric(do.call(c, lapply(x, function(y) y@firstMoment)))))
+	}
 	else if(class(x[[1]]) == "approximateZeroVarianceResult") 
 	{
 		return(var(as.numeric(do.call(c, lapply(x, function(y) y@firstMoment)))))
 	}
 	else if(class(x[[1]]) == "approximateZeroVarianceWORResult")
 	{
-		return(var(as.numeric(do.call(c, lapply(x, function(y) y@estimate)))))
+		estimates <- do.call(c, lapply(x, function(y) y@estimate))
+		return(as.numeric(sum(estimates*estimates)/length(estimates) - (sum(estimates)/length(estimates))^2))
 	}
 	else if(class(x[[1]]) == "approximateZeroVarianceWORWithVarianceResult")
 	{
@@ -94,6 +107,10 @@ empiricalVariances <- do.call(c, lapply(allResults, empiricalVarianceFunc))
 varianceEstimateFunc <- function(x)
 {
 	if(length(x) == 0)
+	{
+		return(NA)
+	}
+	else if(class(x[[1]]) == "residualResamplingResult") 
 	{
 		return(NA)
 	}
