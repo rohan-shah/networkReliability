@@ -27,7 +27,7 @@ namespace networkReliability
 			int indexWithinDesign;
 			mutable ::sampling::mpfr_class accumulatedMean, accumulatedVariance;
 			boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusionProbabilities;
-			mpfr_class d;
+			boost::shared_ptr<boost::numeric::ublas::matrix<mpfr_class> > secondOrder;
 			int edgeCounter;
 			boost::shared_ptr<particleData> data;
 		};
@@ -67,7 +67,7 @@ namespace networkReliability
 			mpfr_class inopProbability = 1 - opProbability;
 			const std::size_t nEdges = contextObj.getNEdges();
 			mpfr_class currentLikelihoodRatio = 1;
-			int indicatorValue;
+			int indicatorValue = -1;
 			boost::random::uniform_01<float,float> uniformReal;
 			for(int edgeCounter2 = edgeCounter + 1; edgeCounter2 < (int)nEdges; edgeCounter2++)
 			{
@@ -108,6 +108,10 @@ namespace networkReliability
 					}
 				}
 			}
+			if(indicatorValue < 0)
+			{
+				 throw std::runtime_error("Internal error");
+			}
 			return indicatorValue*currentLikelihoodRatio.convert_to<double>();
 		}
 		struct accumulationVisitor : public boost::default_dfs_visitor
@@ -128,7 +132,6 @@ namespace networkReliability
 				varianceGraph::out_edge_iterator current, end;
 				boost::tie(current, end) = boost::out_edges(u, graph);
 				double opProbability = contextObj.getOperationalProbability().convert_to<double>();
-				double inopProbability = 1 - opProbability;
 				if(current == end)
 				{
 /*					double firstBit = 1;
@@ -178,16 +181,7 @@ namespace networkReliability
 						}
 						else
 						{
-							int N = (int)(*inclusionProbabilities).size();
-							mpfr_class secondOrder;
-							if(((*inclusionProbabilities)[childVertexInfo.indexWithinDesign] == 1 && (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign] == 1) || childVertexInfo.d == 0)
-							{
-								secondOrder = 1;
-							}
-							else
-							{
-								secondOrder = (*inclusionProbabilities)[childVertexInfo.indexWithinDesign] * (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign] - N * (*inclusionProbabilities)[childVertexInfo.indexWithinDesign] * (1 - (*inclusionProbabilities)[childVertexInfo.indexWithinDesign]) * (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign] * (1 - (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign])/((N - 1) * childVertexInfo.d);
-							}
+							mpfr_class secondOrder = (*childVertexInfo.secondOrder.get())(childVertexInfo.indexWithinDesign, childVertexInfo2.indexWithinDesign);
 							currentVertexInfo.accumulatedVariance += (1 - (*inclusionProbabilities)[childVertexInfo.indexWithinDesign] * (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign] / secondOrder) * (childVertexInfo.accumulatedMean / (*inclusionProbabilities)[childVertexInfo.indexWithinDesign]) * (childVertexInfo2.accumulatedMean / (*inclusionProbabilities)[childVertexInfo2.indexWithinDesign]);
 						}
 					}
@@ -275,7 +269,7 @@ namespace networkReliability
 		{
 			cachedInopPowers[i] = boost::multiprecision::pow(inopProbability, i);
 		}
-		sampling::sampfordFromParetoNaiveArgs samplingArgs;
+		sampling::conditionalPoissonSequentialArgs samplingArgs(true);
 		samplingArgs.n = n;
 		std::vector<int>& indices = samplingArgs.indices;
 		//Temporaries for calculating max flow values
@@ -324,11 +318,13 @@ namespace networkReliability
 				particles.emplace_back(std::move(withEdgeParticle));
 
 				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(2, 1.0));
+				boost::shared_ptr<boost::numeric::ublas::matrix<mpfr_class> > secondOrder(new boost::numeric::ublas::matrix<mpfr_class>(2, 2, 1));
 				approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor firstVertex = boost::add_vertex(varianceEstimationGraph);
 				approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& firstVertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, firstVertex);
 				firstVertexInfo.edgeCounter = 0;
 				firstVertexInfo.data = particles[0].ownedData;
 				firstVertexInfo.inclusionProbabilities = inclusion;
+				firstVertexInfo.secondOrder = secondOrder;
 				firstVertexInfo.indexWithinDesign = 0;
 				boost::add_edge(rootVertex, firstVertex, varianceEstimationGraph);
 				previousStepVertices.push_back(firstVertex);
@@ -338,6 +334,7 @@ namespace networkReliability
 				secondVertexInfo.edgeCounter = 0;
 				secondVertexInfo.data = particles[1].ownedData;
 				secondVertexInfo.inclusionProbabilities = inclusion;
+				secondVertexInfo.secondOrder = secondOrder;
 				secondVertexInfo.indexWithinDesign = 1;
 				boost::add_edge(rootVertex, secondVertex, varianceEstimationGraph);
 				previousStepVertices.push_back(secondVertex);
@@ -348,11 +345,13 @@ namespace networkReliability
 				particles.emplace_back(std::move(missingEdgeParticle));
 
 				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(1, 1.0));
+				boost::shared_ptr<boost::numeric::ublas::matrix<mpfr_class> > secondOrder(new boost::numeric::ublas::matrix<mpfr_class>(1, 1, 1));
 				approximateZeroVarianceWithVarianceImpl::varianceGraph::vertex_descriptor singleVertexDescriptor = boost::add_vertex(varianceEstimationGraph);
 				approximateZeroVarianceWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, singleVertexDescriptor);
 				vertexInfo.edgeCounter = 0;
 				vertexInfo.data = particles.back().ownedData;
 				vertexInfo.inclusionProbabilities = inclusion;
+				vertexInfo.secondOrder = secondOrder;
 				vertexInfo.indexWithinDesign = 0;
 				boost::add_edge(rootVertex, singleVertexDescriptor, varianceEstimationGraph);
 				previousStepVertices.push_back(singleVertexDescriptor);
@@ -425,6 +424,7 @@ namespace networkReliability
 			if(newParticles.size() <= n)
 			{
 				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusion(new std::vector<::sampling::mpfr_class>(newParticles.size(), 1.0));
+				boost::shared_ptr<boost::numeric::ublas::matrix<mpfr_class> > secondOrder(new boost::numeric::ublas::matrix<mpfr_class>(newParticles.size(), newParticles.size(), 1));
 				for(int i = 0; i < (int)newParticles.size(); i++)
 				{
 					particles.emplace_back(std::move(newParticles[i]));
@@ -455,6 +455,7 @@ namespace networkReliability
 					vertexInfo.edgeCounter = edgeCounter;
 					vertexInfo.data = movedParticle.ownedData;
 					vertexInfo.inclusionProbabilities = inclusion;
+					vertexInfo.secondOrder = secondOrder;
 					vertexInfo.indexWithinDesign = i;
 					vertexInfo.accumulatedMean = vertexInfo.accumulatedVariance = 0.0;
 					boost::add_edge(previousStepVertices[movedParticle.parentIndex], newVertex, varianceEstimationGraph);
@@ -469,16 +470,13 @@ namespace networkReliability
 					newImportanceDensity.push_back(i->importanceDensity);
 				}
 				indices.clear();
-				sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
-				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusionProbabilities(new std::vector<::sampling::mpfr_class>());
-				inclusionProbabilities->swap(samplingArgs.rescaledWeights);
+				sampling::conditionalPoissonSequential(samplingArgs, args.randomSource);
+				boost::shared_ptr<boost::numeric::ublas::matrix<mpfr_class> > secondOrder(new boost::numeric::ublas::matrix<mpfr_class>(newParticles.size(), newParticles.size()));
+				conditionalPoissonSecondOrderInclusionProbabilities(samplingArgs, samplingArgs.inclusionProbabilities, *secondOrder.get());
 
-				mpfr_class d = 0;
-				for(int i = 0; i < (int)inclusionProbabilities->size(); i++) 
-				{
-					d += (*inclusionProbabilities)[i] * (1 - (*inclusionProbabilities)[i]);
-				}
-				
+				boost::shared_ptr<std::vector<::sampling::mpfr_class> > inclusionProbabilities(new std::vector<::sampling::mpfr_class>());
+				inclusionProbabilities->swap(samplingArgs.inclusionProbabilities);
+
 				int counter = 0;
 				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
 				{
@@ -513,7 +511,7 @@ namespace networkReliability
 					vertexInfo.data = movedParticle.ownedData;
 					vertexInfo.indexWithinDesign = *i;
 					vertexInfo.inclusionProbabilities = inclusionProbabilities;
-					vertexInfo.d = d;
+					vertexInfo.secondOrder = secondOrder;
 					vertexInfo.accumulatedMean = vertexInfo.accumulatedVariance = 0.0;
 					boost::add_edge(previousStepVertices[movedParticle.parentIndex], newVertex, varianceEstimationGraph);
 					nextStepVertices.push_back(newVertex);
