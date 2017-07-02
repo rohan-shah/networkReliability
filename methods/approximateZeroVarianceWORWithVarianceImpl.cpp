@@ -131,7 +131,6 @@ namespace networkReliability
 				const varianceGraphVertex& currentVertexInfo = boost::get(boost::vertex_name, graph, u);
 				varianceGraph::out_edge_iterator current, end;
 				boost::tie(current, end) = boost::out_edges(u, graph);
-				double opProbability = contextObj.getOperationalProbability().convert_to<double>();
 				if(current == end)
 				{
 /*					double firstBit = 1;

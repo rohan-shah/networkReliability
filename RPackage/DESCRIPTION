@@ -24,3 +24,4 @@ Collate:
 	'setDefaultPrec.R'
 	'residualResampling.R'
 	'approximateZeroVarianceWORMerge.R'
+	'approximateZeroVarianceWORMergeWithVariance.R'

@@ -25,5 +25,5 @@ print(ggplot(data.frame(value = htResults), aes(value)) + stat_bin(breaks = brea
 dev.off()
 
 tikz("./bootstrapEmpirical.tex", standAlone = TRUE)
-print(ggplot(data.frame(value = log10(unlist(bootstrapResults))), aes(value)) + stat_bin() + xlab("$\\log_10\\left(\\mathrm{Bootstrapped Variance}\\right)$") + ylab("Count") + ggtitle("") + theme(axis.text = element_text(size = rel(1.35)), axis.title = element_text(size = rel(2)), plot.margin = margin(0, 25, 5, 5)) + geom_vline(xintercept = log10(var(empiricalResults)), size = 2) + geom_vline(xintercept = log10(mean(htResults)), size = 2, color = "red"))
+print(ggplot(data.frame(value = log10(unlist(bootstrapResults))), aes(value)) + stat_bin() + xlab("$\\log_{10}\\left(\\mathrm{Bootstrapped Variance}\\right)$") + ylab("Count") + ggtitle("") + theme(axis.text = element_text(size = rel(1.35)), axis.title = element_text(size = rel(2)), plot.margin = margin(0, 25, 5, 5)) + geom_vline(xintercept = log10(var(empiricalResults)), size = 2) + geom_vline(xintercept = log10(mean(htResults)), size = 2, color = "red"))
 dev.off()
