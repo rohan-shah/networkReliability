@@ -4,6 +4,8 @@
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include "conditionalPoissonSequential.h"
 #include "connected_components_fixed.hpp"
+#include <boost/graph/graphml.hpp>
+#include <boost/graph/graphviz.hpp>
 namespace networkReliability
 {
 	namespace approximateZeroVarianceWORMergeWithVarianceImpl
@@ -24,14 +26,14 @@ namespace networkReliability
 		{
 		public:
 			varianceGraphVertex()
-				: indexWithinDesign(-1), samplingStage(-1), mergedCount(-1), mergedProduct(-1), accumulatedMean(0), trueDensity(0)
+				: indexWithinDesign(-1), samplingStage(-1), mergedCount(-1), mergedProduct(-1), accumulatedMean(0), trueDensity(0), V(0)
 			{}
 			int indexWithinDesign;
 			int samplingStage;
 			int mergedCount;
 			int mergedProduct;
 			int indexWithinSelected;
-			mutable ::sampling::mpfr_class accumulatedMean, trueDensity;
+			mutable ::sampling::mpfr_class accumulatedMean, trueDensity, V;
 		};
 		typedef boost::adjacency_list<boost::listS, boost::vecS, boost::directedS, boost::property<boost::vertex_name_t, varianceGraphVertex>, boost::property<boost::edge_name_t, bool> > varianceGraph;
 		struct particle
@@ -173,6 +175,37 @@ namespace networkReliability
 			return *std::min_element(scratch.maxFlowResults.begin(), scratch.maxFlowResults.end());
 		}
 	}
+	class vertexPropertyWriter
+	{
+	public:
+		vertexPropertyWriter(const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g)
+			:g(g)
+		{}
+		template<typename vertexDesc> void operator()(std::ostream& out, const vertexDesc& v)
+		{
+			const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, g, v);
+			out << std::endl << "[trueDensity=\"" << vertexInfo.trueDensity.convert_to<double>() << "\"";
+			out << ",accumulatedMean=\"" << vertexInfo.accumulatedMean.convert_to<double>() << "\"";
+			out << ",samplingStage=\"" << vertexInfo.samplingStage << "\"";
+			out << ",indexWithinDesign=\"" << vertexInfo.indexWithinDesign << "\"";
+			out << ",V=\"" << vertexInfo.V.convert_to<double>() << "\"";
+			out << ",indexWithinSelected=\"" << vertexInfo.indexWithinSelected <<"\"]" << std::endl;
+		}
+		const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g;
+	};
+	class edgePropertyWriter
+	{
+	public:
+		edgePropertyWriter(const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g)
+			:g(g)
+		{}
+		template<typename edgeDesc> void operator()(std::ostream& out, const edgeDesc& e)
+		{
+			bool edgeInfo = boost::get(boost::edge_name, g, e);
+			out << " [isPresent=\"" << edgeInfo <<"\"]" << std::endl;
+		}
+		const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g;
+	};
 	void approximateZeroVarianceWORMergeWithVariance(approximateZeroVarianceWORMergeWithVarianceArgs& args)
 	{
 		std::size_t n = args.n;
@@ -661,13 +694,17 @@ namespace networkReliability
 							else multiple2 = inopProbability;
 							if(targetVertex1 == targetVertex2)
 							{
-								currentCovarianceValue += ((currentInclusionProbabilities[targetVertexInfo1.indexWithinDesign] - inclusionProduct) * targetVertexInfo1.accumulatedMean * targetVertexInfo2.accumulatedMean * graphVertex1Info.trueDensity * graphVertex2Info.trueDensity * multiple1 * multiple2 / (targetVertexInfo1.mergedCount * targetVertexInfo2.mergedCount * currentInclusionProbabilities[targetVertexInfo1.indexWithinDesign]*inclusionProduct)) + previousCovariance(targetVertexInfo1.indexWithinSelected, targetVertexInfo2.indexWithinSelected) / (targetVertexInfo1.mergedCount * targetVertexInfo2.mergedCount * currentInclusionProbabilities[targetVertexInfo1.indexWithinDesign]);
+								currentCovarianceValue += ((currentInclusionProbabilities[targetVertexInfo1.indexWithinDesign] - inclusionProduct) * targetVertexInfo1.accumulatedMean * targetVertexInfo2.accumulatedMean * graphVertex1Info.trueDensity * graphVertex2Info.trueDensity * multiple1 * multiple2 / (currentInclusionProbabilities[targetVertexInfo1.indexWithinDesign]*inclusionProduct)) + (previousCovariance(targetVertexInfo1.indexWithinSelected, targetVertexInfo2.indexWithinSelected) / (currentInclusionProbabilities[targetVertexInfo1.indexWithinDesign])) * (multiple1 * graphVertex1Info.trueDensity / targetVertexInfo1.trueDensity) * (multiple2 * graphVertex2Info.trueDensity / targetVertexInfo2.trueDensity);
 							}
 							else
 							{
-								currentCovarianceValue += ((currentSecondOrderInclusionProbabilities(targetVertexInfo1.indexWithinDesign, targetVertexInfo2.indexWithinDesign) - inclusionProduct) * targetVertexInfo1.accumulatedMean * targetVertexInfo2.accumulatedMean * graphVertex1Info.trueDensity * graphVertex2Info.trueDensity * multiple1 * multiple2 / (targetVertexInfo1.mergedCount * targetVertexInfo2.mergedCount * currentSecondOrderInclusionProbabilities(targetVertexInfo1.indexWithinDesign, targetVertexInfo2.indexWithinDesign) * inclusionProduct)) + previousCovariance(targetVertexInfo1.indexWithinSelected, targetVertexInfo2.indexWithinSelected) / (targetVertexInfo1.mergedCount * targetVertexInfo2.mergedCount * currentSecondOrderInclusionProbabilities(targetVertexInfo1.indexWithinDesign, targetVertexInfo2.indexWithinDesign));
+								currentCovarianceValue += ((currentSecondOrderInclusionProbabilities(targetVertexInfo1.indexWithinDesign, targetVertexInfo2.indexWithinDesign) - inclusionProduct) * targetVertexInfo1.accumulatedMean * targetVertexInfo2.accumulatedMean * graphVertex1Info.trueDensity * graphVertex2Info.trueDensity * multiple1 * multiple2 / (currentSecondOrderInclusionProbabilities(targetVertexInfo1.indexWithinDesign, targetVertexInfo2.indexWithinDesign) * inclusionProduct)) + (previousCovariance(targetVertexInfo1.indexWithinSelected, targetVertexInfo2.indexWithinSelected) / (currentSecondOrderInclusionProbabilities(targetVertexInfo1.indexWithinDesign, targetVertexInfo2.indexWithinDesign))) * (multiple1 * graphVertex1Info.trueDensity / targetVertexInfo1.trueDensity) * (multiple2 * graphVertex2Info.trueDensity / targetVertexInfo2.trueDensity);
 							}
 						}
+					}
+					if(particleCounter1 == particleCounter2)
+					{
+						graphVertex1Info.V = currentCovarianceValue;
 					}
 					particleCounter2++;
 				}
@@ -681,9 +718,40 @@ namespace networkReliability
 		mpfr_class totalFromGraph = boost::get(boost::vertex_name, varianceEstimationGraph, 1).accumulatedMean*inopProbability + boost::get(boost::vertex_name, varianceEstimationGraph, 2).accumulatedMean * opProbability;
 		mpfr_class totalCovarianceFromGraph = allCovariances[0](0, 0) + allCovariances[0](1, 0) + allCovariances[0](0, 1) + allCovariances[0](1, 1);
 		args.varianceEstimate = totalCovarianceFromGraph;
-		if(std::fabs((totalFromGraph - args.estimate).convert_to<double>()) > 1e-6)
+		mpfr_class relative1 = (totalFromGraph - args.estimate)/totalFromGraph;
+		mpfr_class relative2 = (totalFromGraph - args.estimate)/args.estimate;
+		if(std::fabs(relative1.convert_to<double>()) > 1e-3 || std::fabs(relative2.convert_to<double>()) > 1e-3)
 		{
 			throw std::runtime_error("Internal error");
+		}
+		{
+			std::ofstream file("graph.graphml");
+			boost::dynamic_properties dp;
+			dp.property("samplingStage", boost::make_transform_value_property_map(boost::bind<int&>(&approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex::samplingStage, _1), boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
+			dp.property("indexWithinDesign", boost::make_transform_value_property_map(boost::bind<int&>(&approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex::indexWithinDesign, _1), boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
+			dp.property("indexWithinSelected", boost::make_transform_value_property_map(boost::bind<int&>(&approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex::indexWithinSelected, _1), boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
+			auto vertexToAccumulatedMean = [](approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& x)
+				{
+					return x.accumulatedMean.convert_to<double>();
+				};
+			dp.property("accumulatedMean", boost::make_transform_value_property_map(vertexToAccumulatedMean, boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
+			auto vertexToTrueDensity = [](approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& x)
+				{
+					return x.trueDensity.convert_to<double>();
+				};
+			dp.property("trueDensity", boost::make_transform_value_property_map(vertexToTrueDensity, boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
+			auto vertexToV = [](approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& x)
+				{
+					return x.V.convert_to<double>();
+				};
+			dp.property("V", boost::make_transform_value_property_map(vertexToV, boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
+			boost::write_graphml(file, varianceEstimationGraph, dp);
+		}
+		{
+			std::ofstream file("graph.dot");
+			vertexPropertyWriter vp(varianceEstimationGraph);
+			edgePropertyWriter ep(varianceEstimationGraph);
+			boost::write_graphviz(file, varianceEstimationGraph, vp, ep);
 		}
 	}
 }
