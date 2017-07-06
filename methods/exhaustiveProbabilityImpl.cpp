@@ -2,7 +2,7 @@
 #include <boost/filesystem.hpp>
 namespace networkReliability
 {
-	double exhaustiveProbability(std::vector<mpfr_class>& counts, mpfr_class probability, bool countDisconnected)
+	mpfr_class exhaustiveProbability(std::vector<mpfr_class>& counts, mpfr_class probability, bool countDisconnected)
 	{
 		if(probability < 0 || probability > 1)
 		{
@@ -28,6 +28,6 @@ namespace networkReliability
 		{
 			unreliability = 1 - result;
 		}
-		return unreliability.convert_to<double>();
+		return unreliability;
 	}
 }

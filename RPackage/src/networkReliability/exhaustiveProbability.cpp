@@ -19,7 +19,7 @@ namespace networkReliability
 		{
 			countData.push_back(mpfr_class(Rcpp::as<std::string>(*i)));
 		}
-		return Rcpp::wrap(exhaustiveProbability(countData, probability_mpfr, countDisconnected));
+		return Rcpp::wrap(exhaustiveProbability(countData, probability_mpfr, countDisconnected).str());
 	END_RCPP
 	}
 }

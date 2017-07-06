@@ -4,6 +4,6 @@
 #include "includeMPFRNetworkReliability.h"
 namespace networkReliability
 {
-	double exhaustiveProbability(std::vector<mpfr_class>& counts, mpfr_class probability, bool countDisconnected);
+	mpfr_class exhaustiveProbability(std::vector<mpfr_class>& counts, mpfr_class probability, bool countDisconnected);
 }
 #endif

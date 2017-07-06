@@ -4,5 +4,5 @@ exhaustiveProbability <- function(searchObj, probability)
 	{
 		stop("Input searchObj must be an object of class exhaustiveSearchResult")
 	}
-	.Call("exhaustiveProbability", searchObj, probability, PACKAGE="networkReliability")
+	mpfr(.Call("exhaustiveProbability", searchObj, probability, PACKAGE="networkReliability"))
 }
