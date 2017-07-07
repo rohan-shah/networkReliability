@@ -26,14 +26,14 @@ namespace networkReliability
 		{
 		public:
 			varianceGraphVertex()
-				: indexWithinDesign(-1), samplingStage(-1), mergedCount(-1), mergedProduct(-1), accumulatedMean(0), trueDensity(0), V(0)
+				: indexWithinDesign(-1), samplingStage(-1), mergedCount(-1), mergedProduct(-1), accumulatedMean(0), trueDensity(0)//, V(0)
 			{}
 			int indexWithinDesign;
 			int samplingStage;
 			int mergedCount;
 			int mergedProduct;
 			int indexWithinSelected;
-			mutable ::sampling::mpfr_class accumulatedMean, trueDensity, V;
+			mutable ::sampling::mpfr_class accumulatedMean, trueDensity;//, V;
 		};
 		typedef boost::adjacency_list<boost::listS, boost::vecS, boost::directedS, boost::property<boost::vertex_name_t, varianceGraphVertex>, boost::property<boost::edge_name_t, bool> > varianceGraph;
 		struct particle
@@ -175,7 +175,7 @@ namespace networkReliability
 			return *std::min_element(scratch.maxFlowResults.begin(), scratch.maxFlowResults.end());
 		}
 	}
-	class vertexPropertyWriter
+/*	class vertexPropertyWriter
 	{
 	public:
 		vertexPropertyWriter(const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g)
@@ -205,7 +205,7 @@ namespace networkReliability
 			out << " [isPresent=\"" << edgeInfo <<"\"]" << std::endl;
 		}
 		const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g;
-	};
+	};*/
 	void approximateZeroVarianceWORMergeWithVariance(approximateZeroVarianceWORMergeWithVarianceArgs& args)
 	{
 		std::size_t n = args.n;
@@ -569,7 +569,23 @@ namespace networkReliability
 			else
 			{
 				indices.clear();
-				sampling::conditionalPoissonSequential(samplingArgs, args.randomSource);
+				bool hasTooLarge = true;
+				while(hasTooLarge)
+				{
+					hasTooLarge = false;
+					sampling::conditionalPoissonSequential(samplingArgs, args.randomSource);
+					int nDeterministic = 0;
+					for(int i = 0; i < (int) samplingArgs.inclusionProbabilities.size(); i++)
+					{
+						if(samplingArgs.inclusionProbabilities[i] > 0.9999 && samplingArgs.inclusionProbabilities[i] != 1)
+						{
+							hasTooLarge = true;
+							samplingArgs.weights[i] = 1.0;
+						}
+						if(samplingArgs.weights[i] == 1) nDeterministic++;
+					}
+					samplingArgs.n = std::max(nDeterministic+1, (int)n);
+				}
 				int counter = 0;
 				for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
 				{
@@ -702,11 +718,26 @@ namespace networkReliability
 							}
 						}
 					}
-					if(particleCounter1 == particleCounter2)
+					/*if(particleCounter1 == particleCounter2)
 					{
 						graphVertex1Info.V = currentCovarianceValue;
-					}
+					}*/
 					particleCounter2++;
+				}
+				particleCounter1++;
+			}
+			//If a variance is zero, the covariances *have* to be zero. 
+			particleCounter1 = 0;
+			while(particleCounter1 < (int)n && graphVertices(edgeCounter, particleCounter1) > -1)
+			{
+				if(currentCovariance(particleCounter1, particleCounter1) == 0)
+				{
+					int particleCounter2 = 0;
+					while(particleCounter2 < (int)n && graphVertices(edgeCounter, particleCounter2) > -1)
+					{
+						currentCovariance(particleCounter1, particleCounter2) = currentCovariance(particleCounter2, particleCounter1) = 0;
+						particleCounter2++;
+					}
 				}
 				particleCounter1++;
 			}
@@ -724,7 +755,7 @@ namespace networkReliability
 		{
 			throw std::runtime_error("Internal error");
 		}
-		{
+/*		{
 			std::ofstream file("graph.graphml");
 			boost::dynamic_properties dp;
 			dp.property("samplingStage", boost::make_transform_value_property_map(boost::bind<int&>(&approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex::samplingStage, _1), boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
@@ -752,6 +783,6 @@ namespace networkReliability
 			vertexPropertyWriter vp(varianceEstimationGraph);
 			edgePropertyWriter ep(varianceEstimationGraph);
 			boost::write_graphviz(file, varianceEstimationGraph, vp, ep);
-		}
+		}*/
 	}
 }
