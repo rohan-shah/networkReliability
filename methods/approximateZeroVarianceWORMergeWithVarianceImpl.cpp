@@ -26,14 +26,14 @@ namespace networkReliability
 		{
 		public:
 			varianceGraphVertex()
-				: indexWithinDesign(-1), samplingStage(-1), mergedCount(-1), mergedProduct(-1), accumulatedMean(0), trueDensity(0)//, V(0)
+				: indexWithinDesign(-1), samplingStage(-1), mergedCount(-1), mergedProduct(-1), accumulatedMean(0), trueDensity(0), V(0)
 			{}
 			int indexWithinDesign;
 			int samplingStage;
 			int mergedCount;
 			int mergedProduct;
 			int indexWithinSelected;
-			mutable ::sampling::mpfr_class accumulatedMean, trueDensity;//, V;
+			mutable ::sampling::mpfr_class accumulatedMean, trueDensity, V;
 		};
 		typedef boost::adjacency_list<boost::listS, boost::vecS, boost::directedS, boost::property<boost::vertex_name_t, varianceGraphVertex>, boost::property<boost::edge_name_t, bool> > varianceGraph;
 		struct particle
@@ -175,37 +175,6 @@ namespace networkReliability
 			return *std::min_element(scratch.maxFlowResults.begin(), scratch.maxFlowResults.end());
 		}
 	}
-/*	class vertexPropertyWriter
-	{
-	public:
-		vertexPropertyWriter(const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g)
-			:g(g)
-		{}
-		template<typename vertexDesc> void operator()(std::ostream& out, const vertexDesc& v)
-		{
-			const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, g, v);
-			out << std::endl << "[trueDensity=\"" << vertexInfo.trueDensity.convert_to<double>() << "\"";
-			out << ",accumulatedMean=\"" << vertexInfo.accumulatedMean.convert_to<double>() << "\"";
-			out << ",samplingStage=\"" << vertexInfo.samplingStage << "\"";
-			out << ",indexWithinDesign=\"" << vertexInfo.indexWithinDesign << "\"";
-			out << ",V=\"" << vertexInfo.V.convert_to<double>() << "\"";
-			out << ",indexWithinSelected=\"" << vertexInfo.indexWithinSelected <<"\"]" << std::endl;
-		}
-		const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g;
-	};
-	class edgePropertyWriter
-	{
-	public:
-		edgePropertyWriter(const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g)
-			:g(g)
-		{}
-		template<typename edgeDesc> void operator()(std::ostream& out, const edgeDesc& e)
-		{
-			bool edgeInfo = boost::get(boost::edge_name, g, e);
-			out << " [isPresent=\"" << edgeInfo <<"\"]" << std::endl;
-		}
-		const approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph& g;
-	};*/
 	void approximateZeroVarianceWORMergeWithVariance(approximateZeroVarianceWORMergeWithVarianceArgs& args)
 	{
 		std::size_t n = args.n;
@@ -240,7 +209,7 @@ namespace networkReliability
 
 		///The graph used to help estimate the variance. The initial vertex is the root.
 		approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph varianceEstimationGraph;
-		boost::numeric::ublas::matrix<int> graphVertices(nEdges, n, -1);
+		std::vector<std::vector<int> > graphVertices(nEdges);
 		approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph::vertex_descriptor rootVertex = boost::add_vertex(varianceEstimationGraph);
 
 		std::vector<std::vector<::sampling::mpfr_class> > allInclusionProbabilities;
@@ -311,7 +280,7 @@ namespace networkReliability
 				firstVertexInfo.mergedCount = firstVertexInfo.mergedProduct = 1;
 				firstVertexInfo.trueDensity = inopProbability;
 				boost::add_edge(rootVertex, firstVertex, varianceEstimationGraph);
-				graphVertices(0, 0) = (int)firstVertex;
+				graphVertices[0].push_back((int)firstVertex);
 
 				approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph::vertex_descriptor secondVertex = boost::add_vertex(varianceEstimationGraph);
 				approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& secondVertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, secondVertex);
@@ -320,7 +289,7 @@ namespace networkReliability
 				secondVertexInfo.mergedCount = secondVertexInfo.mergedProduct = 1;
 				secondVertexInfo.trueDensity = opProbability;
 				boost::add_edge(rootVertex, secondVertex, varianceEstimationGraph);
-				graphVertices(0, 1) = (int)secondVertex;
+				graphVertices[0].push_back((int)secondVertex);
 			}
 			else
 			{
@@ -339,7 +308,7 @@ namespace networkReliability
 				vertexInfo.mergedCount = vertexInfo.mergedProduct = 1;
 				vertexInfo.trueDensity = inopProbability;
 				boost::add_edge(rootVertex, vertex, varianceEstimationGraph);
-				graphVertices(0, 0) = (int)vertex;
+				graphVertices[0].push_back((int)vertex);
 			}
 		}
 		args.estimate = 0;
@@ -352,7 +321,7 @@ namespace networkReliability
 				if(currentParticle.minCutSize == 0)
 				{
 					args.estimate += currentParticle.weight;
-					approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, graphVertices(edgeCounter-1, particleCounter));
+					approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, graphVertices[edgeCounter-1][particleCounter]);
 					vertexInfo.accumulatedMean = 1;
 					vertexInfo.mergedCount = currentParticle.mergedCount;
 					vertexInfo.mergedProduct = currentParticle.mergedProduct;
@@ -554,10 +523,10 @@ namespace networkReliability
 						vertexInfo.trueDensity = movedParticle.trueDensity;
 						for(int i = 0; i < (int)movedParticle.parentIndices.size(); i++)
 						{
-							boost::add_edge(graphVertices(edgeCounter-1, movedParticle.parentIndices[i]), newVertex, (bool)movedParticle.hasNextEdgeVector[i], varianceEstimationGraph);
+							boost::add_edge(graphVertices[edgeCounter-1][movedParticle.parentIndices[i]], newVertex, (bool)movedParticle.hasNextEdgeVector[i], varianceEstimationGraph);
 						}
 						movedParticle.parentIndices.clear();
-						graphVertices(edgeCounter, counter) = (int)newVertex;
+						graphVertices[edgeCounter].push_back((int)newVertex);
 						counter++;
 					}
 				}
@@ -570,6 +539,7 @@ namespace networkReliability
 			{
 				indices.clear();
 				bool hasTooLarge = true;
+				samplingArgs.n = (int)n;
 				while(hasTooLarge)
 				{
 					hasTooLarge = false;
@@ -624,9 +594,9 @@ namespace networkReliability
 					vertexInfo.trueDensity = movedParticle.trueDensity;
 					for(int i = 0; i < (int)movedParticle.parentIndices.size(); i++)
 					{
-						boost::add_edge(graphVertices(edgeCounter-1, movedParticle.parentIndices[i]), newVertex, (bool)movedParticle.hasNextEdgeVector[i], varianceEstimationGraph);
+						boost::add_edge(graphVertices[edgeCounter-1][movedParticle.parentIndices[i]], newVertex, (bool)movedParticle.hasNextEdgeVector[i], varianceEstimationGraph);
 					}
-					graphVertices(edgeCounter, counter) = (int)newVertex;
+					graphVertices[edgeCounter].push_back((int)newVertex);
 					counter++;
 				}
 				boost::numeric::ublas::matrix<mpfr_class> secondOrder;
@@ -638,25 +608,27 @@ namespace networkReliability
 		//Put in values of 1 for the accumulated means at the end
 		for(int i = 0; i < (int)particles.size(); i++)
 		{
-			if(graphVertices(nEdges - 1, i) > -1)
+			if(graphVertices[nEdges - 1][i] > -1)
 			{
-				approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, graphVertices(nEdges - 1, i));
+				approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, graphVertices[nEdges - 1][i]);
 				vertexInfo.accumulatedMean = 1;
 			}
 		}
 		//Now for the covariance matrix estimations. 
-		std::vector<boost::numeric::ublas::matrix<mpfr_class> > allCovariances(nEdges, boost::numeric::ublas::matrix<mpfr_class>(n, n, 0));
+		std::vector<boost::numeric::ublas::matrix<mpfr_class> > allCovariances(nEdges);
+		allCovariances[nEdges-1].resize(graphVertices[nEdges-1].size(), graphVertices[nEdges-1].size(), false);
 		for(int edgeCounter = nEdges - 2; edgeCounter >= 0; edgeCounter--)
 		{
-			int particleCounter = 0;
 			const std::vector<mpfr_class>& currentInclusionProbabilities = allInclusionProbabilities[edgeCounter+1];
 			const boost::numeric::ublas::matrix<mpfr_class>& currentSecondOrderInclusionProbabilities = allSecondOrderInclusionProbabilities[edgeCounter+1];
+
+			allCovariances[edgeCounter].resize(graphVertices[edgeCounter].size(), graphVertices[edgeCounter].size(), false);
 			boost::numeric::ublas::matrix<mpfr_class>& currentCovariance = allCovariances[edgeCounter];
 			const boost::numeric::ublas::matrix<mpfr_class>& previousCovariance = allCovariances[edgeCounter+1];
 			//First estimate the accumulated means
-			while(particleCounter < (int)n && graphVertices(edgeCounter, particleCounter) > -1)
+			for(int particleCounter = 0; particleCounter < (int)graphVertices[edgeCounter].size(); particleCounter++)
 			{
-				int currentVertex = graphVertices(edgeCounter, particleCounter);
+				int currentVertex = graphVertices[edgeCounter][particleCounter];
 				approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& vertexInfo = boost::get(boost::vertex_name, varianceEstimationGraph, currentVertex);
 				approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraph::out_edge_iterator current, end;
 				boost::tie(current, end) = boost::out_edges(currentVertex, varianceEstimationGraph);
@@ -673,18 +645,15 @@ namespace networkReliability
 						vertexInfo.accumulatedMean += (inopProbability * targetVertexInfo.accumulatedMean / currentInclusionProbabilities[targetVertexInfo.indexWithinDesign]);
 					}
 				}
-				particleCounter++;
 			}
 			//now actually do the covariance estimation. 
-			int particleCounter1 = 0;
-			while(particleCounter1 < (int)n && graphVertices(edgeCounter, particleCounter1) > -1)
+			for(int particleCounter1 = 0; particleCounter1 < (int)graphVertices[edgeCounter].size(); particleCounter1++)
 			{
-				int particleCounter2 = 0;
-				while(particleCounter2 < (int)n && graphVertices(edgeCounter, particleCounter2) > -1)
+				for(int particleCounter2 = 0; particleCounter2 < (int)graphVertices[edgeCounter].size(); particleCounter2++)
 				{
-					int graphVertex1 = graphVertices(edgeCounter, particleCounter1);
+					int graphVertex1 = graphVertices[edgeCounter][particleCounter1];
 					approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& graphVertex1Info = boost::get(boost::vertex_name, varianceEstimationGraph, graphVertex1);
-					int graphVertex2 = graphVertices(edgeCounter, particleCounter2);
+					int graphVertex2 = graphVertices[edgeCounter][particleCounter2];
 					approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& graphVertex2Info = boost::get(boost::vertex_name, varianceEstimationGraph, graphVertex2);
 
 					mpfr_class& currentCovarianceValue = currentCovariance(particleCounter1, particleCounter2);
@@ -718,28 +687,22 @@ namespace networkReliability
 							}
 						}
 					}
-					/*if(particleCounter1 == particleCounter2)
+					if(particleCounter1 == particleCounter2)
 					{
 						graphVertex1Info.V = currentCovarianceValue;
-					}*/
-					particleCounter2++;
+					}
 				}
-				particleCounter1++;
 			}
 			//If a variance is zero, the covariances *have* to be zero. 
-			particleCounter1 = 0;
-			while(particleCounter1 < (int)n && graphVertices(edgeCounter, particleCounter1) > -1)
+			for(int particleCounter1 = 0; particleCounter1 < (int)graphVertices[edgeCounter].size(); particleCounter1++)
 			{
 				if(currentCovariance(particleCounter1, particleCounter1) == 0)
 				{
-					int particleCounter2 = 0;
-					while(particleCounter2 < (int)n && graphVertices(edgeCounter, particleCounter2) > -1)
+					for(int particleCounter2 = 0; particleCounter2 < (int)graphVertices[edgeCounter].size(); particleCounter2++)
 					{
 						currentCovariance(particleCounter1, particleCounter2) = currentCovariance(particleCounter2, particleCounter1) = 0;
-						particleCounter2++;
 					}
 				}
-				particleCounter1++;
 			}
 		}
 		for(std::vector<approximateZeroVarianceWORMergeWithVarianceImpl::particle>::iterator i = particles.begin(); i != particles.end(); i++)
@@ -755,8 +718,9 @@ namespace networkReliability
 		{
 			throw std::runtime_error("Internal error");
 		}
-/*		{
-			std::ofstream file("graph.graphml");
+		if(args.graphFile != "")
+		{
+			std::ofstream file(args.graphFile);
 			boost::dynamic_properties dp;
 			dp.property("samplingStage", boost::make_transform_value_property_map(boost::bind<int&>(&approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex::samplingStage, _1), boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
 			dp.property("indexWithinDesign", boost::make_transform_value_property_map(boost::bind<int&>(&approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex::indexWithinDesign, _1), boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
@@ -778,11 +742,5 @@ namespace networkReliability
 			dp.property("V", boost::make_transform_value_property_map(vertexToV, boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
 			boost::write_graphml(file, varianceEstimationGraph, dp);
 		}
-		{
-			std::ofstream file("graph.dot");
-			vertexPropertyWriter vp(varianceEstimationGraph);
-			edgePropertyWriter ep(varianceEstimationGraph);
-			boost::write_graphviz(file, varianceEstimationGraph, vp, ep);
-		}*/
 	}
 }

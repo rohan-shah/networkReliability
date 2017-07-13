@@ -11,7 +11,6 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/graph/adj_list_serialize.hpp>
 #include <vector>
-#include "TruncatedBinomialDistribution.h"
 #include "includeMPFRNetworkReliability.h"
 #include "allPointsMaxFlow.hpp"
 #include "serializeGMPNetworkReliability.hpp"
@@ -51,8 +50,6 @@ namespace networkReliability
 		const std::vector<int>& getInterestVertices() const;
 		const std::vector<vertexPosition>& getVertexPositions() const;
 		const mpfr_class& getOperationalProbability() const;
-		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getInopDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
-		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& getOpDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const;
 		std::size_t getMinCutEdges() const;
 		int getMinCut(std::vector<int>& capacityVector) const;
 		static context completeContext(int nVertices, int nInterestVertices, const mpfr_class& operationalProbability);
@@ -156,8 +153,6 @@ namespace networkReliability
 		boost::shared_array<double> edgeDistances;
 		mpfr_class operationalProbability;
 		double inoperationalProbabilityD;
-		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allInopDistributions;
-		mutable ::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection allOpDistributions;
 		
 		std::size_t minCutEdges;
 		//Powers of the operational and inoperational probabilities

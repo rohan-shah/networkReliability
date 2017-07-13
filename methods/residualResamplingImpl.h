@@ -1,6 +1,7 @@
 #ifndef RESIDUAL_RESAMPLING_HEADER_GUARD
 #define RESIDUAL_RESAMPLING_HEADER_GUARD
 #include "context.h"
+#include <boost/random/mersenne_twister.hpp>
 namespace networkReliability
 {
 	struct residualResamplingArgs

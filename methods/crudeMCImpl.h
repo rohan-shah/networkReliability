@@ -1,6 +1,7 @@
 #ifndef CRUDEMC_IMPL_HEADER_GUARD
 #define CRUDEMC_IMPL_HEADER_GUARD
 #include "context.h"
+#include <boost/random/mersenne_twister.hpp>
 namespace networkReliability
 {
 	struct crudeMCArgs

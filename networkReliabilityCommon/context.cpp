@@ -22,8 +22,6 @@ namespace networkReliability
 		vertexPositions.swap(other.vertexPositions);
 		edgeDistances.swap(other.edgeDistances);
 		std::swap(operationalProbability, other.operationalProbability);
-		allOpDistributions.swap(other.allOpDistributions);
-		allInopDistributions.swap(other.allInopDistributions);
 		std::swap(minCutEdges, other.minCutEdges);
 
 		edgeResidualCapacityVector.swap(other.edgeResidualCapacityVector);
@@ -46,8 +44,6 @@ namespace networkReliability
 		vertexPositions.swap(other.vertexPositions);
 		edgeDistances.swap(other.edgeDistances);
 		std::swap(operationalProbability, other.operationalProbability);
-		allOpDistributions.swap(other.allOpDistributions);
-		allInopDistributions.swap(other.allInopDistributions);
 		std::swap(minCutEdges, other.minCutEdges);
 
 		edgeResidualCapacityVector.swap(other.edgeResidualCapacityVector);
@@ -459,38 +455,6 @@ namespace networkReliability
 	}
 	context::~context()
 	{
-	}
-	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& context::getOpDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
-	{
-		::TruncatedBinomialDistribution::TruncatedBinomialDistribution::key key;
-		key.firstAllowedValue = firstAllowedValue;
-		key.lastAllowedValue = lastAllowedValue;
-		key.n = n;
-
-		::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection::mapType::iterator searchIterator;
-		searchIterator = allOpDistributions.data.find(key);
-		if (searchIterator == allOpDistributions.data.end())
-		{
-			::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection::mapType::value_type toInsert(key, ::TruncatedBinomialDistribution::TruncatedBinomialDistribution(n, firstAllowedValue, lastAllowedValue, operationalProbability));
-			return allOpDistributions.data.insert(std::move(toInsert)).first->second;
-		}
-		else return searchIterator->second;
-	}
-	const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& context::getInopDistribution(std::size_t firstAllowedValue, std::size_t lastAllowedValue, std::size_t n) const
-	{
-		::TruncatedBinomialDistribution::TruncatedBinomialDistribution::key key;
-		key.firstAllowedValue = firstAllowedValue;
-		key.lastAllowedValue = lastAllowedValue;
-		key.n = n;
-
-		::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection::mapType::iterator searchIterator;
-		searchIterator = allInopDistributions.data.find(key);
-		if(searchIterator == allInopDistributions.data.end())
-		{
-			::TruncatedBinomialDistribution::TruncatedBinomialDistributionCollection::mapType::value_type toInsert(key, ::TruncatedBinomialDistribution::TruncatedBinomialDistribution(n, firstAllowedValue, lastAllowedValue, 1-operationalProbability));
-			return allInopDistributions.data.insert(std::move(toInsert)).first->second;
-		}
-		else return searchIterator->second;
 	}
 	std::size_t context::getMinCutEdges() const
 	{

@@ -36,36 +36,6 @@ namespace networkReliability
 		}
 		this->state = state;
 	}
-	void NetworkReliabilityObs::constructConditional(context const& contextObj, boost::mt19937& randomSource, edgeState* state, bool fixed)
-	{
-		const context::internalGraph& graph = contextObj.getGraph();
-		const std::size_t nEdges = boost::num_edges(graph);
-		const std::size_t minCutEdges = contextObj.getMinCutEdges();
-		const ::TruncatedBinomialDistribution::TruncatedBinomialDistribution& dist = contextObj.getInopDistribution(minCutEdges, nEdges, nEdges);
-
-		const std::size_t nRemovedEdges = dist(randomSource);
-		edgeState inopState;
-		if(fixed) 
-		{
-			std::fill(state, state + nEdges, FIXED_OP);
-			inopState = FIXED_INOP;
-		}
-		else 
-		{
-			std::fill(state, state + nEdges, UNFIXED_OP);
-			inopState = UNFIXED_INOP;
-		}
-
-		std::vector<int> indices(boost::counting_iterator<int>(0), boost::counting_iterator<int>((int)nEdges));
-		for(std::size_t i = 0; i < nRemovedEdges; i++)
-		{
-			boost::random::uniform_int_distribution<int> removedEdgeIndexDistribution(0, (int)indices.size()-1);
-			int index = removedEdgeIndexDistribution(randomSource);
-			state[indices[index]] = inopState;
-			std::swap(indices[index], *indices.rbegin());
-			indices.pop_back();
-		}
-	}
 	NetworkReliabilityObs::NetworkReliabilityObs(context const& contextObj, boost::shared_array<edgeState> state)
 		:contextObj(contextObj), state(state)
 	{}

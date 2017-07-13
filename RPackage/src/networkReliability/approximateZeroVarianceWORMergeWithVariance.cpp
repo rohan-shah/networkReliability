@@ -4,7 +4,7 @@
 #include "createContext.h"
 namespace networkReliability
 {
-	SEXP approximateZeroVarianceWORMergeWithVariance(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp, R_GRAPH_TYPE graphType)
+	SEXP approximateZeroVarianceWORMergeWithVariance(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp, SEXP graphFile_sexp, R_GRAPH_TYPE graphType)
 	{
 	BEGIN_RCPP
 		std::vector<int> interestVertices = Rcpp::as<std::vector<int> >(interestVertices_sexp);
@@ -22,20 +22,21 @@ namespace networkReliability
 		approximateZeroVarianceWORMergeWithVarianceArgs args(contextObj);
 		args.randomSource.seed(seed);
 		args.n = n;
+		args.graphFile = Rcpp::as<std::string>(graphFile_sexp);
 		approximateZeroVarianceWORMergeWithVariance(args);
 		return Rcpp::List::create(Rcpp::Named("estimate") = Rcpp::wrap(args.estimate.str()), Rcpp::Named("varianceEstimate") = Rcpp::wrap(args.varianceEstimate.str()));
 	END_RCPP
 	}
-	SEXP approximateZeroVarianceWORMergeWithVariance_igraph(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp)
+	SEXP approximateZeroVarianceWORMergeWithVariance_igraph(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp, SEXP graphFile_sexp)
 	{
-		return approximateZeroVarianceWORMergeWithVariance(graph_sexp, probability_sexp, n_sexp, seed_sexp, interestVertices_sexp, IGRAPH);
+		return approximateZeroVarianceWORMergeWithVariance(graph_sexp, probability_sexp, n_sexp, seed_sexp, interestVertices_sexp, graphFile_sexp, IGRAPH);
 	}
-	SEXP approximateZeroVarianceWORMergeWithVariance_graphAM(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp)
+	SEXP approximateZeroVarianceWORMergeWithVariance_graphAM(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp, SEXP graphFile_sexp)
 	{
-		return approximateZeroVarianceWORMergeWithVariance(graph_sexp, probability_sexp, n_sexp, seed_sexp, interestVertices_sexp, GRAPHAM);
+		return approximateZeroVarianceWORMergeWithVariance(graph_sexp, probability_sexp, n_sexp, seed_sexp, interestVertices_sexp, graphFile_sexp, GRAPHAM);
 	}
-	SEXP approximateZeroVarianceWORMergeWithVariance_graphNEL(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp)
+	SEXP approximateZeroVarianceWORMergeWithVariance_graphNEL(SEXP graph_sexp, SEXP probability_sexp, SEXP n_sexp, SEXP seed_sexp, SEXP interestVertices_sexp, SEXP graphFile_sexp)
 	{
-		return approximateZeroVarianceWORMergeWithVariance(graph_sexp, probability_sexp, n_sexp, seed_sexp, interestVertices_sexp, GRAPHNEL);
+		return approximateZeroVarianceWORMergeWithVariance(graph_sexp, probability_sexp, n_sexp, seed_sexp, interestVertices_sexp, graphFile_sexp, GRAPHNEL);
 	}
 }

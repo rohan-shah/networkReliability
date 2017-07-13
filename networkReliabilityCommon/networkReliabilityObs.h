@@ -55,7 +55,6 @@ namespace networkReliability
 		void getReducedGraphNoSelfWithWeights(getReducedGraphNoSelfWithWeightsInput& input) const;
 
 	protected:
-		static void constructConditional(context const& contextObj, boost::mt19937& randomSource, edgeState* state, bool fixed);
 		context const& contextObj;
 		boost::shared_array<edgeState> state;
 	private:

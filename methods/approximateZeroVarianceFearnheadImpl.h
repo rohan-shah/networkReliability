@@ -1,6 +1,7 @@
 #ifndef APPROXIMATE_ZERO_VARIANCE_FEARNHEAD_HEADER_GUARD
 #define APPROXIMATE_ZERO_VARIANCE_FEARNHEAD_HEADER_GUARD
 #include "context.h"
+#include <boost/random/mersenne_twister.hpp>
 namespace networkReliability
 {
 	struct approximateZeroVarianceFearnheadArgs

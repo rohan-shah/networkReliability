@@ -1,4 +1,4 @@
-approximateZeroVarianceWORMergeWithVariance <- function(graph, probability, n, seed, interestVertices)
+approximateZeroVarianceWORMergeWithVariance <- function(graph, probability, n, seed, interestVertices, graphFile = "")
 {
 	if(class(graph) == "igraph")
 	{
@@ -7,19 +7,19 @@ approximateZeroVarianceWORMergeWithVariance <- function(graph, probability, n, s
 			stop("Input `graph' must be undirected")
 		}
 		start <- Sys.time()
-		result <- .Call("approximateZeroVarianceWORMergeWithVariance_igraph", graph, probability, n, seed, interestVertices, PACKAGE="networkReliability")
+		result <- .Call("approximateZeroVarianceWORMergeWithVariance_igraph", graph, probability, n, seed, interestVertices, graphFile, PACKAGE="networkReliability")
 		end <- Sys.time()
 	}
 	else if(class(graph) == "graphNEL")
 	{
 		start <- Sys.time()
-		result <- .Call("approximateZeroVarianceWORMergeWithVariance_graphNEL", graph, probability, n, seed, interestVertices, PACKAGE="networkReliability")
+		result <- .Call("approximateZeroVarianceWORMergeWithVariance_graphNEL", graph, probability, n, seed, interestVertices, graphFile, PACKAGE="networkReliability")
 		end <- Sys.time()
 	}
 	else if(class(graph) == "graphAM")
 	{
 		start <- Sys.time()
-		result <- .Call("approximateZeroVarianceWORMergeWithVariance_graphAM", graph, probability, n, seed, interestVertices, PACKAGE="networkReliability")
+		result <- .Call("approximateZeroVarianceWORMergeWithVariance_graphAM", graph, probability, n, seed, interestVertices, graphFile, PACKAGE="networkReliability")
 		end <- Sys.time()
 	}
 	else

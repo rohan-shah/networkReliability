@@ -24,7 +24,7 @@ namespace boost
 		{
 			std::string resultStr;
 			ar >> resultStr;
-			number = TruncatedBinomialDistribution::mpfr_class(resultStr);
+			number = ::networkReliability::mpfr_class(resultStr);
 		}
 	}
 }

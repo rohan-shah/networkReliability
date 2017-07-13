@@ -9,12 +9,13 @@ namespace networkReliability
 	{
 	public:
 		approximateZeroVarianceWORMergeWithVarianceArgs(const context& contextObj)
-			: contextObj(contextObj)
+			: contextObj(contextObj), graphFile("")
 		{}
 		const context& contextObj;
 		boost::mt19937 randomSource;
 		std::size_t n;
 		mpfr_class estimate, varianceEstimate;
+		std::string graphFile;
 	};
 	void approximateZeroVarianceWORMergeWithVariance(approximateZeroVarianceWORMergeWithVarianceArgs& args);
 }
