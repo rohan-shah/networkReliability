@@ -23,7 +23,7 @@ namespace networkReliability
 			if(*i >= (int)nVertices) throw std::runtime_error("Input vertex was too large");
 		}
 
-		const exhaustiveSearchArgs::counterType maximumState = 1ULL << nEdges;
+		const exhaustiveSearchArgs::counterType maximumState = ((exhaustiveSearchArgs::counterType)1) << nEdges;
 
 		args.result.resize(nEdges+1, 0);
 		#pragma omp parallel
@@ -44,7 +44,7 @@ namespace networkReliability
 				int nEdgesThisGraph = 0;
 				for(std::size_t edgeCounter = 0; edgeCounter < nEdges; edgeCounter++)
 				{
-					if(state & (1ULL << edgeCounter))
+					if(state & (((exhaustiveSearchArgs::counterType)1) << edgeCounter))
 					{
 						edgeStatePtr[edgeCounter] = UNFIXED_OP;
 						nEdgesThisGraph++;

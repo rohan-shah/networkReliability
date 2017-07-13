@@ -3,6 +3,7 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
+#include <iostream>
 namespace networkReliability
 {
 	bool readN(boost::program_options::variables_map& variableMap, std::size_t& out)

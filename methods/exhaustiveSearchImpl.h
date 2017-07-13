@@ -6,7 +6,11 @@ namespace networkReliability
 	struct exhaustiveSearchArgs
 	{
 	public:
+#ifdef _MSC_VER
+		typedef long long counterType;
+#else
 		typedef unsigned long long counterType;
+#endif
 		exhaustiveSearchArgs(const context::internalGraph& graph)
 			:graph(graph)
 		{}
