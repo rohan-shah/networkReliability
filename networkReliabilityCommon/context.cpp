@@ -133,6 +133,10 @@ namespace networkReliability
 			constructEdgeDistances();
 		}
 
+		for(std::vector<int>::const_iterator i = interestVertices->begin(); i != interestVertices->end(); i++)
+		{
+			if(*i < 0 || *i >= (int)nVertices) throw std::runtime_error("Value in interestVertices was too large");
+		}
 		//are we looking at the all-terminal reliability problem?
 		if(interestVertices->size() == nVertices)
 		{
