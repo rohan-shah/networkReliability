@@ -729,7 +729,7 @@ namespace networkReliability
 				{
 					return x.accumulatedMean.convert_to<double>();
 				};
-			dp.property("accumulatedMean", boost::make_transform_value_property_map(vertexToAccumulatedMean, boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
+			dp.property("Z", boost::make_transform_value_property_map(vertexToAccumulatedMean, boost::get(boost::vertex_name_t(), varianceEstimationGraph)));
 			auto vertexToTrueDensity = [](approximateZeroVarianceWORMergeWithVarianceImpl::varianceGraphVertex& x)
 				{
 					return x.trueDensity.convert_to<double>();
