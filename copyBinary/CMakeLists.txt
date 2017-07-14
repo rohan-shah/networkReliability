@@ -13,6 +13,18 @@ function(copyBinary buildType destination resultName)
 	add_custom_command(OUTPUT "${destination}/${NAME_PART}.dll" COMMAND ${CMAKE_COMMAND} ARGS -E copy "${MPIR_LOCATION}" "${destination}/${NAME_PART}.dll")
 	list(APPEND COPIED_BINARY_FILES "${destination}/${NAME_PART}.dll")
 
+	#copy boost regex
+	get_filename_component(NAME_PART ${Boost_REGEX_LIBRARY_${buildType}} NAME_WE)
+	get_filename_component(PATH_PART ${Boost_REGEX_LIBRARY_${buildType}} PATH)
+	add_custom_command(OUTPUT "${destination}/${NAME_PART}.dll" COMMAND ${CMAKE_COMMAND} ARGS -E copy "${PATH_PART}/${NAME_PART}.dll" "${destination}/${NAME_PART}.dll")
+	list(APPEND COPIED_BINARY_FILES "${destination}/${NAME_PART}.dll")
+
+	#copy boost graph
+	get_filename_component(NAME_PART ${Boost_GRAPH_LIBRARY_${buildType}} NAME_WE)
+	get_filename_component(PATH_PART ${Boost_GRAPH_LIBRARY_${buildType}} PATH)
+	add_custom_command(OUTPUT "${destination}/${NAME_PART}.dll" COMMAND ${CMAKE_COMMAND} ARGS -E copy "${PATH_PART}/${NAME_PART}.dll" "${destination}/${NAME_PART}.dll")
+	list(APPEND COPIED_BINARY_FILES "${destination}/${NAME_PART}.dll")
+
 	#copy boost serialization
 	get_filename_component(NAME_PART ${Boost_SERIALIZATION_LIBRARY_${buildType}} NAME_WE)
 	get_filename_component(PATH_PART ${Boost_SERIALIZATION_LIBRARY_${buildType}} PATH)
