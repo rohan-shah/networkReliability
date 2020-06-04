@@ -1,8 +1,8 @@
 #include <boost/program_options.hpp>
 #include <boost/random.hpp>
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
-#include "Context.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
+#include "context.h"
 #include "observationVisualiser.h"
 #include <QApplication>
 #include <fstream>
@@ -80,8 +80,8 @@ namespace networkReliability
 			return 0;
 		}
 
-		Context context = Context::emptyContext();
-		if(!readContext(variableMap, context, probability))
+		context contextObj = context::emptyContext();
+		if(!readContext(variableMap, contextObj, probability))
 		{
 			return 0;
 		}
@@ -96,7 +96,7 @@ namespace networkReliability
 		}
 		
 		QApplication app(argc, argv);
-		observationVisualiser viewer(context, randomSource, pointSize);
+		observationVisualiser viewer(contextObj, randomSource, pointSize);
 		viewer.show();
 		app.exec();
 		return 0;

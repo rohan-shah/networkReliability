@@ -2,7 +2,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QTimer>
-#include "ZoomGraphicsView.h"
+#include "zoomGraphicsView.h"
 #include <QGraphicsRectItem>
 #include "graphAlgorithms.h"
 #include <boost/lexical_cast.hpp>

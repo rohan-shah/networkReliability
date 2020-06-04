@@ -1,7 +1,7 @@
-#include "NetworkReliabilityObs.h"
-#include "Context.h"
-#include "Arguments.h"
-#include "ArgumentsMPFR.h"
+#include "networkReliabilityObs.h"
+#include "context.h"
+#include "arguments.h"
+#include "argumentsMPFR.h"
 #include <QApplication>
 #include "subObservationVisualiserSingle.h"
 #include "subObservationVisualiserCollection.h"

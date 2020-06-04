@@ -5,7 +5,7 @@
 #include <QKeyEvent>
 #include <boost/lexical_cast.hpp>
 #include "graphAlgorithms.h"
-#include "ZoomGraphicsView.h"
+#include "zoomGraphicsView.h"
 #include <QGraphicsSceneMouseEvent>
 namespace networkReliability
 {
@@ -34,7 +34,7 @@ namespace networkReliability
 		graphicsScene->installEventFilter(this);
 		graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
 
-		graphicsView = new ZoomGraphicsView(graphicsScene);
+		graphicsView = new zoomGraphicsView(graphicsScene);
 		graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->viewport()->installEventFilter(this);
@@ -74,12 +74,12 @@ namespace networkReliability
 		addLines();
 		addPoints();
 
-		const EdgeState* state = obs.getState();
+		const edgeState* state = obs.getState();
 
 		std::vector<int> components;
 		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 		std::vector<boost::default_color_type> colorMap;
-		countComponents(contextObj, state, components, stack, colorMap);
+		countComponents(contextObj.getGraph(), state, components, stack, colorMap);
 		
 		const std::vector<int>& interestVertices = contextObj.getInterestVertices();
 		
@@ -141,7 +141,7 @@ namespace networkReliability
 	}
 	void observationVisualiser::addLines()
 	{
-		const EdgeState* state = obs.getState();
+		const edgeState* state = obs.getState();
 		const context::internalGraph& graph = contextObj.getGraph();
 		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 

@@ -3,10 +3,10 @@
 #include <QGraphicsView>
 namespace networkReliability
 {
-	class ZoomGraphicsView : public QGraphicsView
+	class zoomGraphicsView : public QGraphicsView
 	{
 	public:
-		ZoomGraphicsView(QGraphicsScene* scene);
+		zoomGraphicsView(QGraphicsScene* scene);
 	protected:
 		void wheelEvent(QWheelEvent* event);
 		void keyPressEvent(QKeyEvent* event);

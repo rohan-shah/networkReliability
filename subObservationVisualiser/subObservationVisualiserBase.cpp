@@ -9,7 +9,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QTimer>
-#include "ZoomGraphicsView.h"
+#include "zoomGraphicsView.h"
 #include <QGraphicsRectItem>
 #include "graphAlgorithms.h"
 #include <boost/lexical_cast.hpp>
@@ -43,7 +43,7 @@ namespace networkReliability
 	{
 		boost::detail::depth_first_visit_restricted_impl_helper<context::internalGraph>::stackType stack;
 		std::vector<boost::default_color_type> colorMap;
-		nUnreducedComponents = countComponents(contextObj, subObs.getState(), reducedComponents, stack, colorMap);
+		nUnreducedComponents = countComponents(contextObj.getGraph(), subObs.getState(), reducedComponents, stack, colorMap);
 		subObs.getReducedGraphNoSelfWithWeights(reducedGraphData);
 	}
 	void subObservationVisualiserBase::initialiseControls()
@@ -52,7 +52,7 @@ namespace networkReliability
 		graphicsScene->installEventFilter(this);
 		graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
 
-		graphicsView = new ZoomGraphicsView(graphicsScene);
+		graphicsView = new zoomGraphicsView(graphicsScene);
 		graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->viewport()->installEventFilter(this);
@@ -187,7 +187,7 @@ namespace networkReliability
 	void subObservationVisualiserBase::constructUnreducedLines(const NetworkReliabilityObs& subObs)
 	{
 		assert(unreducedLinesItem);
-		const EdgeState* state = subObs.getState();
+		const edgeState* state = subObs.getState();
 		const context::internalGraph& graph = contextObj.getGraph();
 		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 
@@ -338,7 +338,7 @@ namespace networkReliability
 	{
 		assert(reducedLinesItem);
 		const context::internalGraph& unreducedGraph = contextObj.getGraph();
-		const std::vector<Context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
+		const std::vector<context::vertexPosition>& vertexPositions = contextObj.getVertexPositions();
 
 		std::vector<bool> stillPresentInReduced(nUnreducedComponents, false);
 		NetworkReliabilityObs::reducedGraphWithProbabilities::vertex_iterator currentReducedVertex, endReducedVertex;
@@ -350,16 +350,16 @@ namespace networkReliability
 		
 		QPen blackPen(QColor("black"));
 
-		Context::internalGraph::edge_iterator currentEdge, lastEdge;
+		context::internalGraph::edge_iterator currentEdge, lastEdge;
 		boost::tie(currentEdge, lastEdge) = boost::edges(unreducedGraph);
-		const EdgeState* state = subObs.getState();
+		const edgeState* state = subObs.getState();
 		for(; currentEdge != lastEdge; currentEdge++)
 		{
 			int sourceVertex = (int)boost::source(*currentEdge, unreducedGraph);
 			int targetVertex = (int)boost::target(*currentEdge, unreducedGraph);
 			if(stillPresentInReduced[reducedComponents[sourceVertex]] && reducedComponents[sourceVertex] == reducedComponents[targetVertex] && (state[boost::get(boost::edge_index, unreducedGraph, *currentEdge)] & OP_MASK))
 			{
-				Context::vertexPosition sourcePosition = vertexPositions[sourceVertex], targetPosition = vertexPositions[targetVertex];
+				context::vertexPosition sourcePosition = vertexPositions[sourceVertex], targetPosition = vertexPositions[targetVertex];
 				QGraphicsLineItem* newItem = new QGraphicsLineItem(sourcePosition.first, sourcePosition.second, targetPosition.first, targetPosition.second, reducedLinesItem);
 				newItem->setPen(blackPen);
 			}

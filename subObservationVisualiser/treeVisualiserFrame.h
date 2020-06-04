@@ -3,7 +3,7 @@
 #include <QFrame>
 #include <QGraphicsView>
 #include <QGraphicsScene>
-#include "NetworkReliabilityObsTree.h"
+#include "networkReliabilityObsTree.h"
 #include <QHBoxLayout>
 #include <QGraphicsEllipseItem>
 namespace networkReliability

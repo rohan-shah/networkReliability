@@ -1,7 +1,7 @@
 #ifndef NETWORK_RELIABILITY_HEADER_GUARD
 #define NETWORK_RELIABILITY_HEADER_GUARD
 #include <QMainWindow>
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 #include <QGraphicsView>
 #include <QGraphicsScene>
 #include <QStatusBar>

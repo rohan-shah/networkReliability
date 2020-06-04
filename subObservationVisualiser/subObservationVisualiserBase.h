@@ -1,11 +1,11 @@
 #ifndef SUB_OBSERVATION_VISUALISER_BASE_HEADER_GUARD
 #define SUB_OBSERVATION_VISUALISER_BASE_HEADER_GUARD
 #include <QFrame>
-#include "Context.h"
+#include "context.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLabel>
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 #include <QHBoxLayout>
 namespace networkReliability
 {
@@ -13,7 +13,7 @@ namespace networkReliability
 	{
 		Q_OBJECT
 	public:
-		subObservationVisualiserBase(const Context& context, float pointSize);
+		subObservationVisualiserBase(const context& contextObj, float pointSize);
 		~subObservationVisualiserBase();
 		bool eventFilter(QObject* object, QEvent *event);
 		void setReduced(bool reduced);
@@ -51,7 +51,7 @@ namespace networkReliability
 		//...and the number of components in the unreduced graph
 		int nUnreducedComponents;
 		bool reduced;
-		const Context& context;
+		const context& contextObj;
 
 		QGraphicsItemGroup* reducedPointsItem;
 		QGraphicsItemGroup* reducedLinesItem;

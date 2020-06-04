@@ -1,14 +1,14 @@
-#include "ZoomGraphicsView.h"
+#include "zoomGraphicsView.h"
 #include <QWheelEvent>
 #include <QGraphicsScene>
 namespace networkReliability
 {
-	ZoomGraphicsView::ZoomGraphicsView(QGraphicsScene* scene)
+	zoomGraphicsView::zoomGraphicsView(QGraphicsScene* scene)
 		:QGraphicsView(scene)
 	{
 		setMouseTracking(true);
 	}
-	void ZoomGraphicsView::wheelEvent(QWheelEvent* event)
+	void zoomGraphicsView::wheelEvent(QWheelEvent* event)
 	{
 		qreal factor = 1.2;
 		if (event->delta() < 0) factor = 1.0 / factor;
@@ -18,7 +18,7 @@ namespace networkReliability
 		QPointF pointAfterScale = this->mapToScene(event->pos());
 		this->centerOn(currentCentre + (pointBeforeScale - pointAfterScale));
 	}
-	void ZoomGraphicsView::keyPressEvent(QKeyEvent* keyEvent)
+	void zoomGraphicsView::keyPressEvent(QKeyEvent* keyEvent)
 	{
 		qreal factor = 1.2;
 		if(keyEvent->key() == Qt::Key_Up && keyEvent->modifiers() & Qt::ShiftModifier)

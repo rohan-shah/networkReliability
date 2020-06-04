@@ -1,7 +1,7 @@
 #ifndef SUB_OBSERVATION_VISUALISER_TREE_HEADER_GUARD
 #define SUB_OBSERVATION_VISUALISER_TREE_HEADER_GUARD
 #include <QMainWindow>
-#include "Context.h"
+#include "context.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLabel>
@@ -10,7 +10,7 @@
 #include <QHBoxLayout>
 #include "subObservationVisualiserBase.h"
 #include "subObservationStatusBar.h"
-#include "NetworkReliabilityObsTree.h"
+#include "networkReliabilityObsTree.h"
 #include "treeVisualiserFrame.h"
 namespace networkReliability
 {

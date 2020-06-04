@@ -2,7 +2,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QTimer>
-#include "ZoomGraphicsView.h"
+#include "zoomGraphicsView.h"
 #include <QGraphicsRectItem>
 #include "graphAlgorithms.h"
 #include <boost/lexical_cast.hpp>
@@ -64,7 +64,7 @@ namespace networkReliability
 	}
 	void subObservationVisualiserTree::setObservation()
 	{
-		boost::shared_array<EdgeState> expandedState(new EdgeState[tree.getContext().getNEdges()]);
+		boost::shared_array<edgeState> expandedState(new edgeState[tree.getContext().getNEdges()]);
 		tree.expand(expandedState, currentLevel, currentIndex);
 		//Putting in dummy values for the last two constructor arguments
 		NetworkReliabilityObs obs(tree.getContext(), expandedState);

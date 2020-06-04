@@ -1,14 +1,14 @@
 #ifndef SUB_OBSERVATION_VISUALISER_SINGLE_HEADER_GUARD
 #define SUB_OBSERVATION_VISUALISER_SINGLE_HEADER_GUARD
 #include <QMainWindow>
-#include "Context.h"
+#include "context.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLabel>
 #include <QStatusBar>
 #include <QFrame>
 #include <QHBoxLayout>
-#include "NetworkReliabilityObs.h"
+#include "networkReliabilityObs.h"
 #include "subObservationVisualiserBase.h"
 #include "subObservationStatusBar.h"
 namespace networkReliability

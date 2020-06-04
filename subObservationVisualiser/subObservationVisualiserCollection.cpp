@@ -2,7 +2,7 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QTimer>
-#include "ZoomGraphicsView.h"
+#include "zoomGraphicsView.h"
 #include <QGraphicsRectItem>
 #include "graphAlgorithms.h"
 #include <boost/lexical_cast.hpp>
@@ -29,7 +29,7 @@ namespace networkReliability
 			QObject::connect(base, &subObservationVisualiserBase::observationLeft, this, &subObservationVisualiserCollection::observationLeft);
 			QObject::connect(base, &subObservationVisualiserBase::observationRight, this, &subObservationVisualiserCollection::observationRight);
 
-			boost::shared_array<EdgeState> expandedState(new EdgeState[collection.getContext().getNEdges()]);
+			boost::shared_array<edgeState> expandedState(new edgeState[collection.getContext().getNEdges()]);
 			collection.expand(currentIndex, expandedState);
 			//Putting in dummy values for the last two constructor arguments
 			NetworkReliabilityObs subObs(collection.getContext(), expandedState);
@@ -67,7 +67,7 @@ namespace networkReliability
 		if(currentIndex > 0)
 		{
 			currentIndex--;
-			boost::shared_array<EdgeState> expandedState(new EdgeState[collection.getContext().getNEdges()]);
+			boost::shared_array<edgeState> expandedState(new edgeState[collection.getContext().getNEdges()]);
 			collection.expand(currentIndex, expandedState);
 			//Putting in dummy values for the last two constructor arguments
 			NetworkReliabilityObs obs(collection.getContext(), expandedState);
@@ -79,7 +79,7 @@ namespace networkReliability
 		if(currentIndex < (int)(collection.getSampleSize() - 1))
 		{
 			currentIndex++;
-			boost::shared_array<EdgeState> expandedState(new EdgeState[collection.getContext().getNEdges()]);
+			boost::shared_array<edgeState> expandedState(new edgeState[collection.getContext().getNEdges()]);
 			collection.expand(currentIndex, expandedState);
 			//Putting in dummy values for the last two constructor arguments
 			NetworkReliabilityObs obs(collection.getContext(), expandedState);

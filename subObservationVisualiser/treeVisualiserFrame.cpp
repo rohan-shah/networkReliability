@@ -1,5 +1,5 @@
 #include "treeVisualiserFrame.h"
-#include "ZoomGraphicsView.h"
+#include "zoomGraphicsView.h"
 #include <QEvent>
 #include <QKeyEvent>
 #include <QGraphicsSceneMouseEvent>
@@ -29,7 +29,7 @@ namespace networkReliability
 		graphicsScene->installEventFilter(this);
 		graphicsScene->setItemIndexMethod(QGraphicsScene::NoIndex);
 
-		graphicsView = new ZoomGraphicsView(graphicsScene);
+		graphicsView = new zoomGraphicsView(graphicsScene);
 		graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		graphicsView->installEventFilter(this);

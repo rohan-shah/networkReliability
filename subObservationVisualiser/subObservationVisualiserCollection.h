@@ -1,7 +1,7 @@
 #ifndef SUB_OBSERVATION_VISUALISER_COLLECTION_HEADER_GUARD
 #define SUB_OBSERVATION_VISUALISER_COLLECTION_HEADER_GUARD
 #include <QMainWindow>
-#include "Context.h"
+#include "context.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLabel>
@@ -10,7 +10,7 @@
 #include <QHBoxLayout>
 #include "subObservationVisualiserBase.h"
 #include "subObservationStatusBar.h"
-#include "NetworkReliabilityObsCollection.h"
+#include "networkReliabilityObsCollection.h"
 namespace networkReliability
 {
 	//If the next state is RESIMULATE, then we resimulate until we observe something that hits the next level, BUT
